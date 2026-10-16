@@ -36,6 +36,8 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
 
+Las propuestas del widget (PW-01 a PW-08, Fase 3) están al final, ⚠️ por confirmar.
+
 ---
 
 ## PD-01 · Horarios del local y de cada profesional
@@ -450,3 +452,93 @@ La conversación solo pasa entera al equipo (y el agente deja de agendar,
 PA-06) cuando la clienta pide una persona, hay una queja, la política bloquea
 su cancelación, insiste en una hora que no existe, no se entiende tras dos
 intentos o algo falla.
+
+---
+
+## El widget web (Fase 3) · ⚠️ POR CONFIRMAR
+
+Aparecieron al escribir el spec de la Fase 3 (`fase-3-widget-web.md`), el
+16/10/2026. Son **propuestas**: Mariana tiene que confirmarlas o cambiarlas
+antes de lanzar la fase.
+
+| # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ⚠️ por confirmar |
+| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Asistente virtual. Al escribir aceptas la política de privacidad de {negocio}", con enlace | URL de su política de privacidad | ⚠️ por confirmar |
+| PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **24 h**, la retoma; después, conversación nueva | — | ⚠️ por confirmar |
+| PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ⚠️ por confirmar |
+| PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ⚠️ por confirmar |
+| PW-06 | Dónde puede ir el widget | Solo en los **dominios que indique el negocio** | Lista de dominios | ⚠️ por confirmar |
+| PW-07 | SMS de confirmación (PA-09) | En la Fase 3 se construye todo **menos el envío real** (proveedor de prueba). La página del enlace muestra la cita y permite **cancelarla**; para cambiarla, remite al chat o al teléfono | — | ⚠️ por confirmar |
+| PW-08 | La demo pública | Primero en local; después, con el visto bueno de Mariana, en **Vercel** contra Supabase en la nube | — | ⚠️ por confirmar |
+
+### PW-01 · Marca del widget
+
+La burbuja y la cabecera del chat llevan **el nombre y el color del negocio**:
+para la clienta, está hablando con "Estética Aurora", no con un producto. Como
+el nombre del producto (PD-07) todavía no existe, no aparece. Cuando exista,
+la propuesta es como mucho un "Funciona con …" pequeño al pie, que también es
+publicidad gratuita.
+
+### PW-02 · Aviso de privacidad
+
+Antes de que la clienta escriba, una línea fija: *"Asistente virtual. Al
+escribir aceptas la política de privacidad de {negocio}"*, con enlace a la
+política del negocio si la tiene. Cumple dos cosas: avisar de que es una IA
+(como PA-04, pero antes de escribir) e informar del tratamiento de datos.
+**No sustituye a PD-11** (contrato de encargado, base legal para datos de
+salud): eso sigue pendiente antes del primer cliente sanitario.
+
+### PW-03 · Cuánto dura la conversación en el navegador
+
+Si la clienta cierra la web y vuelve **antes de 24 horas**, ve sus mensajes y
+sigue donde estaba. Después, empieza una conversación nueva (el agente la
+reconoce igual cuando da su teléfono). Una conversación solo la ve **el
+navegador que la empezó**.
+
+### PW-04 · Tope mensual por negocio
+
+Para que un negocio con un uso raro (o un ataque) no se coma el margen. De
+serie **100 US$ al mes** de coste del agente, que con Opus 5 son unas 2.000
+conversaciones (≈ 0,05 US$ cada una). Al llegar al tope, el widget responde con
+un mensaje fijo con el teléfono del local, sin llamar a la IA. Al 80 %, aviso en
+el informe de consumo para que Mariana hable con el negocio (o suba el tope).
+
+### PW-05 · Límites anti-abuso
+
+El widget está en una web pública: cualquiera puede escribirle. Límites de
+serie: mensajes de hasta 1.000 caracteres, 20 mensajes por conversación y hora,
+y 10 conversaciones nuevas por hora desde la misma conexión. Una clienta normal
+no llega nunca. Al pasarse, un mensaje fijo amable con el teléfono del local.
+
+### PW-06 · Dónde puede ir el widget
+
+Cada negocio dice en qué web(s) lo pega (por ejemplo `esteticaaurora.es`). El
+widget solo funciona ahí: si alguien copia el código en otra web, no carga. Es
+una pregunta más del cuestionario de alta.
+
+### PW-07 · SMS de confirmación (PA-09)
+
+PA-09 decidió que al reservar llega un SMS con un enlace para cancelar o
+cambiar la cita. Enviar SMS de verdad pide **contratar un proveedor** (Twilio u
+otro, unos céntimos por mensaje), y el maestro quiere la Fase 3 **sin trámites
+externos**. Propuesta:
+
+- En la Fase 3 se construye todo: el texto, el enlace y la página. Un
+  **proveedor de prueba** muestra el SMS en la consola en vez de mandarlo.
+- El proveedor real se elige y se conecta cuando Mariana lo decida (antes del
+  primer cliente real). Es cambiar una pieza, no rehacer nada.
+- **La página del enlace** muestra la cita y deja **cancelarla** (con la misma
+  regla PR-07 que el agente). Para **cambiarla**, remite al chat de la web o al
+  teléfono del local: hacer una agenda completa en esa página es mucho más
+  trabajo y el chat ya lo hace.
+- Si el SMS falla, la reserva sigue valiendo.
+- Texto: *"{negocio}: cita confirmada el {día} a las {hora} con {profesional}.
+  Para verla o cancelarla: {enlace}"*. Sin datos de salud.
+
+### PW-08 · La demo pública
+
+La demo se prueba primero en el ordenador de Mariana. Para enseñarla con un
+enlace hace falta publicarla: la propuesta es **Vercel** (el maestro ya lo
+eligió) contra el Supabase de la nube. Publicar es un paso hacia fuera, así que
+se hace solo cuando Mariana lo confirme.
