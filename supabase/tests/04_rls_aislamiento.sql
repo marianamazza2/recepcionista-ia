@@ -86,6 +86,9 @@ drop role if exists test_tenant;
 set client_min_messages = notice;
 
 create role test_tenant nologin;
+-- En Supabase `postgres` no es superusuario: puede crear el rol, pero para
+-- hacer SET ROLE tiene que ser miembro (Postgres 16+). En local no hace daño.
+grant test_tenant to current_user;
 grant usage on schema public, app to test_tenant;
 grant select, insert, update, delete on all tables in schema public to test_tenant;
 

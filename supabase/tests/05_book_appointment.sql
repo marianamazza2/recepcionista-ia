@@ -5,7 +5,7 @@
 -- end_at desde la duración del servicio e inserta de forma atómica, dejando que
 -- la restricción no_overlap sea la que decide si el hueco está libre.
 --
--- Horarios, festivos y buffers son de la Fase 1 y NO se comprueban acá.
+-- Horarios, festivos y buffers son de la Fase 1: los comprueban 07 y 08.
 -- =============================================================================
 
 \set ON_ERROR_STOP on
@@ -39,6 +39,14 @@ insert into public.staff_services (business_id, staff_id, service_id) values
    '44444444-4444-4444-8444-00000000000a',
    '44444444-4444-4444-8444-00000000000c');
 
+-- Ajuste de la Fase 1: desde que book_appointment valida horario y antelación,
+-- este test necesita que el negocio abra (lunes 9–20) y que las fechas estén
+-- en el futuro. Las fechas pasaron del 14/09/2026 —que ya quedó atrás— al lunes
+-- 14/10/2030. Las aserciones son las mismas de la Fase 0: se ajustó el
+-- fixture, no la regla.
+insert into public.business_hours (business_id, staff_id, weekday, hora_apertura, hora_cierre) values
+  ('44444444-4444-4444-8444-000000000001', null, 1, '09:00', '20:00');
+
 -- =============================================================================
 -- Camino feliz
 -- =============================================================================
@@ -48,7 +56,7 @@ select test.succeeds(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000a',
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 10:00:00+02')$q$,
+       '2030-10-14 10:00:00+02')$q$,
   'reserva válida: la crea'
 );
 
@@ -62,7 +70,7 @@ select test.ok(
 select test.ok(
   (select end_at from public.appointments
     where business_id = '44444444-4444-4444-8444-000000000001')
-    = '2026-09-14 11:00:00+02'::timestamptz,
+    = '2030-10-14 11:00:00+02'::timestamptz,
   'end_at = start_at + duracion_min del servicio (60 min)'
 );
 
@@ -90,7 +98,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000a',
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 10:30:00+02')$q$,
+       '2030-10-14 10:30:00+02')$q$,
   '23P01', 'reservar sobre un hueco ocupado: rechazado'
 );
 
@@ -109,7 +117,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000b',   -- Lucía no presta este servicio
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 16:00:00+02')$q$,
+       '2030-10-14 16:00:00+02')$q$,
   '23514', 'profesional que no presta el servicio: rechazado'
 );
 
@@ -119,7 +127,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000f',   -- servicio inactivo
        '44444444-4444-4444-8444-00000000000a',
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 16:00:00+02')$q$,
+       '2030-10-14 16:00:00+02')$q$,
   '23503', 'servicio inactivo: rechazado'
 );
 
@@ -129,7 +137,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000e',   -- profesional inactivo
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 16:00:00+02')$q$,
+       '2030-10-14 16:00:00+02')$q$,
   '23503', 'profesional inactivo: rechazado'
 );
 
@@ -139,7 +147,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000a',
        '44444444-4444-4444-8444-000000000ddd',   -- cliente de otro negocio
-       '2026-09-14 16:00:00+02')$q$,
+       '2030-10-14 16:00:00+02')$q$,
   '23503', 'cliente de otro negocio: rechazado'
 );
 
@@ -149,7 +157,7 @@ select test.throws(
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000a',
        '44444444-4444-4444-8444-00000000000d',
-       '2026-09-14 16:00:00+02')$q$,
+       '2030-10-14 16:00:00+02')$q$,
   '23503', 'servicio de otro negocio: rechazado'
 );
 

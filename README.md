@@ -3,17 +3,19 @@
 Agente conversacional multi-cliente que atiende y agenda citas. Un motor, muchas
 configuraciones. Spec completo en [`_specs/`](_specs/).
 
-> **Antes de tocar la base, leé [`DECISIONES.md`](DECISIONES.md):** por qué el
+> **Reglas de negocio:** [`_specs/decisiones-producto.md`](_specs/decisiones-producto.md)
+> — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
+> cancelar o mover una cita. Todas decididas el 16/10/2026.
+>
+> **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
->
-> **Antes de arrancar la Fase 1, leé
-> [`DECISIONES-PENDIENTES.md`](DECISIONES-PENDIENTES.md):** hay cuatro reglas de
-> negocio sin decidir que bloquean el cálculo de huecos.
 
-**Estado: Fase 0 (cimientos) terminada.** Solo base de datos: esquema, RLS,
-garantía anti-solapamiento, esqueleto del RPC de reserva y seeds. Nada de
-agente, canal ni frontend todavía.
+**Estado: Fase 1 (motor de reservas) terminada.** La base sabe calcular huecos
+libres y reservar de forma atómica respetando horarios, festivos, ausencias,
+márgenes, antelación y profesional. Encima, la primera capa TypeScript: la
+interfaz `BookingAdapter` y su implementación `SupabaseAdapter`, que es lo que
+usará el agente en la Fase 2. Nada de agente, canal ni frontend todavía.
 
 ---
 
@@ -21,11 +23,18 @@ agente, canal ni frontend todavía.
 
 ```
 supabase/
-├── migrations/          8 migraciones, versionadas y en orden de dependencias
+├── migrations/          13 migraciones, versionadas y en orden de dependencias
 ├── seed.sql             negocio de prueba "Estética Aurora"
-└── tests/               tests SQL de aserción (81 aserciones)
+└── tests/               tests SQL de aserción (8 archivos, 149 aserciones)
 scripts/
-└── run-sql-tests.sh     runner de los tests
+└── run-sql-tests.sh     runner de los tests SQL
+src/
+├── adapters/booking/
+│   ├── types.ts         la interfaz BookingAdapter (maestro §7)
+│   ├── supabase.ts      SupabaseAdapter: conexión directa a Postgres
+│   └── errors.ts        errores tipados (SlotTakenError, OutsideHoursError…)
+└── db/client.ts         cliente de Postgres (lee DATABASE_URL)
+tests/                   tests TypeScript de integración y de concurrencia
 ```
 
 | Migración | Qué trae |
@@ -37,7 +46,12 @@ scripts/
 | `…120400_conocimiento` | `knowledge_docs`, `knowledge_chunks` (vacías hasta la Fase 5) |
 | `…120500_integraciones_y_consumo` | `integrations`, `usage_events` |
 | `…120600_rls` | RLS y políticas de aislamiento en las 15 tablas |
-| `…120700_book_appointment` | esqueleto del RPC de reserva atómica |
+| `…120700_book_appointment` | esqueleto del RPC de reserva atómica (Fase 0) |
+| `20261016120000_ajustes_por_negocio` | antelación, intervalo de huecos, margen al cierre y modo de asignación por negocio |
+| `20261016120100_motor_disponibilidad` | `app.slot_es_valido` (la única fuente de verdad) y `available_slots` |
+| `20261016120200_book_appointment_completo` | `book_appointment` completo, asignación automática, advisory lock y `ultima_profesional` |
+| `20261016120300_ultima_profesional_pasada` | PR-06: `ultima_profesional` solo cuenta citas ya pasadas y atendidas |
+| `20261016120400_cancelacion_por_negocio` | PR-07: modo de cancelación (solo informar / bloquear) y plazo en horas, por negocio |
 
 ### Las dos garantías que ya están puestas
 
@@ -70,6 +84,50 @@ devuelve `NULL` y no se ve nada — denegar por defecto.
 
 ---
 
+### El motor de reservas (Fase 1)
+
+**Una sola regla de "hueco válido".** `app.slot_es_valido(negocio, servicio,
+profesional, inicio)` decide si un inicio es reservable y, si no, por qué. La
+usan las dos caras del motor, así que nunca se ofrece un hueco que después no
+deja reservar:
+
+- `available_slots(negocio, servicio, desde, hasta, [profesional])` → los huecos
+  libres, uno por profesional y hora, ordenados. Máximo 31 días por consulta.
+- `book_appointment(…)` → reserva. Con `p_staff_id` NULL asigna sola a la
+  profesional con menos citas ese día (PD-03).
+- `ultima_profesional(negocio, clienta)` → para *"la última vez te atendió
+  Marta"*: la última cita ya pasada y atendida (PR-06).
+
+Qué comprueba, en este orden: horario (el propio de la profesional reemplaza al
+del local), rejilla del intervalo, que el servicio quepa antes del cierre,
+festivos y ausencias, antelación mínima, solape con otra cita y margen.
+
+**Dos reservas a la vez.** `book_appointment` serializa por profesional con un
+advisory lock, porque `no_overlap` no protege el margen. Probado con
+conexiones simultáneas en `tests/concurrency.test.ts`.
+
+### Errores
+
+Cada rechazo tiene su código, y el adaptador lo convierte en una clase para que
+el agente no tenga que conocer Postgres:
+
+| SQLSTATE | Error TypeScript | Significa | Qué hará el agente (Fase 2) |
+|---|---|---|---|
+| `23P01` | `SlotTakenError` | Hueco ocupado | Ofrecer otro hueco |
+| `RA001` | `OutsideHoursError` | Fuera del horario de esa profesional o del local | Decir que no abre y ofrecer los más cercanos (PD-04) |
+| `RA002` | `TimeOffError` | Festivo o ausencia | Igual que RA001 |
+| `RA003` | `TooSoonError` | No respeta la antelación mínima | Explicarla y ofrecer el primer hueco válido |
+| `RA004` | `BufferConflictError` | Pisa el margen de otra cita | Ofrecer otro hueco |
+| `RA005` | `NoStaffAvailableError` | Asignación automática sin nadie libre | Ofrecer otros huecos |
+| `23514` | `StaffDoesNotProvideServiceError` | La profesional no hace ese servicio | Proponer otra profesional |
+| `23503` | `InvalidReferenceError` | Algo no es de ese negocio o está inactivo | Error de programación: log y derivar |
+| `22023` | `InvalidRangeError` | Rango de fechas inválido o de más de 31 días | Error de programación |
+
+Además, sin código de Postgres: `BookingNotFoundError`,
+`BookingNotCancellableError` y `TenantMismatchError`.
+
+---
+
 ## Ponerla en marcha
 
 ### Con Docker (la vía canónica)
@@ -97,21 +155,55 @@ psql "$URL" -f supabase/seed.sql
 DATABASE_URL="$URL" ./scripts/run-sql-tests.sh
 ```
 
+En esta máquina el usuario de Postgres es el de macOS, no `postgres`:
+`postgresql://marianamazzariello@127.0.0.1:5432/recepcionista_dev`.
+
 Requiere las extensiones `btree_gist` (viene con Postgres) y `vector`
 (`brew install pgvector`).
 
 ---
 
+### En el proyecto Supabase (la nube)
+
+Cada fase se cierra verificando ahí (PD-06). El proyecto es
+`recepcionista-ia-dev`. En `.env` van `SUPABASE_PROJECT_REF`,
+`SUPABASE_DB_PASSWORD` y `SUPABASE_ANON_KEY` (nunca en el código).
+
+```bash
+supabase login                                   # una vez, en una terminal normal
+supabase link --project-ref eksixnahjjwrpdaqcosa # una vez
+SUPABASE_DB_PASSWORD=… supabase db push          # o con la variable exportada
+./scripts/con-supabase.sh psql -f supabase/seed.sql
+./scripts/con-supabase.sh npm run test:sql
+./scripts/con-supabase.sh npm test
+```
+
+`con-supabase.sh` arma la cadena de conexión con los datos de `.env` y ejecuta
+el comando contra la nube, sin escribir ni mostrar la contraseña.
+
+---
+
 ## Los tests
+
+Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
+`DATABASE_URL`. Los dos comandos la leen de ahí.
+
+```bash
+npm run test:sql                    # tests SQL (8 archivos)
+./scripts/run-sql-tests.sh 07       # solo uno
+npm test                            # tests TypeScript, el de concurrencia incluido
+npm run typecheck                   # comprobación de tipos
+
+# Contra otra base, sin tocar .env:
+DATABASE_URL="postgresql://…" npm test
+```
+
+### Tests SQL
 
 Cada archivo de `supabase/tests/` corre en su propia transacción y termina en
 `ROLLBACK`: monta sus fixtures, comprueba y no deja rastro. El único que mira
-datos reales es `06_seeds.sql`.
-
-```bash
-./scripts/run-sql-tests.sh          # todos
-./scripts/run-sql-tests.sh 02       # solo el de anti-solapamiento
-```
+datos reales es `06_seeds.sql`. Usan fechas fijas de 2030 para no depender del
+día en que se corren; la antelación se mide contra `now()`.
 
 | Archivo | Cubre |
 |---|---|
@@ -121,9 +213,22 @@ datos reales es `06_seeds.sql`.
 | `04_rls_aislamiento.sql` | Cobertura de RLS tabla por tabla + aislamiento real con un rol sin privilegios |
 | `05_book_appointment.sql` | El RPC: camino feliz, hueco ocupado y validaciones de pertenencia |
 | `06_seeds.sql` | Que Estética Aurora esté cargada y sea coherente |
+| `07_disponibilidad.sql` | `available_slots`: tramo partido, cierre (PR-02 en sus dos modos), intervalo, festivo, ausencia, filtro por servicio, horario propio, margen, canceladas, antelación, cambio de hora, rango máximo |
+| `08_reserva_completa.sql` | `book_appointment`: cada motivo de rechazo con su código, asignación automática, `ultima_profesional`, que reserva y disponibilidad coincidan, y RLS |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
+
+### Tests TypeScript
+
+| Archivo | Cubre |
+|---|---|
+| `tests/booking-adapter.test.ts` | Disponibilidad de Estética Aurora, reserva con y sin profesional, cancelación, reprogramación (y que si falla la original queda intacta), errores tipados, aislamiento entre negocios |
+| `tests/concurrency.test.ts` | Seis conexiones al mismo hueco → entra una. Dos huecos que solo chocan por el margen → entra una. Una reserva sin confirmar hace esperar a la otra |
+
+Estos sí confirman en la base (la concurrencia no se puede probar de otra
+forma). Limpian lo suyo al terminar: crean negocios de prueba que se borran, y
+en Estética Aurora solo escriben con una clienta de prueba en fechas de 2030.
 
 ---
 
@@ -137,6 +242,8 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Servicios | Limpieza facial (60 min), láser (30), corporal (90), valoración (20) |
 | Profesionales | Marta (facial, corporal, valoración) y Lucía (facial, láser, valoración) |
 | Horario | L-M-X partido 9–14 / 16–20 · J 10–14 / 16–21 · V continuo 9–15 |
+| Horario propio | Lucía los jueves solo 16–21 (PD-01) |
+| Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
 
@@ -149,12 +256,9 @@ elegir profesional según el servicio en vez de al azar.
 
 | Pendiente | Fase |
 |---|---|
-| Cálculo de huecos libres: horarios, festivos, buffers, multi-profesional | 1 |
-| `SupabaseAdapter` y el `book_appointment` completo | 1 |
 | Núcleo del agente, tools, guardrails | 2 |
 | Widget web y endpoint de chat | 3 |
+| Panel para cargar la configuración | 4 |
 | Ingesta de conocimiento y embeddings | 5 |
-
-El RPC `book_appointment` de la Fase 0 es **un esqueleto**: valida pertenencia
-al negocio, calcula `end_at` desde `duracion_min` e inserta de forma atómica.
-No sabe de horarios, festivos ni buffers — eso llega en la Fase 1.
+| Recordatorios | 6 |
+| `GoogleCalendarAdapter` | 7 |

@@ -92,20 +92,46 @@ select test.ok(
 );
 
 select test.ok(
-  (select count(*) from public.business_hours where business_id = :aurora) = 9,
-  'hay 9 tramos horarios (partido de lunes a jueves, continuo el viernes)'
+  (select count(*) from public.business_hours
+    where business_id = :aurora and staff_id is null) = 9,
+  'hay 9 tramos del local (partido de lunes a jueves, continuo el viernes)'
 );
 
 -- El viernes es el día distinto: jornada continua, un solo tramo.
 select test.ok(
-  (select count(*) from public.business_hours where business_id = :aurora and weekday = 5) = 1,
+  (select count(*) from public.business_hours
+    where business_id = :aurora and staff_id is null and weekday = 5) = 1,
   'el viernes tiene jornada continua (un único tramo)'
 );
 
 select test.ok(
-  (select min(hora_apertura) from public.business_hours where business_id = :aurora and weekday = 4)
+  (select min(hora_apertura) from public.business_hours
+    where business_id = :aurora and staff_id is null and weekday = 4)
     = '10:00'::time,
   'el jueves abre más tarde que el resto'
+);
+
+-- Fase 1 · PD-01: un horario propio, para tener el caso en los datos.
+select test.ok(
+  (select count(*) from public.business_hours where business_id = :aurora) = 10
+  and exists (
+    select 1 from public.business_hours
+     where business_id = :aurora
+       and staff_id = 'c0000000-0000-4000-8000-000000000002'
+       and weekday = 4 and hora_apertura = '16:00' and hora_cierre = '21:00'),
+  'Lucía tiene horario propio el jueves (solo 16–21): 10 tramos en total'
+);
+
+-- --- Ajustes por negocio (Fase 1) --------------------------------------------
+select test.ok(
+  (select antelacion_min_horas = 2
+      and intervalo_huecos_min = 30
+      and not margen_dentro_horario
+      and asignacion_profesional = 'preguntar'
+      and cancelacion_modo = 'informar'
+      and cancelacion_plazo_horas = 24
+     from public.businesses where id = :aurora),
+  'ajustes de serie: antelación 2 h, huecos cada 30, margen fuera del horario, el agente pregunta, cancelación solo informa (24 h)'
 );
 
 -- --- Festivos y bloqueos -----------------------------------------------------

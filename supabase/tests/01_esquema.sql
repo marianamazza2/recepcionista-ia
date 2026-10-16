@@ -121,6 +121,32 @@ select test.ok(
   'existe el RPC public.book_appointment'
 );
 
+-- --- Motor de reservas (Fase 1) ---------------------------------------------
+select test.ok(
+  to_regprocedure('public.available_slots(uuid, uuid, timestamptz, timestamptz, uuid)') is not null
+  and to_regprocedure('public.ultima_profesional(uuid, uuid)') is not null
+  and to_regprocedure('app.slot_es_valido(uuid, uuid, uuid, timestamptz)') is not null,
+  'existen available_slots, ultima_profesional y app.slot_es_valido'
+);
+
+select test.ok(
+  not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where (n.nspname, p.proname) in (('public', 'available_slots'), ('public', 'book_appointment'),
+                                      ('public', 'ultima_profesional'), ('app', 'slot_es_valido'))
+       and p.prosecdef),
+  'las funciones del motor son SECURITY INVOKER (D-17)'
+);
+
+select test.ok(
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'businesses'
+      and column_name in ('antelacion_min_horas', 'intervalo_huecos_min',
+                          'margen_dentro_horario', 'asignacion_profesional',
+                          'cancelacion_modo', 'cancelacion_plazo_horas')) = 6,
+  'businesses tiene los 6 ajustes por negocio de la Fase 1'
+);
+
 -- --- Índices que pide el spec de fase (0.2) ----------------------------------
 select test.ok(
   exists (select 1 from pg_indexes where tablename = 'appointments' and indexdef like '%start_at%'),

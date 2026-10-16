@@ -29,7 +29,9 @@ delete from public.businesses where id = 'a0000000-0000-4000-8000-000000000001';
 insert into public.businesses (
   id, nombre, slug, timezone, sector, estado, plan,
   tono_de_voz, mensaje_bienvenida, politica_cancelacion,
-  direccion, telefono_humano
+  direccion, telefono_humano,
+  antelacion_min_horas, intervalo_huecos_min, margen_dentro_horario, asignacion_profesional,
+  cancelacion_modo, cancelacion_plazo_horas
 ) values (
   'a0000000-0000-4000-8000-000000000001',
   'Estética Aurora',
@@ -42,7 +44,15 @@ insert into public.businesses (
   '¡Hola! Soy la recepcionista de Estética Aurora 💫 Puedo darte cita, resolverte dudas de tratamientos o pasarte con el equipo. ¿Qué necesitas?',
   'Puedes cancelar o cambiar tu cita sin coste hasta 24 h antes. Por debajo de 24 h se cobra el 50 % del tratamiento.',
   'Calle Mayor 14, bajo. 28013 Madrid',
-  '+34910000000'
+  '+34910000000',
+  -- Ajustes por negocio (Fase 1): los valores de serie, escritos a la vista
+  -- para que el seed documente la configuración completa.
+  2,            -- antelacion_min_horas   (PD-05)
+  30,           -- intervalo_huecos_min   (PR-01)
+  false,        -- margen_dentro_horario  (PR-02)
+  'preguntar',  -- asignacion_profesional (PD-03)
+  'informar',   -- cancelacion_modo       (PR-07)
+  24            -- cancelacion_plazo_horas (PR-07): el "24 h" de su política
 );
 
 -- -----------------------------------------------------------------------------
@@ -106,6 +116,12 @@ insert into public.business_hours (business_id, staff_id, weekday, hora_apertura
   ('a0000000-0000-4000-8000-000000000001', null, 4, '16:00', '21:00'),
   -- Viernes: jornada continua, sin tarde
   ('a0000000-0000-4000-8000-000000000001', null, 5, '09:00', '15:00');
+
+-- Horario propio (PD-01): los jueves Lucía solo trabaja por la tarde. Ese día
+-- su tramo REEMPLAZA al del local, así que el jueves por la mañana solo está
+-- Marta. El resto de días Lucía hereda el horario del local.
+insert into public.business_hours (business_id, staff_id, weekday, hora_apertura, hora_cierre) values
+  ('a0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000002', 4, '16:00', '21:00');
 
 -- -----------------------------------------------------------------------------
 -- Festivos y bloqueos

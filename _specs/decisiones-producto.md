@@ -29,6 +29,11 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PD-06 | Entorno | Cada fase se cierra verificando en un proyecto Supabase en la nube (gratuito) | — | 16/10/2026 |
 | PR-01 | Cada cuánto se ofrecen horarios | Los huecos empiezan cada X minutos desde la apertura | Intervalo (de serie: **30 min**) | 16/10/2026 |
 | PR-02 | Margen al final del día | El servicio siempre tiene que terminar antes del cierre | Si el margen de la última cita cuenta dentro del horario (de serie: **no cuenta**) | 16/10/2026 |
+| PR-03 | Margen antes de un festivo o ausencia | Se trata igual que el cierre del día | El mismo ajuste de PR-02 (de serie: **no cuenta**) | 16/10/2026 |
+| PR-04 | Horas fuera de la rejilla | El agente solo reserva en la rejilla; si piden otra hora, ofrece las más cercanas. Recepción podrá saltársela (Fase 4) | — | 16/10/2026 |
+| PR-05 | Reprogramar | Mantiene la misma profesional y el mismo servicio; si la clienta pide otra, se cancela y se crea una nueva | — | 16/10/2026 |
+| PR-06 | "La última vez te atendió…" | Solo cuenta la última cita **ya pasada** y atendida | — | 16/10/2026 |
+| PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 
 ---
 
@@ -136,3 +141,90 @@ Ejemplo: cierre a las 20:00, horarios cada 30 min y limpieza de 60 + 10 de marge
   20:00 y su margen queda después del cierre.
 - Si el negocio quiere que cuente (por ejemplo, para recoger antes de cerrar):
   a las 19:00 el margen llegaría a las 20:10, así que la última es a las **18:30**.
+
+---
+
+## PR-03 · El margen antes de un festivo o una ausencia
+
+Decidido el 16/10/2026.
+
+**Caso:** Marta tiene una formación de 16:00 a 20:00. Una limpieza de 60 + 10
+de margen a las 15:00 termina a las 16:00, y sus 10 minutos de limpieza caerían
+de 16:00 a 16:10, ya dentro de la formación.
+
+**Regla del motor:** un festivo o una ausencia se tratan **igual que el cierre
+del día** (PR-02).
+
+**Ajuste por negocio:** el mismo de PR-02, sin pregunta nueva. De serie **no
+cuenta**: la limpieza de las 15:00 se ofrece, porque después no viene otra
+clienta. Si el negocio quiere que el margen caiga dentro del horario, vale para
+el cierre y también antes de un festivo o una ausencia (la última sería a las
+14:30).
+
+## PR-04 · Horas fuera de la rejilla
+
+Decidido el 16/10/2026.
+
+**Regla del motor:** el agente solo reserva en los horarios de la rejilla (PR-01:
+cada 30 minutos desde la apertura, de serie). Si una clienta pide las 10:15, le
+dice que esa hora no está disponible y le ofrece las más cercanas (10:00 o
+10:30).
+
+*Por qué:* la agenda queda ordenada y no se pierden huecos sueltos de 15
+minutos.
+
+**Recepción (cuando exista el panel, Fase 4):** podrá saltarse la rejilla y la
+antelación mínima al cargar una cita a mano. Es una persona del negocio
+decidiendo, no el agente: por ejemplo, una clienta que está en el local y quiere
+entrar en 20 minutos.
+
+## PR-05 · Reprogramar
+
+Decidido el 16/10/2026.
+
+**Regla del motor:** mover una cita mantiene la **misma profesional** y el mismo
+servicio. Si esa profesional no tiene el hueco nuevo, la cita no se mueve y queda
+como estaba, y el agente ofrece otros horarios con ella.
+
+Si la clienta **prefiere otra profesional**, es decisión suya: el agente cancela
+la cita y crea una nueva con quien ella elija.
+
+## PR-06 · "La última vez te atendió…"
+
+Decidido el 16/10/2026.
+
+**Regla del motor:** cuenta solo la **última cita que ya pasó**. Una cita futura
+ya reservada no cuenta: *"la última vez te atendió"* habla de algo que ocurrió.
+Tampoco cuentan las canceladas ni las marcadas como "no se presentó", porque esa
+vez nadie la atendió.
+
+## PR-07 · Cancelar o reprogramar dentro del plazo
+
+Decidido el 16/10/2026.
+
+**Caso:** la política de Estética Aurora dice *"sin coste hasta 24 h antes"*. Una
+clienta quiere cancelar por el chat con 3 horas de antelación.
+
+**Ajuste por negocio**, con dos modos:
+
+- **Solo informar** (de serie): el agente cancela y le recuerda la política (por
+  ejemplo, que se cobra el 50 %).
+- **Bloquear dentro del plazo:** con menos horas que las del plazo, el agente no
+  cancela y la pasa con una persona.
+
+Y el **plazo en horas** (de serie: **24**).
+
+*Por qué "solo informar" de serie:* el agente no cobra la penalización (la aplica
+el local), y una clienta que no va a venir no viene aunque se le bloquee: el
+bloqueo solo suma una llamada a recepción. El negocio que quiera ser estricto lo
+elige al darse de alta.
+
+**Reprogramar** sigue la misma regla que cancelar: mover una cita a último
+momento libera el hueco igual que cancelarla.
+
+**Siempre:** el texto de la política es el que escribe cada negocio, y el agente
+lo explica tal cual. Las citas ya completadas o "no presentadas" no se pueden
+cancelar. Recepción puede cancelar siempre.
+
+Lo que hace el agente en cada modo se programa en la Fase 2. Esta fase deja el
+ajuste guardado en la configuración del negocio.
