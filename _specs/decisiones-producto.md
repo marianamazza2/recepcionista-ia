@@ -228,3 +228,73 @@ cancelar. Recepción puede cancelar siempre.
 
 Lo que hace el agente en cada modo se programa en la Fase 2. Esta fase deja el
 ajuste guardado en la configuración del negocio.
+
+---
+
+## Cómo conversa el agente (Fase 2) · ✅ confirmadas
+
+Aparecieron al escribir el spec de la Fase 2 (16/10/2026). Mariana las
+confirmó el 16/10/2026 con el valor de serie propuesto.
+
+| # | Tema | Decisión | Estado |
+|---|---|---|---|
+| PA-01 | Confirmar antes de reservar | Resume la cita y espera un sí explícito antes de reservar, cancelar o mover | ✅ confirmada |
+| PA-02 | Datos para reservar | Nombre y teléfono (el teléfono identifica a la clienta) | ✅ confirmada |
+| PA-03 | Horarios que ofrece de una vez | Hasta 3, los más cercanos a lo que pidió | ✅ confirmada |
+| PA-04 | Se presenta como asistente virtual | Sí, en el primer mensaje | ✅ confirmada |
+| PA-05 | Cuándo deriva a una persona | Si lo pide, si insiste tras PD-04, salud, quejas, cancelación bloqueada, si no entiende tras dos intentos o si algo falla | ✅ confirmada |
+| PA-06 | Qué pasa al derivar | Avisa al equipo, da el teléfono del local y deja de agendar en esa conversación | ✅ confirmada |
+| PA-07 | Preguntas que no sabe | Dice que no tiene ese dato y ofrece pasar con una persona. Nunca inventa | ✅ confirmada |
+| PA-08 | Ver y tocar citas | Cada clienta solo ve y cambia sus propias citas (las de su teléfono) | ✅ confirmada |
+
+### PA-01 · Confirmar antes de reservar
+
+Antes de reservar, cancelar o mover, el agente resume lo que va a hacer
+(*"limpieza facial el martes 20 a las 16:00 con Lucía, ¿te la reservo?"*) y
+espera un sí. *Por qué:* un malentendido en una cita es caro para el local y
+para la clienta; una pregunta más es barata.
+
+### PA-02 · Datos para reservar
+
+Pide **nombre y teléfono**. El teléfono es lo que identifica a la clienta (así
+se la reconoce como habitual en PD-03) y lo que usará el local para avisarla.
+No pide email: es un dato más que tratar (RGPD) sin uso en el MVP.
+
+### PA-03 · Cuántos horarios ofrece
+
+Hasta **3** de una vez, los más cercanos a lo que pidió. Una lista larga en un
+chat abruma; si ninguno le va, ofrece otros.
+
+### PA-04 · Se presenta como asistente virtual
+
+En el primer mensaje dice que es la **asistente virtual** del negocio. La
+normativa europea de IA pide avisar a la persona de que está hablando con una
+IA, y además genera confianza: nadie se siente engañado.
+
+### PA-05 · Cuándo deriva a una persona
+
+- La clienta pide hablar con alguien.
+- Insiste en una hora que no existe, después de ofrecerle alternativas (PD-04).
+- Preguntas de salud o médicas, o sobre si un tratamiento le conviene.
+- Quejas o reclamaciones.
+- Cancelación o cambio dentro del plazo con el modo "bloquear" (PR-07).
+- No entiende lo que le piden tras dos intentos, o algo falla.
+
+### PA-06 · Qué pasa al derivar
+
+En la Fase 2 (sin panel todavía): se registra la derivación para el equipo, la
+conversación queda marcada como "pasada a una persona", el agente le da el
+teléfono del local y ya no agenda en esa conversación. Cuando exista el panel
+(Fase 4), el equipo verá ahí las derivaciones pendientes.
+
+### PA-07 · Preguntas que no sabe
+
+Si le preguntan algo que no está en la configuración del negocio, dice que no
+tiene ese dato y ofrece pasar con una persona. **Nunca inventa.** A partir de la
+Fase 5 podrá buscar en los documentos del negocio.
+
+### PA-08 · Ver y tocar citas
+
+Cada clienta solo puede ver, cancelar o mover **sus propias citas**, las
+asociadas a su teléfono. Nunca las de otra persona, aunque dé un nombre o un
+número de cita.
