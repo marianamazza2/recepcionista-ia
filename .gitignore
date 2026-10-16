@@ -10,3 +10,6 @@ dist/
 
 # macOS
 .DS_Store
+
+# Documentación interna (solo en local, no se sube)
+docs/
