@@ -41,7 +41,7 @@ insert into public.businesses (
   'activo',
   'mensual_400',
   'Cercano y profesional. Trata de tú. Frases cortas, nada de tecnicismos ni promesas de resultados.',
-  '¡Hola! Soy la recepcionista de Estética Aurora 💫 Puedo darte cita, resolverte dudas de tratamientos o pasarte con el equipo. ¿Qué necesitas?',
+  '¡Hola! Soy la asistente virtual de Estética Aurora, ¿cómo puedo ayudarte?',
   'Puedes cancelar o cambiar tu cita sin coste hasta 24 h antes. Por debajo de 24 h se cobra el 50 % del tratamiento.',
   'Calle Mayor 14, bajo. 28013 Madrid',
   '+34910000000',

@@ -67,9 +67,9 @@ Aparecieron al escribir este spec y están en `decisiones-producto.md` (PA-01 a 
 ### API de Claude (verificado contra la documentación del SDK, octubre 2026)
 
 - SDK oficial `@anthropic-ai/sdk`. Nada de wrappers ni librerías de terceros.
-- Modelo por variable de entorno `AGENT_MODEL`, **de serie `claude-opus-5-5`**. Cambiar de modelo es decisión de Mariana (coste por negocio), no del código.
-- En Claude Opus 5.5 el pensamiento no se puede desactivar: se controla con `output_config: { effort }`. Para chat, **`effort: "low"`** de serie (`AGENT_EFFORT`), y medirlo en los escenarios.
-- **No se puede forzar una herramienta** (`tool_choice` `any`/`tool` da 400): `tool_choice` `auto` y las instrucciones en el system prompt. `strict: true` en cada herramienta para que los argumentos cumplan el esquema.
+- Modelo por variable de entorno `AGENT_MODEL`, **de serie `claude-opus-5`** (Claude Opus 5; decidido por Mariana el 16/10/2026, antes era `claude-opus-5-5`). Cambiar de modelo es decisión de Mariana (coste por negocio), no del código.
+- No se manda el parámetro `thinking` (en Opus 5 queda adaptativo; en Opus 5.5 no se puede desactivar): el pensamiento se controla con `output_config: { effort }`. Para chat, **`effort: "low"`** de serie (`AGENT_EFFORT`), y medirlo en los escenarios.
+- **No se fuerza una herramienta** (en Opus 5.5 `tool_choice` `any`/`tool` da 400; así el código vale para los dos): `tool_choice` `auto` y las instrucciones en el system prompt. `strict: true` en cada herramienta para que los argumentos cumplan el esquema.
 - **Historial solo-añadir:** se guarda y se reenvía el `content` completo de cada respuesta del asistente (incluidos los bloques `thinking`, sin tocarlos). Nunca se edita un turno anterior: el modelo invalida su razonamiento si el historial cambia.
 - **Caché del prompt:** el system prompt del negocio es estable y lleva `cache_control`. **La fecha y la hora actuales no van en el system prompt** (lo invalidarían en cada mensaje): van en el turno del usuario o como mensaje de sistema intermedio. Verificar con `usage.cache_read_input_tokens`.
 - Revisar `stop_reason` antes de leer la respuesta (`refusal`, `max_tokens`). Activar los `fallbacks` del servidor para `refusal` (beta `server-side-fallback-2026-07-01`, `fallbacks: "default"`), tal como recomienda la documentación para este modelo.

@@ -151,19 +151,23 @@ select test.ok(
 );
 
 -- --- Clientes y citas --------------------------------------------------------
+-- Se cuentan las del seed (UUID d0…/e0…, D-25): desde la Fase 2 el agente crea
+-- clientas y citas reales cada vez que alguien conversa (npm run chat).
 select test.ok(
-  (select count(*) from public.customers where business_id = :aurora) = 2,
+  (select count(*) from public.customers
+    where business_id = :aurora and id::text like 'd0000000-%') = 2,
   'hay 2 clientes finales'
 );
 
 select test.ok(
-  (select count(*) from public.appointments where business_id = :aurora) = 3,
+  (select count(*) from public.appointments
+    where business_id = :aurora and id::text like 'e0000000-%') = 3,
   'hay 3 citas de ejemplo'
 );
 
 select test.ok(
   (select count(*) from public.appointments
-    where business_id = :aurora and estado = 'cancelada') = 1,
+    where business_id = :aurora and id::text like 'e0000000-%' and estado = 'cancelada') = 1,
   'una de las citas está cancelada, para tener el caso'
 );
 
@@ -209,12 +213,20 @@ select test.ok(
 );
 
 -- --- Las tablas de fases futuras están creadas y vacías ----------------------
+-- Desde la Fase 2 el agente escribe conversaciones y mensajes cada vez que
+-- alguien conversa (npm run chat), así que esas tablas ya no tienen por qué
+-- estar vacías: solo se comprueba que existen. Las de conocimiento siguen
+-- vacías hasta la Fase 5.
 select test.ok(
   (select count(*) from public.knowledge_docs)   = 0
-  and (select count(*) from public.knowledge_chunks) = 0
-  and (select count(*) from public.conversations)    = 0
-  and (select count(*) from public.messages)         = 0,
-  'las tablas de conocimiento y conversación existen y están vacías (fases 2, 3 y 5)'
+  and (select count(*) from public.knowledge_chunks) = 0,
+  'las tablas de conocimiento existen y están vacías (fase 5)'
+);
+select test.ok(
+  to_regclass('public.conversations') is not null
+  and to_regclass('public.messages') is not null
+  and to_regclass('public.escalations') is not null,
+  'las tablas de conversación existen (las escribe el agente desde la fase 2)'
 );
 
 select test.resumen();

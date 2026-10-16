@@ -31,6 +31,9 @@ insert into public.services (id, business_id, nombre, duracion_min, buffer_min, 
 
 insert into public.customers (id, business_id, telefono, nombre) values
   ('44444444-4444-4444-8444-00000000000d', '44444444-4444-4444-8444-000000000001', '+34640000001', 'Ana'),
+  -- PR-08: para probar el hueco ocupado hace falta OTRA clienta (Ana no puede
+  -- tener dos citas a la vez; eso es RA006, probado en el test 08).
+  ('44444444-4444-4444-8444-00000000000e', '44444444-4444-4444-8444-000000000001', '+34640000003', 'Bea'),
   ('44444444-4444-4444-8444-000000000ddd', '44444444-4444-4444-8444-000000000002', '+34640000002', 'Cliente ajeno');
 
 -- Marta hace el facial; Lucía no lo hace.
@@ -97,7 +100,7 @@ select test.throws(
        '44444444-4444-4444-8444-000000000001',
        '44444444-4444-4444-8444-00000000000c',
        '44444444-4444-4444-8444-00000000000a',
-       '44444444-4444-4444-8444-00000000000d',
+       '44444444-4444-4444-8444-00000000000e',
        '2030-10-14 10:30:00+02')$q$,
   '23P01', 'reservar sobre un hueco ocupado: rechazado'
 );

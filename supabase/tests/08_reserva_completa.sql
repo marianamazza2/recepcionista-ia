@@ -55,20 +55,25 @@ insert into public.time_off (business_id, staff_id, desde, hasta, motivo) values
 insert into public.customers (id, business_id, telefono, nombre) values
   ('88888888-8888-4888-8888-00000000000d', '88888888-8888-4888-8888-000000000001', '+34680000001', 'Habitual'),
   ('88888888-8888-4888-8888-00000000000e', '88888888-8888-4888-8888-000000000001', '+34680000002', 'Nueva'),
+  -- PR-08: las reservas de pg_temp.reserva van con una clienta sin otras citas,
+  -- para que cada rechazo sea por el hueco y no porque ella ya tiene cita.
+  ('88888888-8888-4888-8888-00000000000f', '88888888-8888-4888-8888-000000000001', '+34680000004', 'Prueba'),
   ('88888888-8888-4888-8888-0000000000dd', '88888888-8888-4888-8888-000000000002', '+34680000003', 'Cliente 24 h');
 
 -- Atajo: la llamada al RPC del negocio de prueba, como texto para test.throws.
 -- p_staff NULL = asignación automática.
-create function pg_temp.reserva(p_staff text, p_inicio text) returns text
+create function pg_temp.reserva(
+  p_staff text, p_inicio text, p_cliente text default '88888888-8888-4888-8888-00000000000f'
+) returns text
 language sql immutable as $$
   select format(
     $q$select public.book_appointment(
          '88888888-8888-4888-8888-000000000001',
          '88888888-8888-4888-8888-0000000000f1',
          %s,
-         '88888888-8888-4888-8888-00000000000d',
+         %L,
          %L)$q$,
-    coalesce(quote_literal(p_staff), 'null'), p_inicio);
+    coalesce(quote_literal(p_staff), 'null'), p_cliente, p_inicio);
 $$;
 
 \set alba  '''88888888-8888-4888-8888-00000000000a'''
@@ -78,7 +83,7 @@ $$;
 -- Reserva válida
 -- =============================================================================
 select test.succeeds(
-  pg_temp.reserva(:alba, '2030-10-14 10:00:00+02'),
+  pg_temp.reserva(:alba, '2030-10-14 10:00:00+02', '88888888-8888-4888-8888-00000000000d'),
   'reserva válida: se crea'
 );
 
@@ -231,12 +236,14 @@ select test.ok(
 -- Candidatas = las que tienen ESE hueco exacto. Martes 22/10: Berta tiene una
 -- cita a las 9:00 y Alba dos más tarde. A las 9:00 la de menos carga (Berta)
 -- está ocupada, así que va Alba aunque tenga más citas ese día.
+-- (Las tres de relleno son de la clienta Nueva: la Habitual reserva la de las 9:00
+-- y no puede tener otra a esa hora, PR-08.)
 select public.book_appointment('88888888-8888-4888-8888-000000000001', '88888888-8888-4888-8888-0000000000f1',
-         :berta, '88888888-8888-4888-8888-00000000000d', '2030-10-22 09:00:00+02');
+         :berta, '88888888-8888-4888-8888-00000000000e', '2030-10-22 09:00:00+02');
 select public.book_appointment('88888888-8888-4888-8888-000000000001', '88888888-8888-4888-8888-0000000000f1',
-         :alba, '88888888-8888-4888-8888-00000000000d', '2030-10-22 11:00:00+02');
+         :alba, '88888888-8888-4888-8888-00000000000e', '2030-10-22 11:00:00+02');
 select public.book_appointment('88888888-8888-4888-8888-000000000001', '88888888-8888-4888-8888-0000000000f1',
-         :alba, '88888888-8888-4888-8888-00000000000d', '2030-10-22 12:30:00+02');
+         :alba, '88888888-8888-4888-8888-00000000000e', '2030-10-22 12:30:00+02');
 
 select test.ok(
   (select (public.book_appointment(
@@ -274,6 +281,42 @@ select test.throws(
 select test.throws(
   pg_temp.reserva(null, '2030-10-19 10:00:00+02'),
   'RA001', 'asignación automática un día que no abre: RA001 (no RA005)'
+);
+
+-- =============================================================================
+-- PR-08: una clienta no puede tener dos citas que se pisen (RA006)
+-- =============================================================================
+-- Miércoles 23/10 (9–14), libre para las dos: la Habitual reserva con Alba a las 10:00.
+select test.succeeds(
+  pg_temp.reserva(:alba, '2030-10-23 10:00:00+02', '88888888-8888-4888-8888-00000000000d'),
+  'PR-08: la Habitual reserva el miércoles 23 a las 10:00 con Alba'
+);
+
+select test.throws(
+  pg_temp.reserva(:berta, '2030-10-23 10:30:00+02', '88888888-8888-4888-8888-00000000000d'),
+  'RA006', 'la misma clienta con otra profesional a una hora que se pisa: RA006'
+);
+
+select test.throws(
+  pg_temp.reserva(:alba, '2030-10-23 10:00:00+02', '88888888-8888-4888-8888-00000000000d'),
+  'RA006', 'la misma clienta, misma hora y misma profesional: RA006 antes que hueco ocupado'
+);
+
+-- Pegada a la suya (empieza cuando termina la otra): sí puede. El margen no
+-- cuenta para la clienta, solo para la profesional.
+select test.succeeds(
+  pg_temp.reserva(:berta, '2030-10-23 11:00:00+02', '88888888-8888-4888-8888-00000000000d'),
+  'la misma clienta justo después de su otra cita, con otra profesional: se reserva'
+);
+
+-- Una cita cancelada no cuenta.
+update public.appointments set estado = 'cancelada'
+ where business_id = '88888888-8888-4888-8888-000000000001'
+   and customer_id = '88888888-8888-4888-8888-00000000000d'
+   and start_at = '2030-10-23 10:00:00+02';
+select test.succeeds(
+  pg_temp.reserva(:alba, '2030-10-23 10:00:00+02', '88888888-8888-4888-8888-00000000000d'),
+  'con su cita de las 10:00 cancelada, puede volver a reservar a esa hora'
 );
 
 -- =============================================================================

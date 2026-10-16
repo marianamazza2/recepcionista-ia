@@ -30,7 +30,12 @@ export const AURORA = {
 } as const;
 
 /** Prefijo de teléfono de las clientas que crean los tests (para limpiar restos). */
-const TELEFONO_TEST = '+34999';
+export const TELEFONO_TEST = '+34999';
+
+/** Un teléfono de test al azar, con el prefijo que limpia deleteTestCustomers. */
+export function telefonoDeTest(): string {
+  return TELEFONO_TEST + String(Math.floor(Math.random() * 1e6)).padStart(6, '0');
+}
 
 /** Crea una clienta de prueba en un negocio y devuelve su id. */
 export async function createTestCustomer(sql: Sql, businessId: string): Promise<string> {
@@ -44,6 +49,14 @@ export async function createTestCustomer(sql: Sql, businessId: string): Promise<
 
 /** Borra las clientas de prueba de un negocio y sus citas (incluidos restos de ejecuciones anteriores). */
 export async function deleteTestCustomers(sql: Sql, businessId: string): Promise<void> {
+  // Fase 2: las conversaciones de esas clientas (sus mensajes y derivaciones
+  // se van en cascada).
+  await sql`
+    delete from public.conversations v
+     using public.customers c
+     where c.id = v.customer_id
+       and c.business_id = ${businessId}
+       and c.telefono like ${TELEFONO_TEST + '%'}`;
   await sql`
     delete from public.appointments a
      using public.customers c

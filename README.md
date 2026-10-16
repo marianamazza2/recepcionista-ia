@@ -11,11 +11,12 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 1 (motor de reservas) terminada.** La base sabe calcular huecos
-libres y reservar de forma atómica respetando horarios, festivos, ausencias,
-márgenes, antelación y profesional. Encima, la primera capa TypeScript: la
-interfaz `BookingAdapter` y su implementación `SupabaseAdapter`, que es lo que
-usará el agente en la Fase 2. Nada de agente, canal ni frontend todavía.
+**Estado: Fase 2 (núcleo del agente) terminada.** Encima del motor de reservas
+de la Fase 1 ya hay **quien conversa**: un agente que entiende lo que pide una
+clienta, usa el motor a través de herramientas (tool use contra la API de
+Claude) y responde en el tono del negocio, aplicando las reglas de
+`decisiones-producto.md`. Se prueba por la Terminal (`npm run chat`); el widget
+web es la Fase 3.
 
 ---
 
@@ -23,7 +24,7 @@ usará el agente en la Fase 2. Nada de agente, canal ni frontend todavía.
 
 ```
 supabase/
-├── migrations/          13 migraciones, versionadas y en orden de dependencias
+├── migrations/          15 migraciones, versionadas y en orden de dependencias
 ├── seed.sql             negocio de prueba "Estética Aurora"
 └── tests/               tests SQL de aserción (8 archivos, 149 aserciones)
 scripts/
@@ -33,8 +34,20 @@ src/
 │   ├── types.ts         la interfaz BookingAdapter (maestro §7)
 │   ├── supabase.ts      SupabaseAdapter: conexión directa a Postgres
 │   └── errors.ts        errores tipados (SlotTakenError, OutsideHoursError…)
-└── db/client.ts         cliente de Postgres (lee DATABASE_URL)
-tests/                   tests TypeScript de integración y de concurrencia
+├── config/business.ts   lo que el agente sabe de un negocio, leído de la base
+├── core/                EL NÚCLEO (Fase 2). No se toca por cliente
+│   ├── agent.ts         el loop: tool use, historial, límites, derivar
+│   ├── prompt.ts        system prompt desde la configuración
+│   ├── tools/           las 8 herramientas (definición strict + ejecución)
+│   ├── guardrails.ts    límites del loop y respuestas fijas
+│   ├── time.ts          hora local del negocio ↔ UTC (cambio de hora incluido)
+│   ├── phone.ts         teléfonos a formato +34…
+│   └── costes.ts        coste aproximado de las llamadas
+├── db/                  cliente, tenant, clientas y conversaciones
+└── cli/
+    ├── chat.ts          npm run chat: conversar por la Terminal
+    └── eval.ts          npm run agent:eval: los 12 escenarios con el modelo real
+tests/                   tests TypeScript (motor, herramientas, prompt, loop…)
 ```
 
 | Migración | Qué trae |
@@ -52,6 +65,8 @@ tests/                   tests TypeScript de integración y de concurrencia
 | `20261016120200_book_appointment_completo` | `book_appointment` completo, asignación automática, advisory lock y `ultima_profesional` |
 | `20261016120300_ultima_profesional_pasada` | PR-06: `ultima_profesional` solo cuenta citas ya pasadas y atendidas |
 | `20261016120400_cancelacion_por_negocio` | PR-07: modo de cancelación (solo informar / bloquear) y plazo en horas, por negocio |
+| `20261016120500_cliente_sin_solape` | PR-08: una clienta no puede tener dos citas que se pisen (`no_overlap_cliente`, `RA006`) |
+| `20261016120600_lock_por_clienta` | PR-08: lock por clienta en `book_appointment`, para dos reservas simultáneas de la misma clienta |
 
 ### Las dos garantías que ya están puestas
 
@@ -65,6 +80,9 @@ WHERE (estado <> 'cancelada')
 
 Aunque dos reservas lleguen en el mismo milisegundo, la segunda se rechaza con
 SQLSTATE `23P01`. Las canceladas no bloquean su hueco.
+
+Y lo mismo **por clienta** (PR-08): una clienta no puede tener dos citas que
+se pisen (`no_overlap_cliente`, y `RA006` desde `book_appointment`).
 
 **2. Ningún negocio ve datos de otro.** Dos barreras independientes:
 
@@ -111,7 +129,7 @@ conexiones simultáneas en `tests/concurrency.test.ts`.
 Cada rechazo tiene su código, y el adaptador lo convierte en una clase para que
 el agente no tenga que conocer Postgres:
 
-| SQLSTATE | Error TypeScript | Significa | Qué hará el agente (Fase 2) |
+| SQLSTATE | Error TypeScript | Significa | Qué hace el agente |
 |---|---|---|---|
 | `23P01` | `SlotTakenError` | Hueco ocupado | Ofrecer otro hueco |
 | `RA001` | `OutsideHoursError` | Fuera del horario de esa profesional o del local | Decir que no abre y ofrecer los más cercanos (PD-04) |
@@ -119,12 +137,68 @@ el agente no tenga que conocer Postgres:
 | `RA003` | `TooSoonError` | No respeta la antelación mínima | Explicarla y ofrecer el primer hueco válido |
 | `RA004` | `BufferConflictError` | Pisa el margen de otra cita | Ofrecer otro hueco |
 | `RA005` | `NoStaffAvailableError` | Asignación automática sin nadie libre | Ofrecer otros huecos |
+| `RA006` | `CustomerBusyError` | La clienta ya tiene una cita que se pisa (PR-08) | Decir qué cita tiene; si quiere, mover o anular la anterior |
 | `23514` | `StaffDoesNotProvideServiceError` | La profesional no hace ese servicio | Proponer otra profesional |
 | `23503` | `InvalidReferenceError` | Algo no es de ese negocio o está inactivo | Error de programación: log y derivar |
 | `22023` | `InvalidRangeError` | Rango de fechas inválido o de más de 31 días | Error de programación |
 
 Además, sin código de Postgres: `BookingNotFoundError`,
 `BookingNotCancellableError` y `TenantMismatchError`.
+
+---
+
+## El agente (Fase 2)
+
+### Conversar por la Terminal
+
+Hace falta `ANTHROPIC_API_KEY` en `.env` (nunca en el código ni en el chat).
+
+```bash
+npm run chat -- --negocio estetica-aurora                         # clienta nueva, sin identificar
+npm run chat -- --negocio estetica-aurora --telefono +34600111222 # Ana Torres, ya identificada
+npm run chat -- --negocio estetica-aurora --debug                 # ver herramientas y tokens
+npm run chat -- --negocio estetica-aurora --telefono +34600111222 --nueva   # no retomar la anterior
+```
+
+Muestra la bienvenida del negocio y espera tus mensajes. `salir` o Ctrl+D para
+terminar; al salir imprime los tokens y el coste aproximado. Con `--telefono`
+de una clienta que existe, retoma su última conversación activa.
+
+Para ver la cita en la base:
+
+```bash
+psql "$DATABASE_URL" -c "select c.nombre, s.nombre as profesional,
+  a.start_at at time zone 'Europe/Madrid' as cuando, a.estado
+  from appointments a join customers c on c.id = a.customer_id
+  join staff s on s.id = a.staff_id order by a.created_at desc limit 5;"
+```
+
+### Los escenarios con el modelo real
+
+```bash
+npm run agent:eval                # los 12 escenarios (≈ 0,36 US$ con Opus 5)
+npm run agent:eval -- --solo 3    # solo uno
+npm run agent:eval -- --ver       # con la conversación entera
+```
+
+Cada uno imprime OK o FALLA y al final el coste total. Usan clientas de prueba
+(`+34999…`) que se borran al empezar y al terminar.
+
+### Cómo funciona por dentro
+
+- **Solo actúa con herramientas** (`consultar_disponibilidad`, `crear_reserva`,
+  `cancelar_reserva`, `reprogramar_reserva`, `buscar_reservas_cliente`,
+  `identificar_cliente`, `derivar_a_humano`, `reservar_y_cambiar_cita_anterior`). Hablan en hora local del negocio;
+  la conversión a UTC vive solo en `core/time.ts`.
+- **Lo que no se puede saltar está en el código**, no en el prompt: solo sus
+  citas (PA-08), cancelación bloqueada dentro del plazo (PR-07), nada de agenda
+  tras derivar (PA-06), precios ocultos que nunca llegan al modelo, límites de
+  vueltas y de tokens.
+- **Cada conversación queda guardada** en `conversations` y `messages`
+  (mensajes, llamadas a herramientas y tokens) y las derivaciones en
+  `escalations`.
+- **Modelo y esfuerzo por variable de entorno** (`AGENT_MODEL`, de serie
+  `claude-opus-5`; `AGENT_EFFORT`, de serie `low`). Ver `.env.example`.
 
 ---
 
@@ -225,6 +299,10 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 |---|---|
 | `tests/booking-adapter.test.ts` | Disponibilidad de Estética Aurora, reserva con y sin profesional, cancelación, reprogramación (y que si falla la original queda intacta), errores tipados, aislamiento entre negocios |
 | `tests/concurrency.test.ts` | Seis conexiones al mismo hueco → entra una. Dos huecos que solo chocan por el margen → entra una. Una reserva sin confirmar hace esperar a la otra |
+| `tests/time.test.ts` | Hora local ↔ UTC, con los dos cambios de hora (la hora que no existe y la que ocurre dos veces) |
+| `tests/tools.test.ts` | Cada herramienta contra Aurora: consultar, identificar, crear, cancelar, mover, buscar, derivar; errores con alternativas; PA-08, PR-07 en sus dos modos, PR-05, PR-06, PD-04, PD-05; precio oculto |
+| `tests/prompt.test.ts` | System prompt determinista, con los datos de Aurora, sin precios ocultos, sin fecha, que cambia con los modos PD-03 y PR-07, y sin datos de ningún negocio en el código |
+| `tests/agent.test.ts` | El loop con un **modelo simulado** (sin coste): todas las herramientas y todos los resultados juntos, historial solo-añadir, mensajes y tokens guardados, derivar, límites, fallos y rechazos |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
 forma). Limpian lo suyo al terminar: crean negocios de prueba que se borran, y
@@ -245,6 +323,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Horario propio | Lucía los jueves solo 16–21 (PD-01) |
 | Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
+| Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
 
 Marta no hace láser y Lucía no hace corporal a propósito: obliga al agente a
@@ -256,8 +335,7 @@ elegir profesional según el servicio en vez de al azar.
 
 | Pendiente | Fase |
 |---|---|
-| Núcleo del agente, tools, guardrails | 2 |
-| Widget web y endpoint de chat | 3 |
+| Widget web y endpoint de chat, idempotencia por mensaje, `usage_events` y topes mensuales | 3 |
 | Panel para cargar la configuración | 4 |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |

@@ -18,6 +18,7 @@ export type BookingErrorReason =
   | 'too_soon'
   | 'buffer_conflict'
   | 'no_staff_available'
+  | 'customer_busy'
   | 'staff_does_not_provide_service'
   | 'invalid_reference'
   | 'invalid_range'
@@ -27,6 +28,8 @@ export type BookingErrorReason =
 
 export abstract class BookingError extends Error {
   abstract readonly reason: BookingErrorReason;
+  /** En operaciones de varios pasos (changeExistingAndBook): qué paso falló. */
+  step?: 'existing' | 'new';
 
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
@@ -62,6 +65,15 @@ export class BufferConflictError extends BookingError {
 /** RA005 — Asignación automática: ninguna profesional libre a esa hora. */
 export class NoStaffAvailableError extends BookingError {
   readonly reason = 'no_staff_available';
+}
+
+/**
+ * RA006 — PR-08: la clienta ya tiene una cita que se pisa con ese horario.
+ * También la restricción no_overlap_cliente (23P01 con ese nombre), que frena
+ * dos reservas simultáneas de la misma clienta con profesionales distintas.
+ */
+export class CustomerBusyError extends BookingError {
+  readonly reason = 'customer_busy';
 }
 
 /** 23514 — La profesional no presta ese servicio. */
@@ -103,6 +115,7 @@ const POR_SQLSTATE: Record<string, BookingErrorClass> = {
   RA003: TooSoonError,
   RA004: BufferConflictError,
   RA005: NoStaffAvailableError,
+  RA006: CustomerBusyError,
   '23514': StaffDoesNotProvideServiceError,
   '23503': InvalidReferenceError,
   '22023': InvalidRangeError,
@@ -117,7 +130,15 @@ export function translateDatabaseError(error: unknown): unknown {
     return error;
   }
   const code = (error as { code: unknown }).code;
-  const Clase = typeof code === 'string' ? POR_SQLSTATE[code] : undefined;
+  // 23P01 es el código de las DOS restricciones de exclusión; se distinguen
+  // por nombre (no_overlap = profesional, no_overlap_cliente = clienta).
+  const restriccion = (error as { constraint_name?: unknown }).constraint_name;
+  const Clase =
+    code === '23P01' && restriccion === 'no_overlap_cliente'
+      ? CustomerBusyError
+      : typeof code === 'string'
+        ? POR_SQLSTATE[code]
+        : undefined;
   if (!Clase) {
     return error;
   }

@@ -25,6 +25,7 @@
 import type { Sql, TransactionSql } from 'postgres';
 
 import {
+  BookingError,
   BookingNotCancellableError,
   BookingNotFoundError,
   TenantMismatchError,
@@ -36,6 +37,8 @@ import type {
   BookingAdapter,
   BookingOrigin,
   BookingStatus,
+  ChangeAndBookParams,
+  ChangeAndBookResult,
   CreateBookingParams,
   TimeSlot,
 } from './types.js';
@@ -148,6 +151,41 @@ export class SupabaseAdapter implements BookingAdapter {
     });
   }
 
+  async changeExistingAndBook(params: ChangeAndBookParams): Promise<ChangeAndBookResult> {
+    this.assertTenant(params.booking.businessId);
+    return this.inTenant(async (tx) => {
+      const cita = await this.lockAppointment(tx, params.existingBookingId);
+      if (cita.estado !== 'confirmada') {
+        throw new BookingNotCancellableError(
+          `La cita ${params.existingBookingId} está en estado "${cita.estado}" y no se puede cambiar`,
+        );
+      }
+      const [cancelada] = await tx<AppointmentRow[]>`
+        update public.appointments
+           set estado = 'cancelada'
+         where id = ${params.existingBookingId}::uuid
+           and business_id = ${this.businessId}::uuid
+        returning *`;
+
+      const created = await this.paso(tx, 'new', params.booking);
+      if (params.existing.action === 'cancel') {
+        return { created, changed: toBooking(cancelada!) };
+      }
+      // Recolocar la anterior: misma profesional, servicio, clienta, notas y
+      // origen (PR-05, igual que rescheduleBooking).
+      const changed = await this.paso(tx, 'existing', {
+        businessId: this.businessId,
+        serviceId: cita.service_id,
+        staffId: cita.staff_id,
+        customerId: cita.customer_id,
+        start: params.existing.newStart,
+        origin: cita.origen,
+        ...(cita.notas === null ? {} : { notes: cita.notas }),
+      });
+      return { created, changed };
+    });
+  }
+
   async listBookings({ customerId }: { customerId: string }): Promise<Booking[]> {
     const rows = await this.inTenant(
       (tx) => tx<AppointmentRow[]>`
@@ -186,6 +224,19 @@ export class SupabaseAdapter implements BookingAdapter {
       throw new Error('book_appointment no devolvió ninguna fila');
     }
     return toBooking(row);
+  }
+
+  /** Una reserva dentro de una operación de varios pasos: el error dice qué paso falló. */
+  private async paso(tx: TransactionSql, step: 'existing' | 'new', params: CreateBookingParams): Promise<Booking> {
+    try {
+      return await this.book(tx, params);
+    } catch (error) {
+      const e = translateDatabaseError(error);
+      if (e instanceof BookingError) {
+        e.step = step;
+      }
+      throw e;
+    }
   }
 
   /** Lee la cita de ESTE negocio bloqueándola hasta el final de la transacción. */

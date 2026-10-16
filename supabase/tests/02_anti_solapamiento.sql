@@ -27,19 +27,23 @@ insert into public.services (id, business_id, nombre, duracion_min) values
   ('11111111-1111-4111-8111-00000000000c', '11111111-1111-4111-8111-000000000001', 'Servicio de 60', 60);
 
 insert into public.customers (id, business_id, telefono, nombre) values
-  ('11111111-1111-4111-8111-00000000000d', '11111111-1111-4111-8111-000000000001', '+34600000001', 'Cliente Test');
+  ('11111111-1111-4111-8111-00000000000d', '11111111-1111-4111-8111-000000000001', '+34600000001', 'Cliente Test'),
+  -- PR-08: una clienta no puede tener dos citas a la vez, así que las citas a
+  -- la misma hora con otra profesional son de otra clienta.
+  ('11111111-1111-4111-8111-00000000000e', '11111111-1111-4111-8111-000000000001', '+34600000002', 'Otra clienta');
 
 -- Atajo para no repetir las columnas fijas en cada aserción.
 create function pg_temp.cita(
-  p_id text, p_staff text, p_desde text, p_hasta text, p_estado text default 'confirmada'
+  p_id text, p_staff text, p_desde text, p_hasta text, p_estado text default 'confirmada',
+  p_cliente text default '11111111-1111-4111-8111-00000000000d'
 ) returns text language sql immutable as $$
   select format(
     $q$insert into public.appointments
          (id, business_id, staff_id, service_id, customer_id, start_at, end_at, estado)
        values (%L, '11111111-1111-4111-8111-000000000001', %L,
                '11111111-1111-4111-8111-00000000000c',
-               '11111111-1111-4111-8111-00000000000d', %L, %L, %L)$q$,
-    p_id, p_staff, p_desde, p_hasta, p_estado
+               %L, %L, %L, %L)$q$,
+    p_id, p_staff, p_cliente, p_desde, p_hasta, p_estado
   );
 $$;
 
@@ -109,8 +113,18 @@ select test.succeeds(
 select test.succeeds(
   pg_temp.cita('11111111-1111-4111-8111-0000000000f8',
                '11111111-1111-4111-8111-00000000000b',
-               '2026-09-14 10:00:00+02', '2026-09-14 11:00:00+02'),
-  'misma hora con otro profesional: convive, no es solape'
+               '2026-09-14 10:00:00+02', '2026-09-14 11:00:00+02',
+               p_cliente => '11111111-1111-4111-8111-00000000000e'),
+  'misma hora con otro profesional (y otra clienta): convive, no es solape'
+);
+
+-- PR-08 (no_overlap_cliente): la MISMA clienta a la misma hora con otra
+-- profesional no puede: una persona no está en dos cabinas a la vez.
+select test.throws(
+  pg_temp.cita('11111111-1111-4111-8111-0000000000e1',
+               '11111111-1111-4111-8111-00000000000b',
+               '2026-09-14 10:30:00+02', '2026-09-14 11:30:00+02'),
+  '23P01', 'misma clienta, otra profesional, horarios que se pisan: rechazado (no_overlap_cliente)'
 );
 
 -- Acotado al negocio del test: los seeds también tienen citas ese mismo lunes.

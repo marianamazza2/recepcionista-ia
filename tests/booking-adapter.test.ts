@@ -22,6 +22,7 @@ import {
   TenantMismatchError,
   TimeOffError,
   TooSoonError,
+  CustomerBusyError,
 } from '../src/adapters/booking/errors.js';
 import { SupabaseAdapter } from '../src/adapters/booking/supabase.js';
 import { createSql } from '../src/db/client.js';
@@ -60,10 +61,14 @@ async function horasDe(serviceId: string, staffId: string, dia: number): Promise
 }
 
 let clienta: string;
+let otra: string;
 
 beforeAll(async () => {
   await deleteTestCustomers(sql, AURORA.businessId);
   clienta = await createTestCustomer(sql, AURORA.businessId);
+  // PR-08: los choques con un hueco ocupado se prueban con OTRA clienta (la
+  // misma no puede tener dos citas a la vez: eso es CustomerBusyError).
+  otra = await createTestCustomer(sql, AURORA.businessId);
 });
 
 afterAll(async () => {
@@ -228,7 +233,7 @@ describe('reservas en Estética Aurora', () => {
       businessId: AURORA.businessId,
       serviceId: AURORA.services.facial,
       staffId: AURORA.staff.marta,
-      customerId: clienta,
+      customerId: otra,
     };
 
     await expect(
@@ -257,7 +262,7 @@ describe('reservas en Estética Aurora', () => {
         businessId: AURORA.businessId,
         serviceId: AURORA.services.facial,
         staffId: AURORA.staff.marta,
-        customerId: clienta,
+        customerId: otra,
         start: a('10:00'),
       })
       .catch((e: unknown) => e);
@@ -321,15 +326,85 @@ describe('reservas en Estética Aurora', () => {
     await expect(
       aurora.rescheduleBooking(original.id, new Date('2030-10-19T10:00:00+02:00')),
     ).rejects.toBeInstanceOf(OutsideHoursError);
-    // 12:00 es de la otra cita de Lucía (asignación automática de arriba).
+    // A las 12:00 la clienta ya tiene otra cita (la de la asignación automática
+    // de arriba, con Lucía): PR-08 lo rechaza antes que el hueco ocupado.
     await expect(aurora.rescheduleBooking(original.id, a('12:00'))).rejects.toBeInstanceOf(
-      SlotTakenError,
+      CustomerBusyError,
     );
+    // Y un hueco ocupado por OTRA clienta: Marta tiene la de las 10:00.
+    const deOtra = await aurora.createBooking({
+      businessId: AURORA.businessId,
+      serviceId: AURORA.services.facial,
+      staffId: AURORA.staff.lucia,
+      customerId: otra,
+      start: a('19:00'),
+    });
+    await expect(aurora.rescheduleBooking(original.id, a('19:00'))).rejects.toBeInstanceOf(SlotTakenError);
+    await aurora.cancelBooking(deOtra.id);
 
     const lista = await aurora.listBookings({ customerId: clienta });
     const tras = lista.find((b) => b.id === original.id);
     expect(tras?.status).toBe('confirmada');
     expect(tras?.start.getTime()).toBe(original.start.getTime());
+  });
+
+  it('PR-08 changeExistingAndBook: mueve la anterior y reserva la nueva a su hora, todo junto', async () => {
+    // Jueves 17/10/2030 (Marta 10–14 y 16–21; Lucía solo 16–21).
+    const j = (hhmm: string) => new Date(`2030-10-17T${hhmm}:00+02:00`);
+    const quien = await createTestCustomer(sql, AURORA.businessId);
+    const anterior = await aurora.createBooking({
+      businessId: AURORA.businessId, serviceId: AURORA.services.facial, staffId: AURORA.staff.lucia,
+      customerId: quien, start: j('17:00'),
+    });
+    const nueva = {
+      businessId: AURORA.businessId, serviceId: AURORA.services.facial, customerId: quien, start: j('17:00'),
+    };
+
+    // Directamente no puede: ya tiene cita a esa hora.
+    await expect(aurora.createBooking(nueva)).rejects.toBeInstanceOf(CustomerBusyError);
+
+    // Si recolocar la anterior falla (a las 17:30 se pisaría con la nueva), no cambia nada.
+    const fallo = await aurora
+      .changeExistingAndBook({ existingBookingId: anterior.id, existing: { action: 'reschedule', newStart: j('17:30') }, booking: nueva })
+      .catch((e: unknown) => e);
+    expect(fallo).toBeInstanceOf(CustomerBusyError);
+    expect((fallo as CustomerBusyError).step).toBe('existing');
+    let citas = (await aurora.listBookings({ customerId: quien })).filter((b) => b.status === 'confirmada');
+    expect(citas.map((b) => b.id)).toEqual([anterior.id]);
+
+    // Si la nueva no puede (un sábado), tampoco cambia nada.
+    const falloNueva = await aurora
+      .changeExistingAndBook({
+        existingBookingId: anterior.id,
+        existing: { action: 'reschedule', newStart: j('19:00') },
+        booking: { ...nueva, start: new Date('2030-10-19T10:00:00+02:00') },
+      })
+      .catch((e: unknown) => e);
+    expect(falloNueva).toBeInstanceOf(OutsideHoursError);
+    expect((falloNueva as OutsideHoursError).step).toBe('new');
+    citas = (await aurora.listBookings({ customerId: quien })).filter((b) => b.status === 'confirmada');
+    expect(citas.map((b) => b.id)).toEqual([anterior.id]);
+
+    // Bien: la anterior pasa a las 19:00 con Lucía y la nueva ocupa las 17:00.
+    const r = await aurora.changeExistingAndBook({
+      existingBookingId: anterior.id,
+      existing: { action: 'reschedule', newStart: j('19:00') },
+      booking: nueva,
+    });
+    expect(r.created.start.getTime()).toBe(j('17:00').getTime());
+    expect(r.changed).toMatchObject({ staffId: AURORA.staff.lucia, serviceId: AURORA.services.facial, status: 'confirmada' });
+    expect(r.changed.start.getTime()).toBe(j('19:00').getTime());
+    citas = (await aurora.listBookings({ customerId: quien })).filter((b) => b.status === 'confirmada');
+    expect(citas).toHaveLength(2);
+
+    // Y anular en vez de mover.
+    const r2 = await aurora.changeExistingAndBook({
+      existingBookingId: r.changed.id,
+      existing: { action: 'cancel' },
+      booking: { ...nueva, start: j('19:00') },
+    });
+    expect(r2.changed.status).toBe('cancelada');
+    expect(r2.created.start.getTime()).toBe(j('19:00').getTime());
   });
 
   it('otro negocio no puede tocar una cita de Aurora', async () => {
@@ -399,6 +474,25 @@ describe('errores que necesitan un negocio propio', () => {
       start: new Date('2030-11-06T10:00:00+01:00'),
     };
     await adapter.createBooking(params);
-    await expect(adapter.createBooking(params)).rejects.toBeInstanceOf(NoStaffAvailableError);
+    // Otra clienta: la misma no podría tener dos citas a la vez (PR-08).
+    const segunda = await createTestCustomer(sql, neg.businessId);
+    await expect(adapter.createBooking({ ...params, customerId: segunda })).rejects.toBeInstanceOf(
+      NoStaffAvailableError,
+    );
+  });
+
+  it('PR-08: la misma clienta no puede tener dos citas que se pisen → CustomerBusyError (RA006)', async () => {
+    const quien = await createTestCustomer(sql, neg.businessId);
+    const params = {
+      businessId: neg.businessId,
+      serviceId: neg.serviceId,
+      customerId: quien,
+      start: new Date('2030-11-07T10:00:00+01:00'),
+    };
+    await adapter.createBooking(params);
+    const e = await adapter.createBooking({ ...params, start: new Date('2030-11-07T10:30:00+01:00') }).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(CustomerBusyError);
+    expect((e as CustomerBusyError).reason).toBe('customer_busy');
+    expect(((e as Error).cause as { code: string }).code).toBe('RA006');
   });
 });

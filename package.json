@@ -2,7 +2,7 @@
   "name": "recepcionista-ia",
   "version": "0.1.0",
   "private": true,
-  "description": "Recepcionista IA: motor de reservas multi-negocio (Fase 1)",
+  "description": "Recepcionista IA: motor de reservas y núcleo del agente (Fase 2)",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -11,13 +11,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:sql": "./scripts/run-sql-tests.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "chat": "tsx src/cli/chat.ts",
+    "agent:eval": "tsx src/cli/eval.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   }

@@ -10,11 +10,17 @@
 //      de book_appointment.
 //   3. La prueba determinista del lock: una transacción con una reserva sin
 //      confirmar hace ESPERAR a la otra, que al seguir ve la cita y la rechaza.
+//   4. PR-08: la MISMA clienta, a la vez, con dos profesionales distintas →
+//      entra una. El lock es por profesional y no las serializa: lo frena la
+//      restricción no_overlap_cliente.
+//
+// Cada conexión reserva para una clienta distinta (como en la realidad): si
+// fueran la misma, PR-08 contestaría "ya tiene cita" en vez de "ocupado".
 // =============================================================================
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { BufferConflictError, SlotTakenError } from '../src/adapters/booking/errors.js';
+import { BufferConflictError, CustomerBusyError, SlotTakenError } from '../src/adapters/booking/errors.js';
 import { SupabaseAdapter } from '../src/adapters/booking/supabase.js';
 import { createSql } from '../src/db/client.js';
 import { createTestBusiness, deleteTestBusiness, type TestBusiness } from './helpers/fixtures.js';
@@ -26,10 +32,19 @@ const conexiones = Array.from({ length: N_CONEXIONES }, () => createSql(undefine
 
 let neg: TestBusiness;
 let adapters: SupabaseAdapter[];
+let clientas: string[];
 
 beforeAll(async () => {
   neg = await createTestBusiness(admin, 'test-ts-concurrencia');
   adapters = conexiones.map((sql) => new SupabaseAdapter({ sql, businessId: neg.businessId }));
+  clientas = [];
+  for (let i = 0; i < N_CONEXIONES; i++) {
+    const [c] = await admin<{ id: string }[]>`
+      insert into public.customers (business_id, telefono, nombre)
+      values (${neg.businessId}, ${'+3461100' + String(i + 1).padStart(4, '0')}, ${'Clienta ' + (i + 1)})
+      returning id`;
+    clientas.push(c!.id);
+  }
   // Abrir las conexiones antes de la carrera, para que salgan a la vez.
   await Promise.all(conexiones.map((sql) => sql`select 1`));
 });
@@ -39,12 +54,13 @@ afterAll(async () => {
   await Promise.all([admin.end(), ...conexiones.map((sql) => sql.end())]);
 });
 
-function reservar(adapter: SupabaseAdapter, start: Date) {
+function reservar(adapter: SupabaseAdapter, start: Date, staffId: string = neg.staffId) {
+  const i = adapters.indexOf(adapter);
   return adapter.createBooking({
     businessId: neg.businessId,
     serviceId: neg.serviceId,
-    staffId: neg.staffId,
-    customerId: neg.customerId,
+    staffId,
+    customerId: clientas[i]!,
     start,
   });
 }
@@ -147,5 +163,31 @@ describe('concurrencia (DT-01)', () => {
     expect(
       await citasConfirmadas(new Date('2030-11-26T00:00:00+01:00'), new Date('2030-11-27T00:00:00+01:00')),
     ).toBe(1);
+  });
+
+  it('PR-08: la misma clienta a la vez con dos profesionales → entra una, la otra CustomerBusyError', async () => {
+    // Una segunda profesional que hace el mismo servicio (hereda el horario 24 h).
+    const [otra] = await admin<{ id: string }[]>`
+      insert into public.staff (business_id, nombre) values (${neg.businessId}, 'Segunda') returning id`;
+    await admin`
+      insert into public.staff_services (business_id, staff_id, service_id)
+      values (${neg.businessId}, ${otra!.id}, ${neg.serviceId})`;
+
+    const [a, b] = adapters;
+    const misma = clientas[0]!;
+    const inicio = new Date('2030-11-28T10:00:00+01:00');
+    const una = (ad: SupabaseAdapter, staffId: string) =>
+      ad.createBooking({ businessId: neg.businessId, serviceId: neg.serviceId, staffId, customerId: misma, start: inicio });
+
+    for (let ronda = 0; ronda < 5; ronda++) {
+      const resultados = await Promise.allSettled([una(a!, neg.staffId), una(b!, otra!.id)]);
+      const ok = resultados.filter((r) => r.status === 'fulfilled');
+      const ko = resultados.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      expect(ok).toHaveLength(1);
+      expect(ko).toHaveLength(1);
+      expect(ko[0]!.reason).toBeInstanceOf(CustomerBusyError);
+      // Se cancela la que entró para la ronda siguiente.
+      await admin`update public.appointments set estado = 'cancelada' where customer_id = ${misma} and start_at = ${inicio}`;
+    }
   });
 });

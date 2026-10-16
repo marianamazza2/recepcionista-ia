@@ -63,6 +63,24 @@ export interface Booking {
   createdAt: Date;
 }
 
+/** Qué se hace con la cita anterior en changeExistingAndBook. */
+export type ExistingChange = { action: 'reschedule'; newStart: Date } | { action: 'cancel' };
+
+export interface ChangeAndBookParams {
+  /** La cita que ya tenía la clienta y que choca con la nueva. */
+  existingBookingId: string;
+  existing: ExistingChange;
+  /** La cita nueva. */
+  booking: CreateBookingParams;
+}
+
+export interface ChangeAndBookResult {
+  /** La cita nueva. */
+  created: Booking;
+  /** Si se movió: la cita anterior en su horario nuevo. Si se anuló: la anterior, cancelada. */
+  changed: Booking;
+}
+
 export interface BookingAdapter {
   /** Huecos libres, ordenados por inicio y luego por profesional. */
   getAvailability(params: AvailabilityParams): Promise<TimeSlot[]>;
@@ -77,6 +95,15 @@ export interface BookingAdapter {
    * servicio. Si la nueva no entra, la original queda intacta.
    */
   rescheduleBooking(bookingId: string, newStart: Date): Promise<Booking>;
+
+  /**
+   * PR-08: mueve (misma profesional y servicio, PR-05) o anula una cita y
+   * reserva otra, TODO en una transacción: si cualquier paso falla, nada
+   * cambia. Primero se libera la anterior, luego se reserva la nueva y, al
+   * final, se recoloca la anterior. Los errores llevan `step`: 'new' si falló
+   * la nueva, 'existing' si falló recolocar la anterior.
+   */
+  changeExistingAndBook(params: ChangeAndBookParams): Promise<ChangeAndBookResult>;
 
   /** Todas las citas de la clienta, de la más antigua a la más reciente. */
   listBookings(params: { customerId: string }): Promise<Booking[]>;
