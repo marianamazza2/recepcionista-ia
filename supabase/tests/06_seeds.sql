@@ -134,6 +134,17 @@ select test.ok(
   'ajustes de serie: antelación 2 h, huecos cada 30, margen fuera del horario, el agente pregunta, cancelación solo informa (24 h)'
 );
 
+-- --- Widget web (Fase 3) ----------------------------------------------------
+select test.ok(
+  (select widget_key = 'wk_demo_estetica_aurora_0001'
+      -- En la nube se le suma el dominio de la demo publicada (PW-08).
+      and widget_dominios[1] = 'localhost'
+      and widget_color ~ '^#[0-9a-fA-F]{6}$'
+      and tope_mensual_usd = 100
+     from public.businesses where id = :aurora),
+  'widget: la clave fija de la demo, en localhost (PW-06), con su color y tope de 100 US$ (PW-04)'
+);
+
 -- --- Festivos y bloqueos -----------------------------------------------------
 select test.ok(
   (select count(*) from public.time_off where business_id = :aurora) = 3,

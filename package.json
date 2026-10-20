@@ -2,7 +2,7 @@
   "name": "recepcionista-ia",
   "version": "0.1.0",
   "private": true,
-  "description": "Recepcionista IA: motor de reservas y núcleo del agente (Fase 2)",
+  "description": "Recepcionista IA: motor de reservas, núcleo del agente y canal widget web (Fase 3)",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -11,9 +11,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:sql": "./scripts/run-sql-tests.sh",
-    "typecheck": "tsc --noEmit",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p widget",
     "chat": "tsx src/cli/chat.ts",
-    "agent:eval": "tsx src/cli/eval.ts"
+    "agent:eval": "tsx src/cli/eval.ts",
+    "dev": "tsx src/dev/server.ts",
+    "consumo": "tsx src/cli/consumo.ts",
+    "build:widget": "tsx src/cli/build-widget.ts",
+    "build:vercel": "tsx src/vercel/build.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -21,6 +26,8 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.64.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"

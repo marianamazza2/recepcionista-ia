@@ -31,7 +31,8 @@ insert into public.businesses (
   tono_de_voz, mensaje_bienvenida, politica_cancelacion,
   direccion, telefono_humano,
   antelacion_min_horas, intervalo_huecos_min, margen_dentro_horario, asignacion_profesional,
-  cancelacion_modo, cancelacion_plazo_horas
+  cancelacion_modo, cancelacion_plazo_horas,
+  widget_key, widget_dominios, widget_color, privacidad_url, tope_mensual_usd
 ) values (
   'a0000000-0000-4000-8000-000000000001',
   'Estética Aurora',
@@ -52,7 +53,14 @@ insert into public.businesses (
   false,        -- margen_dentro_horario  (PR-02)
   'preguntar',  -- asignacion_profesional (PD-03)
   'informar',   -- cancelacion_modo       (PR-07)
-  24            -- cancelacion_plazo_horas (PR-07): el "24 h" de su política
+  24,           -- cancelacion_plazo_horas (PR-07): el "24 h" de su política
+  -- Widget web (Fase 3). Clave fija para que la demo (demo/index.html) la
+  -- lleve escrita; en un negocio real la genera la base.
+  'wk_demo_estetica_aurora_0001',            -- widget_key
+  array['localhost'],                        -- widget_dominios (PW-06): la demo local
+  '#8a5a63',                                 -- widget_color (PW-01)
+  'http://localhost:4310/privacidad.html',   -- privacidad_url (PW-02): la de la demo
+  100                                        -- tope_mensual_usd (PW-04)
 );
 
 -- -----------------------------------------------------------------------------

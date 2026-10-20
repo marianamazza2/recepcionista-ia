@@ -186,13 +186,20 @@ export function buildRequest(
  */
 export async function runAgentTurn(
   deps: AgentDeps,
-  params: { config: BusinessConfig; conversationId: string; mensaje: string },
+  params: {
+    config: BusinessConfig;
+    conversationId: string;
+    mensaje: string;
+    /** Id del mensaje en el canal (Fase 3: el clientMessageId del widget), a messages.external_id. */
+    externalId?: string;
+  },
 ): Promise<TurnResult> {
   const { sql, model, settings } = deps;
   const { config, conversationId } = params;
   const now = deps.now ?? (() => new Date());
   const onError = deps.onError ?? (() => {});
   const mensaje = params.mensaje.trim();
+  const externalId = params.externalId !== undefined ? { externalId: params.externalId } : {};
 
   const conv = await getConversation(sql, config.id, conversationId);
   if (!conv) {
@@ -217,7 +224,7 @@ export async function runAgentTurn(
 
   // PA-06: una conversación derivada no vuelve a llamar al modelo.
   if (conv.estado !== 'activa') {
-    await appendMessages(sql, config.id, conversationId, [{ rol: 'user', contenido: mensaje, mensajes: [] }]);
+    await appendMessages(sql, config.id, conversationId, [{ rol: 'user', contenido: mensaje, mensajes: [], ...externalId }]);
     return fija('conversacion_derivada', false);
   }
 
@@ -230,7 +237,7 @@ export async function runAgentTurn(
     { role: 'user', content: [{ type: 'text', text: mensaje }] },
     { role: 'system', content: contextoDelTurno(config, now(), clienta) },
   ];
-  await appendMessages(sql, config.id, conversationId, [{ rol: 'user', contenido: mensaje, mensajes: turno }]);
+  await appendMessages(sql, config.id, conversationId, [{ rol: 'user', contenido: mensaje, mensajes: turno, ...externalId }]);
   const mensajes = [...historial, ...turno];
 
   const ctx: ToolContext = {

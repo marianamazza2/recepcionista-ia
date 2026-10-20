@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  Demo de la Fase 3 (3.6): la web INVENTADA de "Estética Aurora", el negocio de
+  prueba del seed, con el widget pegado como lo pegaría cualquier negocio (la
+  última línea del body). La sirve `npm run dev` en http://localhost:4310 y el
+  widget sale de http://localhost:4311 (otro origen, como en la realidad).
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estética Aurora · Madrid</title>
+<style>
+  :root { --rosa: #8a5a63; --rosa-claro: #f4e9ea; --texto: #2e2a2b; --suave: #6d6466; --fondo: #fbf8f7; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.6 Georgia, "Times New Roman", serif; color: var(--texto); background: var(--fondo); }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 20px clamp(16px, 5vw, 64px); }
+  .logo { font-size: 22px; letter-spacing: .08em; text-transform: uppercase; }
+  .logo span { color: var(--rosa); }
+  nav a { color: var(--texto); text-decoration: none; margin-left: 24px; font-family: system-ui, sans-serif; font-size: 15px; }
+  .hero { padding: clamp(48px, 10vw, 120px) clamp(16px, 5vw, 64px); background: linear-gradient(135deg, var(--rosa-claro), #fff); }
+  .hero h1 { font-size: clamp(32px, 6vw, 56px); line-height: 1.1; margin: 0 0 16px; max-width: 14ch; font-weight: normal; }
+  .hero p { max-width: 42ch; color: var(--suave); margin: 0 0 28px; }
+  .cta { display: inline-block; background: var(--rosa); color: #fff; padding: 12px 24px; border-radius: 999px; font-family: system-ui, sans-serif; font-size: 15px; text-decoration: none; }
+  section { padding: 56px clamp(16px, 5vw, 64px); }
+  h2 { font-weight: normal; font-size: 30px; margin: 0 0 24px; }
+  .servicios { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+  .servicio { background: #fff; border: 1px solid #eee2e3; border-radius: 14px; padding: 22px; }
+  .servicio h3 { margin: 0 0 6px; font-size: 19px; font-weight: normal; }
+  .servicio p { margin: 0 0 12px; color: var(--suave); font-size: 15px; font-family: system-ui, sans-serif; }
+  .precio { font-family: system-ui, sans-serif; font-size: 14px; color: var(--rosa); }
+  .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; font-family: system-ui, sans-serif; font-size: 15px; }
+  .datos strong { display: block; font-family: Georgia, serif; font-weight: normal; font-size: 18px; margin-bottom: 4px; }
+  footer { padding: 32px clamp(16px, 5vw, 64px); color: var(--suave); font-family: system-ui, sans-serif; font-size: 13px; border-top: 1px solid #eee2e3; }
+  footer a { color: inherit; }
+  .aviso-demo { background: #2e2a2b; color: #fff; font-family: system-ui, sans-serif; font-size: 13px; text-align: center; padding: 8px 16px; }
+  @media (max-width: 600px) { nav { display: none; } }
+</style>
+</head>
+<body>
+<div class="aviso-demo">Web de demostración: Estética Aurora es un negocio inventado.</div>
+<header>
+  <div class="logo">Estética <span>Aurora</span></div>
+  <nav><a href="#servicios">Tratamientos</a><a href="#visitanos">Visítanos</a></nav>
+</header>
+
+<div class="hero">
+  <h1>Tu piel, en buenas manos</h1>
+  <p>Tratamientos faciales y corporales en el centro de Madrid. Pide tu cita en el chat cuando quieras: te responde al momento, también fuera de horario.</p>
+  <a class="cta" href="#servicios">Ver tratamientos</a>
+</div>
+
+<section id="servicios">
+  <h2>Tratamientos</h2>
+  <div class="servicios">
+    <div class="servicio"><h3>Limpieza facial profunda</h3><p>Higiene completa con extracción, exfoliación y mascarilla. 60 min.</p><span class="precio">55 €</span></div>
+    <div class="servicio"><h3>Depilación láser</h3><p>Zonas pequeñas: axilas, labio superior o mentón. 30 min.</p><span class="precio">40 €</span></div>
+    <div class="servicio"><h3>Tratamiento corporal reafirmante</h3><p>Maderoterapia y aparatología reafirmante. 90 min.</p><span class="precio">85 €</span></div>
+    <div class="servicio"><h3>Consulta de valoración</h3><p>Primera visita para valorar tu piel y recomendarte un plan. 20 min.</p><span class="precio">Sin coste</span></div>
+  </div>
+</section>
+
+<section id="visitanos">
+  <h2>Visítanos</h2>
+  <div class="datos">
+    <div><strong>Dirección</strong>Calle Mayor 14, bajo. 28013 Madrid</div>
+    <div><strong>Horario</strong>Lunes a jueves, mañana y tarde<br>Viernes, jornada continua</div>
+    <div><strong>Teléfono</strong>910 000 000</div>
+  </div>
+</section>
+
+<footer>© Estética Aurora (negocio ficticio) · <a href="/privacidad.html">Política de privacidad</a></footer>
+
+<!-- El widget, tal como lo pega un negocio: una línea. -->
+<script src="http://localhost:4311/widget.js" data-key="wk_demo_estetica_aurora_0001" async></script>
+</body>
+</html>

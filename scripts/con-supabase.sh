@@ -11,6 +11,12 @@
 #   ./scripts/con-supabase.sh npm test
 #   ./scripts/con-supabase.sh npm run test:sql
 #   ./scripts/con-supabase.sh psql -f supabase/seed.sql
+#   SUPABASE_POOLER_MODO=transaccion ./scripts/con-supabase.sh npm test
+#
+# De serie usa el pooler en modo sesión (5432). Con
+# SUPABASE_POOLER_MODO=transaccion usa el modo transacción (6543), el que
+# usarían las funciones de Vercel (Fase 3): sirve para comprobar que los locks
+# de transacción y el resto funcionan igual ahí.
 #
 # Requiere haber hecho `supabase link --project-ref <ref>` una vez.
 # =============================================================================
@@ -35,13 +41,18 @@ POOLER_FILE="$RAIZ/supabase/.temp/pooler-url"
 # Pooler en modo sesión (puerto 5432): IPv4, y admite transacciones y
 # advisory locks igual que una conexión directa.
 HOST_Y_RESTO="$(sed -E 's#^postgres(ql)?://[^@]*@##' "$POOLER_FILE")"
+MODO="sesión"
+if [ "${SUPABASE_POOLER_MODO:-}" = "transaccion" ]; then
+  HOST_Y_RESTO="$(printf '%s' "$HOST_Y_RESTO" | sed -E 's#:5432/#:6543/#')"
+  MODO="transacción"
+fi
 PW_URL="$(PW="$PW" node -e 'process.stdout.write(encodeURIComponent(process.env.PW))')"
 
 export DATABASE_URL="postgresql://postgres.${REF}:${PW_URL}@${HOST_Y_RESTO}?sslmode=require"
 export SUPABASE_DB_PASSWORD="$PW"
 export PGSSLMODE=require
 
-echo "→ Supabase ($REF)" >&2
+echo "→ Supabase ($REF, pooler en modo $MODO)" >&2
 
 # psql no lee DATABASE_URL: se le pasa como primer argumento.
 if [ "${1:-}" = "psql" ]; then

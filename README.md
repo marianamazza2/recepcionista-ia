@@ -5,18 +5,29 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 
 > **Reglas de negocio:** [`_specs/decisiones-producto.md`](_specs/decisiones-producto.md)
 > — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
-> cancelar o mover una cita. Todas decididas el 16/10/2026.
+> cancelar o mover una cita. Las de las fases 0 a 2, decididas el 16/10/2026;
+> las del widget (PW-01 a PW-15), ⚠️ por confirmar.
 >
 > **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 2 (núcleo del agente) terminada.** Encima del motor de reservas
-de la Fase 1 ya hay **quien conversa**: un agente que entiende lo que pide una
-clienta, usa el motor a través de herramientas (tool use contra la API de
-Claude) y responde en el tono del negocio, aplicando las reglas de
-`decisiones-producto.md`. Se prueba por la Terminal (`npm run chat`); el widget
-web es la Fase 3.
+**Estado: Fase 3 (canal widget web) terminada.** El agente de la Fase 2 ya
+atiende **desde una web**: una burbuja de chat que el negocio pega con una
+línea, un endpoint que resuelve el negocio por la clave pública del widget, el
+registro de lo que consume cada negocio (con tope mensual) y el SMS de
+confirmación con la página de la cita (con un proveedor de prueba: no se envía
+nada de verdad). Se prueba con la demo de Estética Aurora (`npm run dev`).
+
+Debajo siguen el núcleo del agente (Fase 2: entiende lo que pide la clienta,
+usa el motor con herramientas y responde en el tono del negocio) y el motor de
+reservas (Fase 1).
+
+> **Para trabajar en el repo** (personas o agentes): empezá por
+> [`AGENTS.md`](AGENTS.md) — la forma de trabajo, las reglas que no se rompen y
+> qué documentación hay que actualizar con cada cambio. Cada carpeta
+> importante tiene además su propio `AGENTS.md` (y `README.md` donde hace
+> falta).
 
 ---
 
@@ -24,16 +35,19 @@ web es la Fase 3.
 
 ```
 supabase/
-├── migrations/          15 migraciones, versionadas y en orden de dependencias
+├── migrations/          16 migraciones, versionadas y en orden de dependencias
 ├── seed.sql             negocio de prueba "Estética Aurora"
-└── tests/               tests SQL de aserción (8 archivos, 149 aserciones)
+└── tests/               tests SQL de aserción (9 archivos, 179 aserciones)
 scripts/
-└── run-sql-tests.sh     runner de los tests SQL
+├── run-sql-tests.sh     runner de los tests SQL
+└── con-supabase.sh      ejecutar un comando contra la nube
 src/
-├── adapters/booking/
-│   ├── types.ts         la interfaz BookingAdapter (maestro §7)
-│   ├── supabase.ts      SupabaseAdapter: conexión directa a Postgres
-│   └── errors.ts        errores tipados (SlotTakenError, OutsideHoursError…)
+├── api/                 FASE 3: las rutas HTTP (widget, chat, página de la cita)
+├── adapters/
+│   ├── booking/         BookingAdapter (maestro §7), SupabaseAdapter y errores tipados
+│   ├── channels/        web-widget.ts: sesión, idempotencia, límites, tope, consumo, SMS
+│   └── sms/             SmsProvider y el proveedor de prueba
+├── citas/               SMS de confirmación y de cancelación, y página del enlace (PW-07, PW-10)
 ├── config/business.ts   lo que el agente sabe de un negocio, leído de la base
 ├── core/                EL NÚCLEO (Fase 2). No se toca por cliente
 │   ├── agent.ts         el loop: tool use, historial, límites, derivar
@@ -43,11 +57,16 @@ src/
 │   ├── time.ts          hora local del negocio ↔ UTC (cambio de hora incluido)
 │   ├── phone.ts         teléfonos a formato +34…
 │   └── costes.ts        coste aproximado de las llamadas
-├── db/                  cliente, tenant, clientas y conversaciones
+├── db/                  cliente, tenant, clientas, conversaciones, consumo, widget
+├── dev/                 npm run dev: el servidor local de la demo
 └── cli/
     ├── chat.ts          npm run chat: conversar por la Terminal
-    └── eval.ts          npm run agent:eval: los 12 escenarios con el modelo real
-tests/                   tests TypeScript (motor, herramientas, prompt, loop…)
+    ├── eval.ts          npm run agent:eval: los 12 escenarios con el modelo real
+    ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
+    └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
+widget/                  el chat embebible (TypeScript sin dependencias)
+demo/                    la web inventada de Estética Aurora, con el widget pegado
+tests/                   tests TypeScript (motor, herramientas, prompt, loop, widget…)
 ```
 
 | Migración | Qué trae |
@@ -67,6 +86,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop…)
 | `20261016120400_cancelacion_por_negocio` | PR-07: modo de cancelación (solo informar / bloquear) y plazo en horas, por negocio |
 | `20261016120500_cliente_sin_solape` | PR-08: una clienta no puede tener dos citas que se pisen (`no_overlap_cliente`, `RA006`) |
 | `20261016120600_lock_por_clienta` | PR-08: lock por clienta en `book_appointment`, para dos reservas simultáneas de la misma clienta |
+| `20261016130000_widget_web` | Fase 3: clave, dominios, color, privacidad y tope del widget en `businesses`; token de sesión (hash) e IP (hash) en `conversations`; `usage_events` en US$ y con su conversación; `appointment_links` y `sms_messages` |
 
 ### Las dos garantías que ya están puestas
 
@@ -89,7 +109,7 @@ se pisen (`no_overlap_cliente`, y `RA006` desde `book_appointment`).
 - **FK compuestas.** Cada tabla hija declara `UNIQUE (business_id, id)`, y las
   referencias van por `(business_id, …)`. Una cita del negocio A con un
   profesional del negocio B no se puede insertar ni a propósito.
-- **RLS** activo en las 15 tablas, con política por `business_id`.
+- **RLS** activo en las 17 tablas, con política por `business_id`.
 
 El tenant del contexto lo resuelve `app.current_business_id()`: primero el GUC
 `app.business_id` (lo fija el backend con `app.set_business_id()` al abrir la
@@ -202,6 +222,86 @@ Cada uno imprime OK o FALLA y al final el coste total. Usan clientas de prueba
 
 ---
 
+## El widget web (Fase 3)
+
+### Probar la demo
+
+Hace falta `ANTHROPIC_API_KEY` en `.env` y el Postgres local en marcha.
+
+```bash
+npm run dev
+```
+
+- Abrí **http://localhost:4310**: la web inventada de Estética Aurora con la
+  burbuja abajo a la derecha. Escribí como una clienta; al reservar, el **SMS de
+  prueba** sale en la consola de `npm run dev`, con su enlace.
+- El enlace (`http://localhost:4311/cita/…`) abre la página de la cita: la
+  muestra y deja cancelarla (con PR-07, igual que el agente).
+- Recargá la página: la conversación sigue (24 h, PW-03). En otro navegador (o
+  en una ventana privada) no se ve.
+- `http://127.0.0.1:4310` es "otra web" para el widget (solo admite
+  `localhost`): ahí no aparece (PW-06).
+
+Son dos servidores a propósito, como en la realidad: la web del negocio
+(`:4310`) y el nuestro, que sirve `widget.js` y la API (`:4311`). Si algún
+puerto está ocupado: `API_PORT=5001 DEMO_PORT=5000 npm run dev`.
+
+### La demo publicada (Vercel, PW-08)
+
+Un proyecto de Vercel conectado al repo de GitHub: cada `git push` a `main`
+publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
+`.vercel/output` (la web de la demo, `widget.js` y una función para `/api/…` y
+`/cita/…`, en Frankfurt). Detalle en D-73.
+
+- **Dos dominios** en el proyecto: el de la demo (el que se enseña) y el del
+  servidor del widget (`PUBLIC_API_URL`). El widget solo aparece en el de la
+  demo, que tiene que estar en los `widget_dominios` de Aurora en la nube.
+- **Variables del proyecto** (Settings → Environment Variables):
+  `DATABASE_URL` (Supabase, pooler en modo transacción, puerto 6543),
+  `ANTHROPIC_API_KEY` y `PUBLIC_API_URL`.
+- El SMS de prueba sale en los logs de la función (Vercel → Logs).
+- Probar el build en local: `PUBLIC_API_URL=https://ejemplo.vercel.app npm run build:vercel`.
+
+### Pegar el widget en una web
+
+```html
+<script src="https://<nuestro-servidor>/widget.js" data-key="wk_CLAVE_DEL_NEGOCIO" async></script>
+```
+
+Por negocio, en `businesses` (hasta la Fase 4, por SQL): `widget_key` (la
+genera la base), `widget_dominios` (los hosts exactos de su web: con y sin
+`www.` son dos), `widget_color`, `privacidad_url` y `tope_mensual_usd` (de
+serie 100). Detalle en [`widget/README.md`](widget/README.md) y el contrato de
+las rutas en [`src/api/README.md`](src/api/README.md).
+
+### Lo que protege un endpoint público
+
+- **Dominio** (PW-06): solo responde, con CORS, a los dominios del negocio.
+- **Sesión:** el navegador guarda un token; la base, solo su hash. Sin token
+  válido no se lee ni se escribe ninguna conversación.
+- **Idempotencia:** cada mensaje lleva un `clientMessageId`; si llega dos veces
+  (red lenta, doble clic, reintento), se devuelve la misma respuesta y no se
+  reserva dos veces. Los mensajes de una conversación van de uno en uno.
+- **Límites** (PW-05): 1.000 caracteres, 20 mensajes por conversación y hora,
+  10 conversaciones nuevas por hora desde la misma conexión. Al pasarse, texto
+  fijo con el teléfono del local, sin llamar a la IA.
+- **Tope mensual** (PW-04): al llegar al tope del negocio, texto fijo con el
+  teléfono, sin llamar a la IA.
+- **Errores:** nunca llega un error interno al navegador.
+
+### Ver el consumo
+
+```bash
+npm run consumo -- --negocio estetica-aurora               # el mes en curso
+npm run consumo -- --negocio estetica-aurora --mes 2026-10
+```
+
+Mensajes, conversaciones, citas, tokens y coste (US$) del mes, y el % del tope;
+avisa desde el 80 %. Cuenta lo que pasa por el widget (no las pruebas por la
+Terminal).
+
+---
+
 ## Ponerla en marcha
 
 ### Con Docker (la vía canónica)
@@ -250,6 +350,8 @@ SUPABASE_DB_PASSWORD=… supabase db push          # o con la variable exportada
 ./scripts/con-supabase.sh psql -f supabase/seed.sql
 ./scripts/con-supabase.sh npm run test:sql
 ./scripts/con-supabase.sh npm test
+SUPABASE_POOLER_MODO=transaccion ./scripts/con-supabase.sh npm test   # pooler en modo transacción (6543)
+./scripts/con-supabase.sh npm run test:e2e
 ```
 
 `con-supabase.sh` arma la cadena de conexión con los datos de `.env` y ejecuta
@@ -263,10 +365,11 @@ Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
 `DATABASE_URL`. Los dos comandos la leen de ahí.
 
 ```bash
-npm run test:sql                    # tests SQL (8 archivos)
+npm run test:sql                    # tests SQL (9 archivos)
 ./scripts/run-sql-tests.sh 07       # solo uno
-npm test                            # tests TypeScript, el de concurrencia incluido
-npm run typecheck                   # comprobación de tipos
+npm test                            # tests TypeScript (136), el de concurrencia incluido
+npm run test:e2e                    # la demo en Google Chrome, con el modelo simulado
+npm run typecheck                   # comprobación de tipos (también la del widget)
 
 # Contra otra base, sin tocar .env:
 DATABASE_URL="postgresql://…" npm test
@@ -281,7 +384,7 @@ día en que se corren; la antelación se mide contra `now()`.
 
 | Archivo | Cubre |
 |---|---|
-| `01_esquema.sql` | Extensiones, las 15 tablas, tipos, índices, la restricción y el RPC |
+| `01_esquema.sql` | Extensiones, las 15 tablas de la Fase 0, tipos, índices, la restricción y el RPC |
 | `02_anti_solapamiento.sql` | Solapes por delante, por detrás, contenidos, englobantes, exactos; citas pegadas; profesionales distintos; canceladas |
 | `03_unicidad_cliente.sql` | `UNIQUE (business_id, telefono)` e integridad entre tenants |
 | `04_rls_aislamiento.sql` | Cobertura de RLS tabla por tabla + aislamiento real con un rol sin privilegios |
@@ -289,6 +392,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `06_seeds.sql` | Que Estética Aurora esté cargada y sea coherente |
 | `07_disponibilidad.sql` | `available_slots`: tramo partido, cierre (PR-02 en sus dos modos), intervalo, festivo, ausencia, filtro por servicio, horario propio, margen, canceladas, antelación, cambio de hora, rango máximo |
 | `08_reserva_completa.sql` | `book_appointment`: cada motivo de rechazo con su código, asignación automática, `ultima_profesional`, que reserva y disponibilidad coincidan, y RLS |
+| `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -303,6 +407,11 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/tools.test.ts` | Cada herramienta contra Aurora: consultar, identificar, crear, cancelar, mover, buscar, derivar; errores con alternativas; PA-08, PR-07 en sus dos modos, PR-05, PR-06, PD-04, PD-05; precio oculto |
 | `tests/prompt.test.ts` | System prompt determinista, con los datos de Aurora, sin precios ocultos, sin fecha, que cambia con los modos PD-03 y PR-07, y sin datos de ningún negocio en el código |
 | `tests/agent.test.ts` | El loop con un **modelo simulado** (sin coste): todas las herramientas y todos los resultados juntos, historial solo-añadir, mensajes y tokens guardados, derivar, límites, fallos y rechazos |
+| `tests/widget-api.test.ts` | El endpoint del widget: solo lo público en la config, dominio no permitido, sesión y token de otro negocio, PW-03 (24 h), idempotencia (también simultánea, con una sola cita y un solo SMS), orden de dos mensajes a la vez, límites PW-05, tope PW-04, consumo y errores |
+| `tests/cita-sms.test.ts` | El SMS de prueba al reservar (texto, enlace, sin token en la base), SMS fallido sin perder la cita, el SMS de cancelación por el chat (PW-10), la página del enlace (ver, cancelar en dos pasos, PR-07 en sus dos modos, enlace inventado o caducado) |
+| `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
+| `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
+| `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace y un dominio no permitido |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
 forma). Limpian lo suyo al terminar: crean negocios de prueba que se borran, y
@@ -324,6 +433,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
 | Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
+| Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, tope 100 US$ |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
 
 Marta no hace láser y Lucía no hace corporal a propósito: obliga al agente a
@@ -335,7 +445,8 @@ elegir profesional según el servicio en vez de al azar.
 
 | Pendiente | Fase |
 |---|---|
-| Widget web y endpoint de chat, idempotencia por mensaje, `usage_events` y topes mensuales | 3 |
+| Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
+| Retención y borrado de conversaciones | con PD-11 |
 | Panel para cargar la configuración | 4 |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |

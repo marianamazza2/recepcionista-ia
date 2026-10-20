@@ -36,7 +36,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
 
-Las propuestas del widget (PW-01 a PW-08, Fase 3) están al final, ⚠️ por confirmar.
+Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: ⚠️ por confirmar, salvo PW-08 y PW-10 (✅ decididas el 20/10/2026).
 
 ---
 
@@ -470,7 +470,7 @@ antes de lanzar la fase.
 | PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ⚠️ por confirmar |
 | PW-06 | Dónde puede ir el widget | Solo en los **dominios que indique el negocio** | Lista de dominios | ⚠️ por confirmar |
 | PW-07 | SMS de confirmación (PA-09) | En la Fase 3 se construye todo **menos el envío real** (proveedor de prueba). La página del enlace muestra la cita y permite **cancelarla**; para cambiarla, remite al chat o al teléfono | — | ⚠️ por confirmar |
-| PW-08 | La demo pública | Primero en local; después, con el visto bueno de Mariana, en **Vercel** contra Supabase en la nube | — | ⚠️ por confirmar |
+| PW-08 | La demo pública | Se publica en **Vercel** contra el Supabase de la nube, con dos dominios (la web de la demo y el servidor del widget) | — | ✅ decidida 20/10/2026 |
 
 ### PW-01 · Marca del widget
 
@@ -536,9 +536,109 @@ externos**. Propuesta:
 - Texto: *"{negocio}: cita confirmada el {día} a las {hora} con {profesional}.
   Para verla o cancelarla: {enlace}"*. Sin datos de salud.
 
-### PW-08 · La demo pública
+### PW-08 · La demo pública · ✅ decidida el 20/10/2026
 
-La demo se prueba primero en el ordenador de Mariana. Para enseñarla con un
-enlace hace falta publicarla: la propuesta es **Vercel** (el maestro ya lo
-eligió) contra el Supabase de la nube. Publicar es un paso hacia fuera, así que
-se hace solo cuando Mariana lo confirme.
+La demo se probó primero en el ordenador de Mariana. **Decisión (Mariana,
+20/10/2026): se publica en Vercel** contra el Supabase de la nube, para
+enseñarla con un enlace. La cuenta y el proyecto de Vercel los crea Mariana;
+las claves van en las variables del proyecto, nunca en el repo.
+
+- **Dos dominios**, como en la realidad: uno para la web inventada de Estética
+  Aurora (el que se enseña) y otro para el servidor del widget. El widget solo
+  aparece en el de la demo (PW-06).
+- Quien tenga el enlace gasta del saldo de la API: lo frenan los límites
+  (PW-05) y el tope mensual de Aurora (PW-04, 100 US$; se puede bajar).
+- El SMS sigue siendo de prueba (PW-07): sale en los logs de Vercel, no le
+  llega a nadie.
+- **Abierto:** el plan de Vercel. El gratuito (Hobby) es para uso personal y no
+  comercial; si la demo se usa para vender, probablemente toque el Pro.
+
+---
+
+## Al construir el widget (Fase 3) · ⚠️ POR CONFIRMAR
+
+Aparecieron al implementar la Fase 3. **Ya funcionan así** con la propuesta de
+serie (para poder probar la demo), pero son decisiones de Mariana: si alguna
+cambia, se ajusta el código.
+
+| # | Tema | Propuesta de serie (lo que hace ahora) | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PW-09 | SMS al mover una cita | **Sí**: llega el mismo SMS de confirmación con la hora nueva y un enlace nuevo | — | ⚠️ por confirmar |
+| PW-10 | SMS al cancelar por el chat | **Sí**: un SMS corto de "cita cancelada", sin enlace (PA-09). Desde la página del enlace, no | — | ✅ decidida 20/10/2026 |
+| PW-11 | Color del widget si el negocio no elige | Un gris azulado neutro (`#4f6d7a`) | Sí (el color, PW-01) | ⚠️ por confirmar |
+| PW-12 | Desde cuándo cuentan las 24 h (PW-03) | Desde el **último mensaje** de la conversación | — | ⚠️ por confirmar |
+| PW-13 | Las 10 conversaciones por conexión (PW-05) | Se cuentan **por negocio** | — | ⚠️ por confirmar |
+| PW-14 | Textos fijos del widget | Los de abajo, con el teléfono del local | — | ⚠️ por confirmar |
+| PW-15 | Cancelar desde la página del SMS | Pide un **"¿Seguro?"** antes de cancelar | — | ⚠️ por confirmar |
+
+### PW-09 · SMS al mover una cita
+
+Al mover una cita, en la base la cita "nueva hora" es otra fila, así que el
+enlace del SMS anterior pasa a mostrar la cita vieja como cancelada. Para que
+la clienta tenga un enlace que sirva, **se manda otro SMS de confirmación** con
+la hora nueva: *"{negocio}: cita confirmada el {día} a las {hora} con
+{profesional}. Para verla o cancelarla: {enlace}"*. También cuando el agente
+mueve la cita anterior por PR-08.
+
+*Alternativa:* un texto distinto ("tu cita ha cambiado al…"). Mismo coste.
+
+### PW-10 · SMS al cancelar por el chat · ✅ decidida el 20/10/2026
+
+PA-09 dice que la dueña del teléfono "siempre se entera de lo que se hace con
+sus citas". Se entera al **reservar**, al **mover** (PW-09) y, con esta regla,
+también al **cancelar** por el chat.
+
+**Decisión (Mariana, 20/10/2026):** sí, un SMS corto, sin enlace: *"{negocio}:
+tu cita del {día} a las {hora} se ha cancelado. Si no fuiste tú, llama al
+{teléfono}."* Si el negocio no tiene teléfono, dice "llama al local". Cuesta un
+SMS más por cancelación. Al cancelar desde la propia página del SMS no se manda
+(ya lo está viendo), y si la cita ya estaba cancelada tampoco.
+
+### PW-11 · Color del widget si el negocio no elige
+
+Un gris azulado neutro (`#4f6d7a`), que no parece la marca de nadie. El texto
+encima (blanco o casi negro) lo elige el widget solo, según el color, para que
+se lea bien. Para Estética Aurora la demo usa un rosa empolvado (`#8a5a63`).
+
+### PW-12 · Desde cuándo cuentan las 24 h (PW-03)
+
+Desde el **último mensaje**, no desde que empezó: una clienta que escribió ayer
+a las 20:00 y vuelve hoy a las 19:00 la retoma, aunque la conversación empezara
+antes. Mirar el historial no cuenta como mensaje.
+
+### PW-13 · Las 10 conversaciones por conexión (PW-05)
+
+Se cuentan **por negocio**: si desde la misma conexión (por ejemplo, la wifi de
+un centro comercial) se abren conversaciones en dos webs distintas, cada una
+lleva su cuenta. La IP no se guarda: solo un resumen cifrado que no permite
+recuperarla.
+
+### PW-14 · Textos fijos del widget
+
+Cuando responde el código y no la IA. *{tel}* es el teléfono del local:
+
+| Cuándo | Texto |
+|---|---|
+| Mensaje de más de 1.000 caracteres | "Tu mensaje es demasiado largo. ¿Puedes escribirlo en menos de 1.000 caracteres?" |
+| 20 mensajes en una hora | "Has enviado muchos mensajes seguidos y necesito una pausa. Vuelve a escribirme dentro de un rato o llama al {tel}." |
+| 10 conversaciones nuevas en una hora | "Ahora mismo no puedo abrir más conversaciones desde esta conexión. Inténtalo más tarde o llama al {tel}." |
+| Tope mensual (PW-04) | "Ahora mismo no puedo atenderte por aquí. Si quieres pedir o cambiar una cita, llama al {tel} y te ayudamos." |
+| Dos mensajes a la vez | "Sigo con tu mensaje anterior. Espera un momento y vuelve a enviarlo." |
+| Falla algo | "Perdona, ha habido un problema y no he podido responderte. Inténtalo de nuevo en un momento o llama al {tel}." |
+| Tarda más de 60 s (en el widget) | "Está tardando más de lo normal o se ha cortado la conexión." + botón **Reintentar** |
+
+El del tope no dice que hay un tope: para la clienta, simplemente hoy se pide
+por teléfono.
+
+### PW-15 · Cancelar desde la página del SMS
+
+Como PA-01 en el chat (confirmar antes de cancelar): la página muestra la cita
+y un botón **"Cancelar la cita"**; al pulsarlo pregunta *"¿Seguro que quieres
+cancelar tu cita?"*, con la política de cancelación del negocio, y solo con
+**"Sí, cancelar la cita"** se cancela. Además evita que una app que abre el
+enlace para previsualizarlo cancele sin querer.
+
+**Dominios (detalle de PW-06):** se compara el dominio exacto. `esteticaaurora.es`
+y `www.esteticaaurora.es` son dos entradas: el cuestionario de alta pide los
+dos.
+

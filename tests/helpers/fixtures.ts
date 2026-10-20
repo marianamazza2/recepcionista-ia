@@ -49,6 +49,15 @@ export async function createTestCustomer(sql: Sql, businessId: string): Promise<
 
 /** Borra las clientas de prueba de un negocio y sus citas (incluidos restos de ejecuciones anteriores). */
 export async function deleteTestCustomers(sql: Sql, businessId: string): Promise<void> {
+  // Fase 3: el consumo de sus conversaciones (al borrarlas quedaría suelto y
+  // contaría en el informe del negocio). Los SMS y enlaces se van con la cita.
+  await sql`
+    delete from public.usage_events u
+     using public.conversations v, public.customers c
+     where v.id = u.conversation_id
+       and c.id = v.customer_id
+       and c.business_id = ${businessId}
+       and c.telefono like ${TELEFONO_TEST + '%'}`;
   // Fase 2: las conversaciones de esas clientas (sus mensajes y derivaciones
   // se van en cascada).
   await sql`

@@ -54,6 +54,8 @@ export interface MessageRow {
   stopReason?: string | null;
   /** Lo que se registra además para auditar (herramientas, motivo de una respuesta fija…). */
   extra?: Record<string, unknown>;
+  /** Id del mensaje en el canal (messages.external_id): la clave de idempotencia (maestro §9). */
+  externalId?: string;
 }
 
 interface ConversationRow {
@@ -213,10 +215,10 @@ export async function appendMessages(
       const tokensOut = r.usage?.output_tokens ?? 0;
       await tx`
         insert into public.messages
-          (business_id, conversation_id, rol, contenido, tool_calls, tokens_in, tokens_out, created_at)
+          (business_id, conversation_id, rol, contenido, tool_calls, tokens_in, tokens_out, external_id, created_at)
         values
           (${businessId}::uuid, ${conversationId}::uuid, ${r.rol}, ${r.contenido},
-           ${tx.json(toolCalls as unknown as JSONValue)}, ${tokensIn}, ${tokensOut}, clock_timestamp())`;
+           ${tx.json(toolCalls as unknown as JSONValue)}, ${tokensIn}, ${tokensOut}, ${r.externalId ?? null}, clock_timestamp())`;
     }
     await tx`
       update public.conversations
