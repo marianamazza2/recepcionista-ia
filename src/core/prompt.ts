@@ -10,6 +10,10 @@
 // el prefijo que se cachea; la fecha y la hora NO van aquí, van en un mensaje
 // de sistema en cada turno (ver contextoDelTurno).
 //
+// Fase 4 (PI-08): las preguntas frecuentes del negocio van al final de los
+// datos del negocio, para usarlas tal cual. Es el único cambio del núcleo en
+// la Fase 4.
+//
 // Orden (spec 2.2): identidad y tono (PA-04) · qué puede y qué no · reglas ·
 // datos del negocio (maestro §8) · cuándo pasar con una persona (PA-05).
 // =============================================================================
@@ -166,6 +170,13 @@ function datosDelNegocio(c: BusinessConfig): string {
 
   lineas.push('', `Equipo: ${lista(c.profesionales.map((p) => p.nombre))}.`);
   lineas.push('', `Política de cancelación (explícala tal cual): ${c.politicaCancelacion ?? 'el negocio no ha indicado ninguna; si preguntan, no la tienes.'}`);
+  if (c.preguntasFrecuentes.length > 0) {
+    lineas.push(
+      '',
+      'Preguntas frecuentes del negocio. Si te preguntan algo de esto, responde con su respuesta tal cual, sin añadir nada que no diga. Si lo que preguntan no está aquí ni en el resto de estos datos, no lo sabes: pásalo al equipo como siempre.',
+      ...c.preguntasFrecuentes.map((f) => `- P: ${f.pregunta}\n  R: ${f.respuesta}`),
+    );
+  }
   return lineas.join('\n');
 }
 

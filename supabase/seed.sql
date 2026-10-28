@@ -187,6 +187,20 @@ insert into public.appointments (
    'Cancelada por la clienta con 48 h de antelación.');
 
 -- -----------------------------------------------------------------------------
+-- Preguntas frecuentes (Fase 4, PI-08): van dentro del prompt del agente
+-- -----------------------------------------------------------------------------
+insert into public.knowledge_docs (id, business_id, tipo, titulo, contenido_raw, orden) values
+  ('f0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001', 'faq',
+   '¿Hay aparcamiento cerca?',
+   'No tenemos parking propio, pero el parking público de la Plaza de la Fuente está a 2 minutos andando.', 1),
+  ('f0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001', 'faq',
+   '¿Cómo se puede pagar?',
+   'Con tarjeta, Bizum o en efectivo, en el local al terminar el tratamiento.', 2),
+  ('f0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001', 'faq',
+   '¿Tenéis bonos regalo?',
+   'Sí. Se compran en recepción y valen para cualquier servicio durante un año.', 3);
+
+-- -----------------------------------------------------------------------------
 -- La agenda vive en nuestra propia base (maestro §7: SupabaseAdapter en v1)
 -- -----------------------------------------------------------------------------
 insert into public.integrations (business_id, tipo, config, activa) values

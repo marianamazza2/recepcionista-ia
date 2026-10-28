@@ -6,7 +6,7 @@
 //
 // Mensajes, conversaciones, citas, tokens y coste del mes (en US$), y el % del
 // tope mensual (PW-04). A partir del 80 % avisa para hablar con el negocio.
-// Cuenta lo que pasa por el widget; las pruebas por la Terminal (npm run chat)
+// Cuenta lo que pasa por el widget (las pruebas del panel, PI-13, aparte); las pruebas por la Terminal (npm run chat)
 // no se registran como consumo de un negocio.
 // =============================================================================
 
@@ -43,6 +43,11 @@ async function main(): Promise<number> {
       `  Tope mensual      ${n(r.topeUsd, 2)} US$` +
         (r.fraccionTope !== null ? ` (${n(r.fraccionTope * 100, 1)} % usado)` : ' (tope 0: el widget no llama a la IA)'),
     );
+    if (r.pruebas.mensajes > 0) {
+      console.log(
+        `  Pruebas del panel ${n(r.pruebas.conversaciones)} conversaciones, ${n(r.pruebas.mensajes)} mensajes, ${n(r.pruebas.costeUsd, 4)} US$ (aparte de lo de arriba; cuentan para el tope)`,
+      );
+    }
     if (r.conversaciones > 0) console.log(`  Coste por conversación  ${n(r.costeUsd / r.conversaciones, 4)} US$`);
     if (r.modelosSinPrecio.length) console.log(`\n  ⚠️  Modelos sin precio en core/costes.ts (contados a 0): ${r.modelosSinPrecio.join(', ')}`);
     if (r.fraccionTope !== null && r.fraccionTope >= 1) {

@@ -54,7 +54,27 @@ export async function businessByWidgetKey(sql: Sql, key: string): Promise<Widget
            mensaje_bienvenida, telefono_humano, tope_mensual_usd
       from public.businesses
      where widget_key = ${key} and estado in ('activo', 'trial')`;
-  if (!b) return null;
+  return b ? aWidgetBusiness(b) : null;
+}
+
+/**
+ * PI-13: el mismo negocio por su id, para "Probar el chat" desde el panel (que
+ * no pasa por la clave ni por los dominios). Null si no existe o está pausado.
+ */
+export async function businessParaProbar(sql: Sql, id: string): Promise<WidgetBusiness | null> {
+  const [b] = await inTenant(
+    sql,
+    id,
+    (tx) => tx<WidgetBusinessRow[]>`
+      select id, nombre, timezone, widget_key, widget_dominios, widget_color, widget_logo, privacidad_url,
+             mensaje_bienvenida, telefono_humano, tope_mensual_usd
+        from public.businesses
+       where id = ${id}::uuid and estado in ('activo', 'trial')`,
+  );
+  return b ? aWidgetBusiness(b) : null;
+}
+
+function aWidgetBusiness(b: WidgetBusinessRow): WidgetBusiness {
   return {
     id: b.id,
     nombre: b.nombre,
@@ -98,12 +118,17 @@ export interface WebConversation {
   estado: 'activa' | 'escalada' | 'cerrada';
 }
 
-/** La conversación de ese token en ese negocio, si su último mensaje es de las últimas `horas`. */
+/**
+ * La conversación de ese token en ese negocio, si su último mensaje es de las
+ * últimas `horas`. PI-13: una sesión de prueba del panel no sirve en el widget
+ * ni al revés (`prueba` tiene que coincidir).
+ */
 export async function conversationBySession(
   sql: Sql,
   businessId: string,
   tokenHash: string,
   horas: number,
+  prueba = false,
 ): Promise<WebConversation | null> {
   const [c] = await inTenant(
     sql,
@@ -113,6 +138,7 @@ export async function conversationBySession(
         from public.conversations
        where business_id = ${businessId}::uuid
          and session_token_hash = ${tokenHash}
+         and prueba = ${prueba}
          and ultimo_mensaje_at > now() - make_interval(hours => ${horas})`,
   );
   return c ?? null;
@@ -123,13 +149,14 @@ export async function createWebConversation(
   businessId: string,
   tokenHash: string,
   ipHash: string | null,
+  prueba = false,
 ): Promise<WebConversation> {
   const [c] = await inTenant(
     sql,
     businessId,
     (tx) => tx<WebConversation[]>`
-      insert into public.conversations (business_id, canal, session_token_hash, ip_hash)
-      values (${businessId}::uuid, 'web', ${tokenHash}, ${ipHash})
+      insert into public.conversations (business_id, canal, session_token_hash, ip_hash, prueba)
+      values (${businessId}::uuid, 'web', ${tokenHash}, ${ipHash}, ${prueba})
       returning id, estado`,
   );
   return c!;
