@@ -38,6 +38,8 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026.
+
 ---
 
 ## PD-01 · Horarios del local y de cada profesional
@@ -724,4 +726,159 @@ logo (mejor cuadrado, PNG, SVG o JPG, hasta ~150 KB).
 **Dominios (detalle de PW-06):** se compara el dominio exacto. `esteticaaurora.es`
 y `www.esteticaaurora.es` son dos entradas: el cuestionario de alta pide los
 dos.
+
+
+---
+
+## El panel interno (Fase 4) · ✅ DECIDIDAS
+
+Aparecieron al escribir el spec de la Fase 4 (`fase-4-panel-interno.md`), el
+28/10/2026. **Mariana las confirmó todas ese mismo día**, tal como se
+proponían. El panel es **su** herramienta (dar de alta negocios y
+ver qué pasa), no la del cliente: eso es la Fase 9.
+
+| # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PI-01 | Quién entra | Solo quien tenga cuenta (hoy, Mariana). Email y contraseña, **sin registro público**: las cuentas se crean a mano | — | ✅ decidida 28/10/2026 |
+| PI-02 | Dónde vive | En el mismo proyecto de Vercel, con su propia dirección, y en local con `npm run dev` | — | ✅ decidida 28/10/2026 |
+| PI-03 | Un negocio nuevo | Empieza **en prueba** y **sin dominios** (el widget no aparece). Lista de "lo que falta"; solo se activa con lo mínimo completo | — | ✅ decidida 28/10/2026 |
+| PI-04 | Borrar o desactivar | Servicios y profesionales **se desactivan**; un negocio **se pausa**. Festivos, horarios y preguntas sí se borran | — | ✅ decidida 28/10/2026 |
+| PI-05 | Cuándo se aplican los cambios | Al guardar: el agente, en el siguiente mensaje; el widget, en unos minutos | — | ✅ decidida 28/10/2026 |
+| PI-06 | Qué se ve de una conversación | Todo: mensajes, herramientas y lo que devolvieron, coste y derivación | — | ✅ decidida 28/10/2026 |
+| PI-07 | Derivaciones | Lista de pendientes; se marcan como resueltas a mano. Sin avisos por email todavía | — | ✅ decidida 28/10/2026 |
+| PI-08 | Preguntas frecuentes | Pregunta y respuesta cortas, en el prompt hasta la Fase 5. Hasta ~20 o ~4.000 caracteres por negocio | Sí (sus preguntas) | ✅ decidida 28/10/2026 |
+| PI-09 | La clave del widget | La genera la base; el panel da el `<script>` para copiar. "Cambiar la clave", con confirmación | — | ✅ decidida 28/10/2026 |
+| PI-10 | Subir el logo | PNG, JPG, SVG o WebP; si pesa más de 150 KB, el panel lo reduce solo | — | ✅ decidida 28/10/2026 |
+| PI-11 | Consumo | Tabla del mes por negocio con % del tope y aviso del 80 % | — | ✅ decidida 28/10/2026 |
+| PI-12 | Festivos y ausencias | Del local o de una profesional, día entero o por horas, con motivo | Sí (sus festivos) | ✅ decidida 28/10/2026 |
+| PI-13 | Probar el chat | Desde el panel, aunque el negocio no esté activo. Cuesta lo mismo; se marca como prueba y el consumo la separa | — | ✅ decidida 28/10/2026 |
+| PI-14 | Citas a mano (PR-04) | Desde la agenda del panel, a cualquier hora y sin antelación mínima; nunca fuera de horario, en festivo ni pisando otra cita | — | ✅ decidida 28/10/2026 |
+
+### PI-01 · Quién entra · ✅ decidida el 28/10/2026
+
+El panel ve **todos los negocios y sus conversaciones**, con nombres, teléfonos
+y a veces datos de salud: tiene que estar cerrado. Propuesta: cuenta con email y
+contraseña, **sin registro público** (nadie puede crearse una cuenta desde la
+web). La cuenta de Mariana se crea con un comando; si algún día entra alguien
+más, se crea igual. Una sola clase de permiso (todo o nada) hasta que haya
+equipo.
+
+*Alternativa:* enlace mágico por email (sin contraseña). Depende de que llegue
+el email; con una sola persona, la contraseña es más simple.
+
+### PI-02 · Dónde vive · ✅ decidida el 28/10/2026
+
+En el mismo proyecto de Vercel que la demo, con una **tercera dirección** solo
+para el panel (por ejemplo `recepcionista-ia-panel.vercel.app`). Así no hay
+otro proyecto que mantener y cada `git push` a `main` lo actualiza junto con el
+resto. En local, `npm run dev` lo abre en otro puerto. Publicarlo se hace solo
+con el visto bueno de Mariana.
+
+### PI-03 · Un negocio nuevo · ✅ decidida el 28/10/2026
+
+Al crear un negocio, empieza **en prueba** y **sin dominios**: el widget no
+aparece en ninguna web aunque alguien tenga el código. El panel muestra "lo que
+falta" para poder atender: al menos un servicio, una profesional que lo haga,
+horario, teléfono del local y un dominio. **Activar** solo se puede con eso
+completo. Ejemplo: "Falta: horario del local · un dominio para el chat".
+
+### PI-04 · Borrar o desactivar · ✅ decidida el 28/10/2026
+
+Un servicio o una profesional con citas (pasadas o futuras) no se puede borrar
+sin perder historia: se **desactiva**. El agente deja de ofrecerlo y las citas
+siguen ahí. Si tiene citas futuras, el panel lo avisa antes ("Lucía tiene 3
+citas la semana que viene"). Un negocio no se borra: se **pausa** (el widget
+deja de responder y el agente no atiende). Festivos, horarios y preguntas
+frecuentes sí se borran, porque no tienen historia.
+
+### PI-05 · Cuándo se aplican los cambios · ✅ decidida el 28/10/2026
+
+Al pulsar **Guardar**. El agente lee el negocio en cada mensaje, así que usa lo
+nuevo **en el siguiente mensaje**. El widget guarda su aspecto (color, logo,
+bienvenida) unos minutos en el navegador: un cambio de color puede tardar hasta
+5 minutos en verse. El primer mensaje tras un cambio cuesta unos céntimos más
+(el agente "relee" las reglas).
+
+### PI-06 · Qué se ve de una conversación · ✅ decidida el 28/10/2026
+
+Todo lo que hace falta para responder "¿qué le dijo el agente a…?": los
+mensajes como en el chat, cada herramienta que usó (por ejemplo, "buscar
+huecos el martes por la tarde") con lo que le devolvió, el coste y si se derivó.
+Lo mismo que hoy da la skill `consultar-base`, pero en pantalla. Solo lo ve
+quien entra al panel (PI-01). Registrar quién miró qué queda para PD-11.
+
+### PI-07 · Derivaciones · ✅ decidida el 28/10/2026
+
+Cuando el agente pasa una conversación a una persona, el panel la muestra en una
+lista de **pendientes** del negocio, con el motivo y el enlace a la
+conversación. Se marca **resuelta** a mano. Avisar al negocio por email o SMS
+queda para más adelante.
+
+### PI-08 · Preguntas frecuentes · ✅ decidida el 28/10/2026
+
+Hasta que llegue la base de conocimiento (Fase 5), el negocio puede tener
+**preguntas frecuentes cortas** (pregunta y respuesta) que van **dentro del
+prompt** del agente: por ejemplo, "¿Hay aparcamiento? → Sí, el parking de la
+Plaza Mayor a 2 minutos". El agente las usa tal cual; si la respuesta no está,
+deriva (PA-10, PA-12). Como van en cada mensaje, se limitan a unas **20** o
+**4.000 caracteres** por negocio. Lo largo (tratamientos, cuidados) va en la
+Fase 5.
+
+### PI-09 · La clave del widget · ✅ decidida el 28/10/2026
+
+La base la genera sola al crear el negocio. El panel muestra el código listo
+para copiar y mandárselo al negocio:
+
+```html
+<script src="https://…/widget.js" data-key="wk_…" async></script>
+```
+
+"Cambiar la clave" existe para cuando se filtre o se quiera cortar el acceso:
+pide confirmación, y la anterior **deja de funcionar al momento** (el negocio
+tiene que pegar el código nuevo).
+
+### PI-10 · Subir el logo · ✅ decidida el 28/10/2026
+
+Se sube un archivo PNG, JPG, SVG o WebP. Si pesa más de 150 KB, el panel lo
+**reduce solo** a 256 × 256 antes de guardarlo (en el círculo se ve a 36
+píxeles). Vista previa en el círculo del chat, con el color del negocio.
+
+### PI-11 · Consumo · ✅ decidida el 28/10/2026
+
+Una tabla con el mes de cada negocio: mensajes, conversaciones, citas, coste
+de la IA y **% del tope** (PW-04), con el aviso del 80 % en ámbar. Es lo mismo
+que `npm run consumo`, para todos los negocios a la vez y sin Terminal.
+
+### PI-12 · Festivos y ausencias · ✅ decidida el 28/10/2026
+
+Del **local** (cierra todo el mundo) o de **una profesional** (vacaciones,
+formación), de un día entero o de unas horas, con un motivo opcional. Se ven
+los próximos; los pasados se ocultan. Ejemplo de Aurora: "Festivo local · 21/10"
+y "Marta · formación · 16/09 de 16:00 a 20:00".
+
+### PI-13 · Probar el chat · ✅ decidida el 28/10/2026
+
+Antes de activar un negocio, se conversa con su agente **desde el panel**, con
+sus servicios y horarios, aunque todavía no tenga web. Usa la IA de verdad, así
+que **cuesta lo mismo** que una conversación real. Se guarda marcada como
+**prueba**: aparece en el visor con esa marca y el informe de consumo la separa
+de las de clientas. Si reserva, la cita es real: se puede cancelar desde el
+propio chat o desde el enlace.
+
+### PI-14 · Citas a mano (PR-04) · ✅ decidida el 28/10/2026
+
+PR-04 dejó dicho que "recepción podrá saltarse la rejilla y la antelación
+mínima al cargar una cita a mano" cuando existiera el panel. Propuesta para la
+Fase 4: el panel tiene una **agenda** por negocio y día, y desde ahí se carga
+una cita eligiendo servicio, profesional, día y **cualquier hora** (por
+ejemplo, 10:15), y la clienta por su teléfono (si no existe, se crea).
+
+- **Se salta:** la rejilla (PR-01) y la antelación mínima (PD-05). Ejemplo: una
+  clienta que está en el local y quiere entrar en 20 minutos.
+- **No se salta:** el horario del local o de la profesional, los festivos y
+  ausencias, y que dos citas se pisen (de la clienta o de la profesional). Eso
+  lo sigue impidiendo la base.
+- Llega el **mismo SMS de confirmación** que si reservara el agente (PA-09).
+- En esta fase la usa Mariana desde su panel; la recepción de cada negocio, con
+  el panel del cliente (Fase 9).
 

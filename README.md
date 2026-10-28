@@ -452,7 +452,7 @@ elegir profesional según el servicio en vez de al azar.
 |---|---|
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Panel para cargar la configuración | 4 |
+| Panel interno: alta de negocios, visor de conversaciones y consumo (spec: `_specs/fase-4-panel-interno.md`) | 4 |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |

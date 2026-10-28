@@ -57,7 +57,7 @@ Consecuencias que se aplican siempre:
 |---|---|---|
 | Alcance, arquitectura y plan de fases | `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro) | Sí |
 | Qué hay que hacer en una fase | `_specs/fase-N-*.md` | Sí |
-| **Reglas de negocio** (PD-, PR-, PA-, PW-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
+| **Reglas de negocio** (PD-, PR-, PA-, PW-, PI-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
 | Decisiones técnicas ya tomadas (D-NN) y trampas (T-NN) | `docs/DECISIONES.md` | **No** (`docs/` está en `.gitignore`) |
 | Decisiones esperando a Mariana | `docs/DECISIONES-PENDIENTES.md` | No |
 | Por qué una tabla o función es así | El comentario de cabecera de su migración | Sí |
@@ -196,7 +196,7 @@ excepción:
 1. **Arquitectura:** capas, carpetas, dependencias entre módulos, interfaces
    (`BookingAdapter`, `SmsProvider`, `runAgentTurn`), stack, cómo se guarda o
    se protege un dato.
-2. **Reglas de negocio:** una regla PD/PR/PA/PW nueva o cambiada, sobre todo
+2. **Reglas de negocio:** una regla PD/PR/PA/PW/PI nueva o cambiada, sobre todo
    si cambia dónde se aplica (código, base o prompt) o qué hay que testear.
 3. **Forma de trabajo:** comandos, flujo de fases, cómo se testea o se
    verifica, convenciones de código, qué se puede hacer sin preguntar.
