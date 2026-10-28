@@ -4,10 +4,10 @@
 // Lo que pasa con un mensaje del widget, en orden:
 //
 //   1. Mensaje de más de 1.000 caracteres → texto fijo (PW-05). No se guarda.
-//   2. Sesión (PW-03): con un token válido de este negocio y de las últimas
-//      24 h, se retoma esa conversación; si no, se crea una nueva y se le da al
-//      navegador un token nuevo — salvo que desde esa IP ya se abrieran 10 en
-//      la última hora (PW-05).
+//   2. Sesión (PW-03): con un token válido de este negocio cuyo último mensaje
+//      fue hace menos de 2 h (PW-12), se retoma esa conversación; si no, se
+//      crea una nueva y se le da al navegador un token nuevo — salvo que desde
+//      esa IP ya se abrieran 10 en la última hora (PW-05).
 //   3. Lock de la conversación: los mensajes de una conversación van de uno en
 //      uno (D-45). Dentro del lock:
 //   4. Idempotencia: si ese clientMessageId ya se procesó en esta conversación,
@@ -66,7 +66,7 @@ export const LIMITES_WIDGET: LimitesWidget = {
   maxCaracteres: 1000,
   mensajesPorHora: 20,
   conversacionesPorHoraIp: 10,
-  sesionHoras: 24,
+  sesionHoras: 2,
   // El peor caso de un turno es ~3 × 60 s (D-48) más las herramientas.
   esperaLockMs: 200_000,
 };

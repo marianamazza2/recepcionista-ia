@@ -141,8 +141,9 @@ select test.ok(
       and widget_dominios[1] = 'localhost'
       and widget_color ~ '^#[0-9a-fA-F]{6}$'
       and tope_mensual_usd = 100
+      and widget_logo like 'data:image/svg+xml;base64,%'
      from public.businesses where id = :aurora),
-  'widget: la clave fija de la demo, en localhost (PW-06), con su color y tope de 100 US$ (PW-04)'
+  'widget: la clave fija de la demo, en localhost (PW-06), con su color, tope de 100 US$ (PW-04) y su isotipo (PW-17)'
 );
 
 -- --- Festivos y bloqueos -----------------------------------------------------

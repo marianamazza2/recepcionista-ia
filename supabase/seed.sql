@@ -32,7 +32,8 @@ insert into public.businesses (
   direccion, telefono_humano,
   antelacion_min_horas, intervalo_huecos_min, margen_dentro_horario, asignacion_profesional,
   cancelacion_modo, cancelacion_plazo_horas,
-  widget_key, widget_dominios, widget_color, privacidad_url, tope_mensual_usd
+  widget_key, widget_dominios, widget_color, privacidad_url, tope_mensual_usd,
+  widget_logo
 ) values (
   'a0000000-0000-4000-8000-000000000001',
   'Estética Aurora',
@@ -60,7 +61,9 @@ insert into public.businesses (
   array['localhost'],                        -- widget_dominios (PW-06): la demo local
   '#8a5a63',                                 -- widget_color (PW-01)
   'http://localhost:4310/privacidad.html',   -- privacidad_url (PW-02): la de la demo
-  100                                        -- tope_mensual_usd (PW-04)
+  100,                                       -- tope_mensual_usd (PW-04)
+  -- widget_logo (PW-17): el isotipo inventado de demo/aurora-isotipo.svg, en base64.
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjZjdlY2U5Ii8+PGcgc3Ryb2tlPSIjOGE1YTYzIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTE4IDQwYTE0IDE0IDAgMCAxIDI4IDAiLz48cGF0aCBkPSJNMzIgMTR2Nk0xNyAyMmw0IDRNNDcgMjJsLTQgNE0xMCAzNGg1TTQ5IDM0aDUiLz48cGF0aCBkPSJNMTIgNDZoNDAiLz48L2c+PC9zdmc+Cg=='
 );
 
 -- -----------------------------------------------------------------------------

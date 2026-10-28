@@ -87,6 +87,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261016120500_cliente_sin_solape` | PR-08: una clienta no puede tener dos citas que se pisen (`no_overlap_cliente`, `RA006`) |
 | `20261016120600_lock_por_clienta` | PR-08: lock por clienta en `book_appointment`, para dos reservas simultáneas de la misma clienta |
 | `20261016130000_widget_web` | Fase 3: clave, dominios, color, privacidad y tope del widget en `businesses`; token de sesión (hash) e IP (hash) en `conversations`; `usage_events` en US$ y con su conversación; `appointment_links` y `sms_messages` |
+| `20261028100000_widget_logo` | Fase 3: `businesses.widget_logo`, el logo del círculo de la cabecera del widget como data URL (PW-17) |
 
 ### Las dos garantías que ya están puestas
 
@@ -238,8 +239,9 @@ npm run dev
   prueba** sale en la consola de `npm run dev`, con su enlace.
 - El enlace (`http://localhost:4311/cita/…`) abre la página de la cita: la
   muestra y deja cancelarla (con PR-07, igual que el agente).
-- Recargá la página: la conversación sigue (24 h, PW-03). En otro navegador (o
-  en una ventana privada) no se ve.
+- Recargá la página: la conversación sigue (2 h desde el último mensaje, PW-03
+  y PW-12; pasado ese tiempo, avisa y empieza otra). En otro navegador (o en
+  una ventana privada) no se ve.
 - `http://127.0.0.1:4310` es "otra web" para el widget (solo admite
   `localhost`): ahí no aparece (PW-06).
 
@@ -271,7 +273,8 @@ publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
 
 Por negocio, en `businesses` (hasta la Fase 4, por SQL): `widget_key` (la
 genera la base), `widget_dominios` (los hosts exactos de su web: con y sin
-`www.` son dos), `widget_color`, `privacidad_url` y `tope_mensual_usd` (de
+`www.` son dos), `widget_color`, `widget_logo` (data URL de su logo, PW-17),
+`privacidad_url` y `tope_mensual_usd` (de
 serie 100). Detalle en [`widget/README.md`](widget/README.md) y el contrato de
 las rutas en [`src/api/README.md`](src/api/README.md).
 
@@ -393,7 +396,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `06_seeds.sql` | Que Estética Aurora esté cargada y sea coherente |
 | `07_disponibilidad.sql` | `available_slots`: tramo partido, cierre (PR-02 en sus dos modos), intervalo, festivo, ausencia, filtro por servicio, horario propio, margen, canceladas, antelación, cambio de hora, rango máximo |
 | `08_reserva_completa.sql` | `book_appointment`: cada motivo de rechazo con su código, asignación automática, `ultima_profesional`, que reserva y disponibilidad coincidan, y RLS |
-| `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS |
+| `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS; el formato y el tamaño del logo (PW-17) |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -408,11 +411,12 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/tools.test.ts` | Cada herramienta contra Aurora: consultar, identificar, crear, cancelar, mover, buscar, derivar; errores con alternativas; PA-08, PR-07 en sus dos modos, PR-05, PR-06, PD-04, PD-05; precio oculto |
 | `tests/prompt.test.ts` | System prompt determinista, con los datos de Aurora, sin precios ocultos, sin fecha, que cambia con los modos PD-03 y PR-07, y sin datos de ningún negocio en el código |
 | `tests/agent.test.ts` | El loop con un **modelo simulado** (sin coste): todas las herramientas y todos los resultados juntos, historial solo-añadir, mensajes y tokens guardados, derivar, límites, fallos y rechazos |
-| `tests/widget-api.test.ts` | El endpoint del widget: solo lo público en la config, dominio no permitido, sesión y token de otro negocio, PW-03 (24 h), idempotencia (también simultánea, con una sola cita y un solo SMS), orden de dos mensajes a la vez, límites PW-05, tope PW-04, consumo y errores |
+| `tests/widget-saludo.test.ts` | El saludo según la hora de la bienvenida del widget (PW-02) |
+| `tests/widget-api.test.ts` | El endpoint del widget: solo lo público en la config, dominio no permitido, sesión y token de otro negocio, PW-03 (2 h), idempotencia (también simultánea, con una sola cita y un solo SMS), orden de dos mensajes a la vez, límites PW-05, tope PW-04, consumo y errores |
 | `tests/cita-sms.test.ts` | El SMS de prueba al reservar (texto, enlace, sin token en la base), SMS fallido sin perder la cita, el SMS de cancelación por el chat (PW-10), la página del enlace (ver, cancelar en dos pasos, PR-07 en sus dos modos, enlace inventado o caducado) |
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
-| `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace y un dominio no permitido |
+| `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
 forma). Limpian lo suyo al terminar: crean negocios de prueba que se borran, y
@@ -434,7 +438,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
 | Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
-| Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, tope 100 US$ |
+| Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, isotipo inventado (`demo/aurora-isotipo.svg`), tope 100 US$ |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
 
 Marta no hace láser y Lucía no hace corporal a propósito: obliga al agente a

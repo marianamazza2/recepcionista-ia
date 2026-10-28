@@ -34,10 +34,10 @@ async function negocioYOrigen(deps: WebChatDeps, req: Request, key: unknown): Pr
   return { negocio, origin: origin! };
 }
 
-/** PW-02 */
+/** PW-02: dice que es una IA y enlaza la política, con el texto que eligió Mariana (28/10/2026). */
 export function avisoPrivacidad(negocio: Pick<WidgetBusiness, 'nombre' | 'privacidadUrl'>): { texto: string; enlace: string | null } {
   return {
-    texto: `Asistente virtual. Al escribir aceptas la política de privacidad de ${negocio.nombre}.`,
+    texto: `Soy la asistente virtual de ${negocio.nombre}, al escribir aceptas nuestra política de privacidad.`,
     enlace: negocio.privacidadUrl,
   };
 }
@@ -47,11 +47,12 @@ export async function widgetConfig(deps: WebChatDeps, req: Request): Promise<Res
     const r = await negocioYOrigen(deps, req, new URL(req.url).searchParams.get('key'));
     if (r instanceof Response) return r;
     const { negocio, origin } = r;
-    // Solo lo público (PW-01, PW-02): nada de ids, ajustes internos ni tope.
+    // Solo lo público (PW-01, PW-02, PW-17): nada de ids, ajustes internos ni tope.
     return json(
       {
         nombre: negocio.nombre,
         color: negocio.color,
+        logo: negocio.logo,
         bienvenida: negocio.mensajeBienvenida,
         aviso: avisoPrivacidad(negocio),
         maxCaracteres: { ...LIMITES_WIDGET, ...deps.limites }.maxCaracteres,

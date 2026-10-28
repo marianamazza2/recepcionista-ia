@@ -95,13 +95,14 @@ describe('GET /api/widget/config', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('access-control-allow-origin')).toBe(ORIGEN);
     const body = (await res.json()) as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['aviso', 'bienvenida', 'color', 'maxCaracteres', 'nombre']);
+    expect(Object.keys(body).sort()).toEqual(['aviso', 'bienvenida', 'color', 'logo', 'maxCaracteres', 'nombre']);
     expect(body).toMatchObject({
       nombre: 'Test test-widget-api-a',
       color: '#4f6d7a',
+      logo: null, // PW-17: sin logo, el widget pinta la inicial
       bienvenida: 'Hola, soy la asistente virtual',
       aviso: {
-        texto: 'Asistente virtual. Al escribir aceptas la política de privacidad de Test test-widget-api-a.',
+        texto: 'Soy la asistente virtual de Test test-widget-api-a, al escribir aceptas nuestra política de privacidad.',
         enlace: 'https://example.test/privacidad',
       },
       maxCaracteres: 1000,
@@ -184,9 +185,9 @@ describe('POST /api/chat — dominio y sesión', () => {
     expect(n[0]!.n).toBe(2); // la de A sigue con su saludo y su respuesta
   });
 
-  it('PW-03: pasadas 24 h desde el último mensaje empieza una conversación nueva', async () => {
+  it('PW-03 y PW-12: pasadas 2 h desde el último mensaje empieza una conversación nueva', async () => {
     const { h, token, conversationId } = await empezar(new ModeloSimulado([texto('Hola'), texto('Hola otra vez')]));
-    await sql`update public.conversations set ultimo_mensaje_at = now() - interval '24 hours 1 minute' where id = ${conversationId}`;
+    await sql`update public.conversations set ultimo_mensaje_at = now() - interval '2 hours 1 minute' where id = ${conversationId}`;
 
     const hist = await get(h, `/api/chat/historial?key=${A.key}`, { origin: ORIGEN, authorization: `Bearer ${token}` });
     expect(hist.status).toBe(401);

@@ -13,11 +13,17 @@
 // · El token de la conversación se guarda en localStorage (PW-03). Sin
 //   localStorage funciona igual, solo que no retoma la conversación al volver.
 // · Sin dependencias, sin cookies, sin analítica.
+// · La bienvenida saluda según la hora (PW-02, saludo.ts) y, si la conversación
+//   anterior caducó (PW-03), se avisa antes de empezar otra (PW-12).
 // =============================================================================
+
+import { conSaludo } from './saludo.js';
 
 interface ConfigWidget {
   nombre: string;
   color: string;
+  /** PW-17: data URL del logo, o null (se pinta la inicial). */
+  logo: string | null;
   bienvenida: string | null;
   aviso: { texto: string; enlace: string | null };
   maxCaracteres: number;
@@ -38,6 +44,9 @@ interface MensajeVisible {
 
 /** Más de esto esperando, se ofrece reintentar (el servidor sigue con el mensaje). */
 const ESPERA_MAXIMA_MS = 60_000;
+
+/** PW-12: cuando la conversación anterior caducó (PW-03) y empieza otra. */
+const CONVERSACION_TERMINADA = 'Tu conversación anterior ha terminado. Empezamos una nueva.';
 
 (function iniciar() {
   const script = document.currentScript as HTMLScriptElement | null;
@@ -112,6 +121,9 @@ const ESPERA_MAXIMA_MS = 60_000;
            overflow: hidden; border: 1px solid var(--borde); }
   .panel[hidden] { display: none; }
   .cabecera { background: var(--c); color: var(--sobre-c); padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .logo { flex: none; width: 36px; height: 36px; border-radius: 50%; background: #fff; color: var(--c); overflow: hidden;
+          display: grid; place-items: center; font-weight: 700; font-size: 17px; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+  .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .cabecera h2 { font-size: 16px; margin: 0; font-weight: 600; flex: 1; }
   .cabecera small { display: block; font-size: 12px; opacity: .85; font-weight: 400; }
   .cerrar { background: transparent; border: none; color: inherit; cursor: pointer; padding: 6px; border-radius: 8px; display: grid; }
@@ -144,6 +156,7 @@ const ESPERA_MAXIMA_MS = 60_000;
 <div class="w">
   <div class="panel" role="dialog" aria-modal="false" hidden>
     <div class="cabecera">
+      <span class="logo" aria-hidden="true"></span>
       <h2></h2>
       <button class="cerrar" type="button" aria-label="Cerrar el chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -175,13 +188,27 @@ const ESPERA_MAXIMA_MS = 60_000;
     const aviso = $<HTMLParagraphElement>('.aviso');
 
     $<HTMLHeadingElement>('h2').textContent = config.nombre;
+    pintarLogo($<HTMLSpanElement>('.logo'));
     panel.setAttribute('aria-label', `Chat con ${config.nombre}`);
     boton.setAttribute('aria-label', `Abrir el chat de ${config.nombre}`);
     entrada.maxLength = config.maxCaracteres;
     pintarAviso();
 
+    function pintarLogo(circulo: HTMLSpanElement): void {
+      // PW-17: el logo del negocio llega dentro de la config (data URL), así
+      // que no se carga nada de otra web. Sin logo, la inicial del nombre.
+      if (config.logo && config.logo.startsWith('data:image/')) {
+        const img = document.createElement('img');
+        img.src = config.logo;
+        img.alt = '';
+        circulo.append(img);
+      } else {
+        circulo.textContent = config.nombre.trim().charAt(0).toUpperCase();
+      }
+    }
+
     function pintarAviso(): void {
-      // PW-02: "Asistente virtual. Al escribir aceptas la política de privacidad de {negocio}."
+      // PW-02: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad."
       aviso.textContent = '';
       const frase = 'política de privacidad';
       const i = config.aviso.texto.indexOf(frase);
@@ -207,7 +234,7 @@ const ESPERA_MAXIMA_MS = 60_000;
     }
 
     function bienvenida(): void {
-      if (config.bienvenida) burbuja('asistente', config.bienvenida);
+      if (config.bienvenida) burbuja('asistente', conSaludo(config.bienvenida, new Date().getHours()));
     }
 
     async function cargarHistorial(): Promise<void> {
@@ -219,9 +246,10 @@ const ESPERA_MAXIMA_MS = 60_000;
           credentials: 'omit',
         });
         if (!r.ok) {
-          // Caducada (PW-03) o no válida: se empieza de cero.
+          // Caducada (PW-03) o no válida: se empieza de cero, y se dice (PW-12).
           sessionToken = null;
           guardarToken(null);
+          if (r.status === 401) burbuja('sistema', CONVERSACION_TERMINADA);
           return bienvenida();
         }
         const h = (await r.json()) as { mensajes: MensajeVisible[] };
@@ -276,6 +304,9 @@ const ESPERA_MAXIMA_MS = 60_000;
         });
         if (!r.ok) throw new Error(String(r.status));
         const d = (await r.json()) as RespuestaChat;
+        // Tenía una conversación abierta y el servidor empezó otra: caducó
+        // mientras el panel seguía abierto (PW-12).
+        if (sessionToken && d.nuevaConversacion) burbuja('sistema', CONVERSACION_TERMINADA);
         if (d.sessionToken) {
           sessionToken = d.sessionToken;
           guardarToken(d.sessionToken);
