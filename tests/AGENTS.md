@@ -9,8 +9,10 @@ gasta un céntimo.
 tests/
 ├── helpers/
 │   ├── fixtures.ts         AURORA (ids del seed), clientas de test, negocio de prueba 24 h
-│   └── modelo-simulado.ts  ModelClient con respuestas guionizadas: texto(), herramientas()…
+│   ├── modelo-simulado.ts  ModelClient con respuestas guionizadas: texto(), herramientas()…
+│   └── auth-falsa.ts       AuthPanel falso (Fase 4): usuarios y tokens sin Supabase Auth
 ├── e2e/widget.e2e.ts       la demo en Google Chrome (npm run test:e2e, vitest.e2e.config.ts)
+├── e2e/panel.e2e.ts        el panel en Google Chrome: alta, activar, reservar, visor, agenda
 └── *.test.ts               uno por módulo o por regla (tabla en el README.md raíz)
 ```
 
@@ -22,7 +24,17 @@ los servidores de `src/dev/server.ts` en puertos al azar, con el modelo
 simulado, y escribe en Aurora con una clienta `+34999…`. Al terminar borra sus
 conversaciones **y su consumo** (también las que no llegaron a guardar el
 token). Las esperas llevan margen (30 s): contra la nube cada mensaje tarda
-más. Correla si tocás el widget, la API o la demo.
+más. Correla si tocás el widget, la API, la demo o el panel. La del panel
+compila `admin/` antes de empezar y guarda capturas en
+`$PANEL_CAPTURAS` (de serie, una carpeta temporal) para mirar el aspecto.
+
+## Las cuentas del panel (Fase 4)
+
+Sin Supabase Auth: `helpers/auth-falsa.ts` hace de proveedor de cuentas
+(`createApi({ auth })`). La persona del panel se añade a `panel.personas` con
+`guardarPersonaPanel` y se borra al terminar, igual que los negocios que se
+dan de alta por la API. `tests/admin-api.test.ts` sube el tiempo por test a
+120 s: cada uno da de alta un negocio entero, y contra la nube tarda.
 
 ## Reglas
 

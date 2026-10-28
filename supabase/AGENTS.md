@@ -34,6 +34,9 @@ supabase/
    - **RLS + política `tenant_isolation`** en la misma migración, con el bucle
      de `…130000_widget_web.sql`. `tests/04` falla si una tabla queda sin RLS
      o sin política.
+   - La única tabla que no es de un negocio, `panel.personas` (Fase 4, PI-01),
+     vive en su propio esquema `panel` (no expuesto por PostgREST), con RLS y
+     **sin** política. Lo que no sea de un negocio va ahí, nunca en `public`.
 6. **`comment on`** en tablas, columnas no obvias, restricciones y funciones.
 7. **Enums:** valores nuevos en su propia migración (T-04).
 8. **Ajustes por negocio** = columnas en `businesses` con su valor de serie
@@ -41,11 +44,17 @@ supabase/
 9. **Funciones del motor** (`book_appointment`, `available_slots`…):
    `SECURITY INVOKER`, no declaran el tenant (lo hace quien llama, D-17).
    Todo lo que decide si un hueco es válido pasa por `app.slot_es_valido`
-   (D-26): nunca se duplica esa lógica.
+   (D-26): nunca se duplica esa lógica. Desde la Fase 4 tiene un quinto
+   argumento, `p_manual` (PR-04, PI-14: sin rejilla ni antelación), igual que
+   `book_appointment`. Al añadir un argumento con valor de serie a una
+   función, se **borra** la firma anterior en la misma migración: si no, las
+   dos casan con las llamadas de siempre y Postgres no sabe cuál usar.
 10. **Errores propios con SQLSTATE `RA0NN`** (el siguiente libre: hoy
-    **RA007**), con `hint`/mensaje legible. Cada código nuevo se traduce en
-    `src/adapters/booking/errors.ts` (ver
-    [`src/adapters/AGENTS.md`](../src/adapters/AGENTS.md)).
+    **RA009**), con `hint`/mensaje legible. Cada código nuevo se traduce:
+    los del motor de reservas en `src/adapters/booking/errors.ts` (ver
+    [`src/adapters/AGENTS.md`](../src/adapters/AGENTS.md)); los del panel
+    (RA007 preguntas frecuentes, RA008 activar incompleto) en
+    `src/api/admin/errores.ts`.
 11. **Horas:** `timestamptz` en UTC para instantes; horarios en hora local
     del negocio (D-09) y se cruzan con `AT TIME ZONE b.timezone`, nunca con
     offsets a mano (T-01).

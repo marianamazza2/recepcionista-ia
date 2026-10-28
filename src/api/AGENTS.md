@@ -34,8 +34,30 @@ en [`README.md`](README.md).
 10. `cache-control: no-store` por defecto (lo pone `json`). Solo la config
     pública del widget se cachea.
 
+## El panel (`admin/`, Fase 4)
+
+`/api/admin/…` tiene reglas propias, distintas de las del widget:
+
+11. **Cuenta en cada petición** (PI-01): token de Supabase Auth verificado
+    con `GET /auth/v1/user` (`admin/auth.ts`, detrás de la interfaz
+    `AuthPanel` para poder testear sin red) **y** la persona activa en
+    `panel.personas`. Si no, 401 — también con la clave de un widget. Solo
+    `POST /sesion` y `/sesion/renovar` no la piden. Sin proveedor configurado,
+    503 (el panel no se abre sin login).
+12. **Mismo origen, sin CORS**: el panel se sirve junto a la API. El token va
+    en `Authorization`, nunca en una cookie (sin CSRF).
+13. **El negocio sale de la URL** y todo va con su `business_id` (T-03): pedir
+    la conversación o la cita de otro negocio da 404.
+14. **Errores en palabras** (`admin/errores.ts`): `{ error, mensaje }` con una
+    frase para el panel; las validaciones de negocio siguen en la base y aquí
+    solo se traducen (restricción → frase). Lo que no se reconoce va a
+    `onError` y el panel recibe un 500 genérico.
+15. Cuerpo hasta 512 KB (el logo viaja en el JSON), la forma se valida con
+    `admin/entrada.ts`.
+
 ## Tests
 
+`tests/admin-api.test.ts` cubre el panel con un `AuthPanel` falso.
 `tests/widget-api.test.ts` llama a `createApi` directamente con `Request`
 construidos a mano y el modelo simulado: dominio, sesión, idempotencia (también
 simultánea), orden, límites y tope. `tests/cita-sms.test.ts` cubre la página

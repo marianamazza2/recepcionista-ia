@@ -78,6 +78,11 @@ No se declara una herramienta que todavía no hace nada (por eso
 - Cada párrafo es una función en `prompt.ts`; los ajustes por negocio eligen
   entre párrafos ya escritos (PD-03, PR-07…).
 - Texto para la clienta: español de España, de tú, sin datos inventados.
+- **Preguntas frecuentes (Fase 4, PI-08):** van al final de "Datos del
+  negocio", con la instrucción de responder con ellas tal cual y pasar al
+  equipo lo que no esté. Es el único cambio del núcleo en la Fase 4; las
+  carga `config/business.ts` en el orden del negocio y su límite lo pone la
+  base (RA007), no el prompt.
 - `tests/prompt.test.ts` comprueba determinismo, que no haya precios ocultos ni
   datos de un negocio concreto. Si añadís un modo, añadí su caso.
 - Los escenarios del eval comprueban lo grave, no el estilo (D-56).

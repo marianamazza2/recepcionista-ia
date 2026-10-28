@@ -24,7 +24,8 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `supabase/` | Migraciones, seed y tests SQL | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 | `tests/` | Tests TypeScript (Vitest) contra una base real | [`tests/AGENTS.md`](tests/AGENTS.md) |
 | `widget/` | El chat embebible que va en la web del negocio | [`widget/AGENTS.md`](widget/AGENTS.md) · [`README`](widget/README.md) |
-| `demo/` | La web inventada de Estética Aurora con el widget pegado (la sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales |
+| `admin/` | El panel interno de Mariana (React + Vite + Tailwind): alta de negocios, visor, agenda, consumo | [`admin/AGENTS.md`](admin/AGENTS.md) · [`README`](admin/README.md) |
+| `demo/` | La web inventada de Estética Aurora con el widget pegado, y `prueba.html?key=…` para cualquier negocio (las sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales |
 | `scripts/` | Runner de tests SQL y acceso a la nube | [`scripts/README.md`](scripts/README.md) |
 | `.claude/skills/` | Procedimientos de todos los días (verificar, migrar, consultar, Research Desk) | [§7b](#7b-skills-del-proyecto) |
 
@@ -105,16 +106,19 @@ cp .env.example .env        # y completar DATABASE_URL (nunca subir .env)
 npm run typecheck           # tsc --noEmit, modo estricto
 npm test                    # tests TypeScript (Vitest), contra DATABASE_URL
 npm run test:sql            # tests SQL de supabase/tests/
-npm run test:e2e            # la demo en Google Chrome con el modelo simulado (necesita Chrome)
+npm run test:e2e            # la demo y el panel en Google Chrome con el modelo simulado (necesita Chrome)
 npm run chat -- --negocio estetica-aurora     # conversar por la Terminal (usa la API real)
 npm run agent:eval          # escenarios con el modelo real (cuesta céntimos)
-npm run dev                 # demo del widget: web en :4310, servidor del widget en :4311 (API real)
+npm run dev                 # demo del widget (:4310 web, :4311 servidor) y panel (:4312/panel/), con la API real
 npm run consumo -- --negocio estetica-aurora  # consumo del mes y % del tope
+npm run panel:cuenta -- --email …              # crear una cuenta del panel (pide la contraseña en la Terminal)
 npm run build:widget        # genera widget/dist/widget.js
+npm run build:panel         # compila el panel en admin/dist (lo hacen solos npm run dev y build:vercel)
 npm run build:vercel        # arma .vercel/output para publicar (necesita PUBLIC_API_URL; lo corre Vercel)
 ```
 
-`npm run typecheck` comprueba también el widget (`tsc -p widget`).
+`npm run typecheck` comprueba también el widget (`tsc -p widget`) y el panel
+(`tsc -p admin`).
 
 Contra la nube: `./scripts/con-supabase.sh npm test` (ver
 [`scripts/README.md`](scripts/README.md)); con
@@ -155,6 +159,10 @@ Postgres sin avisar.**
   de sesión.
 - Tokens que dan acceso (sesión del widget, enlace del SMS): en la base **solo
   su hash** (SHA-256).
+- El panel (Fase 4) ve todos los negocios: toda ruta `/api/admin/…` exige
+  cuenta (token de Supabase Auth verificado + `panel.personas`, PI-01). La
+  `SUPABASE_SERVICE_ROLE_KEY` solo la usa `npm run panel:cuenta` desde `.env`:
+  nunca en Vercel, en el navegador ni en el chat.
 - Nada de desplegar (Vercel), contratar servicios ni conectar proveedores
   reales (SMS) sin el visto bueno explícito de Mariana.
 - Datos de salud: el RGPD está abierto (PD-11). No se añaden datos sensibles a

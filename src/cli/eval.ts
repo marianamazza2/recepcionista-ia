@@ -403,7 +403,7 @@ const ESCENARIOS: Escenario[] = [
         e,
         null,
         [
-          '[eval] Hola, ¿tenéis parking cerca del local?',
+          '[eval] Hola, ¿puedo ir con mi bebé al local mientras me hacen el tratamiento?',
           `Vale, gracias. Entonces dame cita para una limpieza facial el ${comoLoDiria(martes)} a las 16:00, me da igual quién. Soy Nora Prueba y mi teléfono es ${telefono()}.`,
           'Sí, resérvala.',
           'Sí, confirmo.',

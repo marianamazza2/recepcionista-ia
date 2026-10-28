@@ -25,6 +25,11 @@ adapters/
   códigos de Postgres.
 - **Operaciones de varios pasos en una transacción** (reprogramar = cancelar +
   crear, D-36): si la nueva falla, la original queda intacta.
+- `CreateBookingParams.manual` (Fase 4, PR-04, PI-14): la cita a mano del
+  panel, que pasa `p_manual` a `book_appointment` (sin rejilla ni antelación;
+  horario, festivos, solapes y margen siguen). **El núcleo nunca lo pone**, y
+  mover una cita (`rescheduleBooking`, `changeExistingAndBook`) no lo hereda:
+  el agente que mueve una cita cargada a mano sigue en la rejilla.
 - Las **clientas no son del adaptador** (D-51): viven en `db/customers.ts`,
   porque son nuestras aunque la agenda esté en Google Calendar (Fase 7).
 

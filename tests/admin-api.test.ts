@@ -6,7 +6,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { OutsideHoursError } from '../src/adapters/booking/errors.js';
 import { SupabaseAdapter } from '../src/adapters/booking/supabase.js';
@@ -21,6 +21,10 @@ import { guardarPersonaPanel } from '../src/db/personas.js';
 import { informeConsumo } from '../src/db/usage.js';
 import { AuthFalsa } from './helpers/auth-falsa.js';
 import { herramientas, ModeloSimulado, texto, type Guion } from './helpers/modelo-simulado.js';
+
+// Cada test da de alta un negocio entero (una docena de peticiones): contra
+// Supabase, en Frankfurt, pasa de los 20 s de serie.
+vi.setConfig({ testTimeout: 120_000 });
 
 const sql = createSql(undefined, { max: 6 });
 const AHORA = localToUtc('2030-10-14', '10:00', 'Europe/Madrid'); // lunes
