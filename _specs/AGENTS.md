@@ -34,7 +34,9 @@ base, no constantes en el código.
   toma el siguiente libre de su prefijo.
 - **Al tocar una regla**, se actualiza también la tabla "Resumen" del
   principio de `decisiones-producto.md`.
-- **Los specs de fase se escriben antes de la fase**, con el mismo formato que
+- **Los specs de fase se escriben antes de la fase**, en la rama de esa fase
+  (un solo PR por fase, spec e implementación juntos: ver §3 del `AGENTS.md`
+  raíz), con el mismo formato que
   los existentes (copiá la estructura de `fase-3-widget-web.md`). Una vez
   cerrada la fase no se reescriben: lo que cambió se registra en
   `docs/DECISIONES.md`.

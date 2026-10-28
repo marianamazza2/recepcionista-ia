@@ -84,8 +84,13 @@ El proyecto se construye en fases cerradas (maestro §11). Cada fase:
    el spec pone en "Depende de".
 3. Se cierra solo cuando se cumplen todos los puntos de su "Definition of
    Done", **en local y en el proyecto Supabase de la nube** (PD-06).
-4. Termina con su sección en `docs/DECISIONES.md`, el `README.md` al día y un
-   commit (`Phase N: …`).
+4. Termina con su sección en `docs/DECISIONES.md`, el `README.md` al día y
+   sus commits (`Phase N: …`).
+5. Va en **una sola rama y un solo PR por fase**: el spec y la implementación
+   juntos. El spec se escribe en la rama de la fase y abre su PR; la sesión
+   que construye la fase sigue en esa misma rama y actualiza ese PR (no abre
+   otro). **Mariana revisa y mergea**; Claude Code nunca mergea ni hace push a
+   `main`.
 
 No se adelanta trabajo de fases futuras: lo que está "fuera del alcance" de la
 fase en curso no se hace (por ejemplo, no se declara una herramienta que
@@ -117,8 +122,9 @@ Contra la nube: `./scripts/con-supabase.sh npm test` (ver
 el que usa Vercel.
 
 La demo está publicada en Vercel (PW-08): cada `git push` a `main` la
-actualiza. Por eso **no se hace push sin que Mariana lo pida**, y lo que se
-sube tiene que pasar los tests antes.
+actualiza. Por eso **a `main` no se hace push nunca**: los cambios llegan por
+el PR de la fase (§3), que mergea Mariana, y lo que se sube tiene que pasar
+los tests antes.
 
 **En esta máquina no hay Docker** (decisión de Mariana, D-24): no uses
 `supabase start` ni `supabase db reset`. Las migraciones se aplican con
@@ -166,8 +172,10 @@ Postgres sin avisar.**
   `// ====` (o `-- ====`) que dice qué es, en qué fase/tarea nació y qué
   reglas implementa. Al cambiar el archivo, se actualiza la cabecera.
 - **Comentarios que explican el porqué**, con su código de decisión, no el qué.
-- **Commits** en inglés, cortos (`Phase 2: agent core`), con el detalle en el
-  cuerpo.
+- **Commits y PR en inglés**, aunque el resto esté en español: commits cortos
+  (`Phase 2: agent core`) con el detalle en el cuerpo, y el título y la
+  descripción de cada PR también en inglés (los códigos como `PI-03` y los
+  nombres de archivo se dejan tal cual).
 
 ## 7b. Skills del proyecto
 

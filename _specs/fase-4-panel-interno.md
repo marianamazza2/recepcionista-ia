@@ -168,13 +168,13 @@ Una migración nueva (no se tocan las anteriores):
 9. Documentación (4.9).
 10. Publicar el panel en Vercel **solo si Mariana lo confirma**.
 
-Trabajar contra el Postgres local (`recepcionista_dev`). No apagar ni reiniciar Postgres sin avisar. Trabajar en una rama y abrir un PR: Mariana mergea.
+Trabajar contra el Postgres local (`recepcionista_dev`). No apagar ni reiniciar Postgres sin avisar. **Un solo PR para toda la fase:** se trabaja en la rama `fase-4-spec`, que ya tiene abierto el PR #2 con este spec; se hace push a esa rama y se actualiza ese PR (título y descripción en inglés), sin abrir otro. Mariana lo mergea.
 
 ---
 
 ## PROMPT DE ARRANQUE (para pegar en Claude Code, sesión fresca en el repo)
 
-> Leé `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro), `_specs/decisiones-producto.md` (reglas de negocio, incluidas las PI-01 a PI-14 del panel), `_specs/fase-4-panel-interno.md` (esta fase) y `docs/DECISIONES.md` (decisiones técnicas de las fases 0 a 3). Implementá la Fase 4 completa siguiendo el spec de fase, en el orden sugerido: migración, cuentas y API del panel, preguntas frecuentes en el agente, el panel de alta y edición de negocios, el visor de conversaciones y derivaciones, la agenda con citas a mano, el consumo y los tests. No cambies el núcleo del agente salvo lo de las preguntas frecuentes. La clave `ANTHROPIC_API_KEY` ya está en `.env`: no me la pidas ni la muestres, y tampoco la contraseña del panel. Trabajá contra el Postgres local `recepcionista_dev` y no lo apagues. Trabajá en una rama nueva y al final abrí un PR: yo lo mergeo. Todos los tests, los de las fases anteriores incluidos, tienen que pasar, en local y en Supabase. No publiques el panel en Vercel ni contrates nada sin preguntarme. Si aparece una decisión de producto que no está en `decisiones-producto.md`, no la inventes: anotala como propuesta por confirmar y avisame. Actualizá también el manual "Cómo funciona el Recepcionista" y la Hoja de ruta de Research Desk. Explicame al final, en lenguaje simple, qué hiciste y cómo lo verifico yo.
+> Leé `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro), `_specs/decisiones-producto.md` (reglas de negocio, incluidas las PI-01 a PI-14 del panel), `_specs/fase-4-panel-interno.md` (esta fase) y `docs/DECISIONES.md` (decisiones técnicas de las fases 0 a 3). Implementá la Fase 4 completa siguiendo el spec de fase, en el orden sugerido: migración, cuentas y API del panel, preguntas frecuentes en el agente, el panel de alta y edición de negocios, el visor de conversaciones y derivaciones, la agenda con citas a mano, el consumo y los tests. No cambies el núcleo del agente salvo lo de las preguntas frecuentes. La clave `ANTHROPIC_API_KEY` ya está en `.env`: no me la pidas ni la muestres, y tampoco la contraseña del panel. Trabajá contra el Postgres local `recepcionista_dev` y no lo apagues. Trabajá en la rama `fase-4-spec`, que ya tiene abierto el PR #2 con este spec: seguí en ella, hacé push a esa rama y al final actualizá ese PR con todo lo de la fase (título y descripción en inglés, como los commits). No abras otro PR ni mergees: lo mergeo yo. Todos los tests, los de las fases anteriores incluidos, tienen que pasar, en local y en Supabase. No publiques el panel en Vercel ni contrates nada sin preguntarme. Si aparece una decisión de producto que no está en `decisiones-producto.md`, no la inventes: anotala como propuesta por confirmar y avisame. Actualizá también el manual "Cómo funciona el Recepcionista" y la Hoja de ruta de Research Desk. Explicame al final, en lenguaje simple, qué hiciste y cómo lo verifico yo.
 
 ---
 
@@ -187,4 +187,4 @@ Trabajar contra el Postgres local (`recepcionista_dev`). No apagar ni reiniciar 
 5. Desactivás un servicio y el agente deja de ofrecerlo; cambiás la clave y el widget viejo deja de aparecer.
 6. Cargás una cita a mano a una hora fuera de la rejilla y aparece en la agenda.
 
-Recién ahí, PR mergeado y sesión nueva para la Fase 5.
+Recién ahí, Mariana mergea el PR de la fase (#2) y sesión nueva para la Fase 5.
