@@ -38,7 +38,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
-Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026.
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) están ⚠️ por confirmar.
 
 ---
 
@@ -881,4 +881,62 @@ ejemplo, 10:15), y la clienta por su teléfono (si no existe, se crea).
 - Llega el **mismo SMS de confirmación** que si reservara el agente (PA-09).
 - En esta fase la usa Mariana desde su panel; la recepción de cada negocio, con
   el panel del cliente (Fase 9).
+
+---
+
+## Al construir el panel (Fase 4) · ⚠️ POR CONFIRMAR
+
+Aparecieron al construir el panel, el 28/10/2026. **Están implementadas tal
+como se proponen** (es lo que hace hoy el código), pero son decisiones de
+Mariana: si alguna cambia, es un ajuste pequeño.
+
+| # | Tema | Propuesta | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA. El informe las enseña aparte | — | ⚠️ por confirmar |
+| PI-16 | El widget de un negocio en prueba | Funciona en los dominios que tenga. "Activar" es el paso de pasar a atender de verdad, no lo que enciende el widget | — | ⚠️ por confirmar |
+| PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ⚠️ por confirmar |
+
+### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ⚠️ por confirmar
+
+PI-13 dice que "Probar el chat" cuesta lo mismo y que el informe separa las
+pruebas. Falta decidir si ese coste cuenta para el tope mensual del negocio
+(PW-04).
+
+*Propuesta:* **sí cuentan**. El tope protege el gasto de la IA por negocio, y
+el gasto de una prueba es tan real como el de una clienta. El informe enseña
+aparte las de clientas y las pruebas, y el % del tope usa la suma de las
+dos (lo mismo que mira el tope). Ejemplo: con un tope de 50 US$, si las
+pruebas de Mariana ya gastaron 1 US$, al negocio le quedan 49 US$ para sus
+clientas.
+
+*Alternativa:* que no cuenten. Entonces una prueba no podría quedarse sin
+respuesta por el tope, pero el gasto de las pruebas no tendría límite.
+
+### PI-16 · El widget de un negocio en prueba · ⚠️ por confirmar
+
+PI-03 dice que un negocio nuevo empieza en prueba y sin dominios, "y el
+widget no aparece hasta que lo actives". Lo que lo impide de verdad es que no
+tiene dominios: en cuanto se le pone uno, el widget aparece en esa web
+aunque el negocio siga en prueba (como ya pasaba en la Fase 3). Así se puede
+probar en `localhost` o en la web del negocio antes de activarlo.
+
+*Propuesta:* dejarlo así. Activar es "ya atiende de verdad" (y exige lo
+mínimo: servicio, profesional, horario, teléfono y dominio); pausar sí apaga
+el widget al momento.
+
+*Alternativa:* que el widget solo funcione con el negocio activo. Entonces
+para probarlo en la web de prueba habría que activarlo antes.
+
+### PI-17 · Un negocio pausado en el panel · ⚠️ por confirmar
+
+Pausar (PI-04) hace que el widget no responda y el agente no atienda. En el
+panel, un negocio pausado **no** deja probar el chat ni cargar o cancelar
+citas a mano: el panel lo dice ("actívalo para…"). La ficha, las
+conversaciones, la agenda y el consumo se siguen viendo y editando.
+
+*Propuesta:* dejarlo así: pausado es "no atiende", también desde el panel.
+
+*Alternativa:* permitir citas a mano en un negocio pausado (por ejemplo, si
+se pausa solo el chat pero la recepción sigue dando citas). Pide separar
+"pausar el chat" de "pausar el negocio".
 

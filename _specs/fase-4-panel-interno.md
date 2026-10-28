@@ -46,6 +46,8 @@ Aparecieron al escribir este spec. Están en `decisiones-producto.md` (PI-01 a P
 | PI-13 | Probar el chat | Desde el panel se conversa con el agente del negocio aunque no esté activo. **Cuesta lo mismo** que una conversación real; se guarda marcada como **prueba** y el informe de consumo la separa |
 | PI-14 | Citas a mano (PR-04) | Desde la agenda del panel: servicio, profesional, día y **cualquier hora** (fuera de la rejilla y sin antelación mínima), clienta por teléfono. Lo que **no** se salta: el horario, los festivos y que dos citas se pisen. Llega el mismo SMS de confirmación |
 
+**Aparecieron al construir la fase (⚠️ por confirmar, en `decisiones-producto.md`):** PI-15 (las pruebas cuentan para el tope), PI-16 (en prueba, el widget ya funciona en sus dominios) y PI-17 (pausado: ni probar el chat ni citas a mano desde el panel).
+
 **Siguen abiertas y no bloquean la fase:** PD-07 (nombre del producto), PD-08 (piloto), PD-11 (RGPD y retención) y PW-17 (qué muestra el círculo si un negocio no tiene logo). En la Fase 4 **no se borra nada** de conversaciones: la retención se decide con PD-11.
 
 ---
