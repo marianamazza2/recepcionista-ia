@@ -202,7 +202,8 @@ npm run agent:eval -- --ver       # con la conversación entera
 ```
 
 Cada uno imprime OK o FALLA y al final el coste total. Usan clientas de prueba
-(`+34999…`) que se borran al empezar y al terminar.
+(`+34998…`, otro prefijo que el de los tests, para poder correrlos a la vez)
+que se borran al empezar y al terminar.
 
 ### Cómo funciona por dentro
 

@@ -34,7 +34,8 @@ más. Correla si tocás el widget, la API o la demo.
    - contra **Estética Aurora** solo se escribe con clientas de test
      (teléfono **`+34999…`**, `telefonoDeTest()` / `createTestCustomer()`),
      y `deleteTestCustomers()` las borra al empezar y al terminar (también
-     restos de ejecuciones anteriores);
+     restos de ejecuciones anteriores). `npm run agent:eval` usa otro
+     prefijo (`+34998…`) para que un `npm test` a la vez no le borre nada;
    - **fechas fijas de 2030** y reloj inyectado (`now: () => AHORA`), nunca
      el día de hoy;
    - lo que escribe consumo (`usage_events`) se borra **antes** que su

@@ -6,7 +6,7 @@
 //   npm run agent:eval -- --ver        # además, la conversación entera
 //
 // Cada escenario conversa con el agente de Estética Aurora con una clienta de
-// prueba (+34999…), comprueba el resultado en la base o en el texto e imprime
+// prueba (+34998…), comprueba el resultado en la base o en el texto e imprime
 // OK o FALLA. Al final, el coste total. Cuesta unos céntimos.
 //
 // Las fechas se calculan desde hoy (siempre en el futuro y fuera de festivos).
@@ -29,7 +29,10 @@ import { fechaLarga, localToUtc, sumarDias, utcToLocal, weekdayDe } from '../cor
 import { createSql } from '../db/client.js';
 import { createConversation, type UsageDetalle } from '../db/conversations.js';
 
-const PREFIJO_TEST = '+34999';
+// Distinto del de los tests (+34999…, tests/helpers/fixtures.ts): los tests
+// borran sus clientas al terminar, y con el mismo prefijo un `npm test`
+// corriendo a la vez borraba la conversación de un escenario a medias.
+const PREFIJO_TEST = '+34998';
 const VERDE = '\x1b[32m';
 const ROJO = '\x1b[31m';
 const GRIS = '\x1b[90m';

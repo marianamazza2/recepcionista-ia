@@ -13,3 +13,4 @@ dist/
 
 # Documentación interna (solo en local, no se sube)
 docs/
+.vercel

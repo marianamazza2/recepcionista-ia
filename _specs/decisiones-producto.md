@@ -550,8 +550,9 @@ las claves van en las variables del proyecto, nunca en el repo.
   (PW-05) y el tope mensual de Aurora (PW-04, 100 US$; se puede bajar).
 - El SMS sigue siendo de prueba (PW-07): sale en los logs de Vercel, no le
   llega a nadie.
-- **Abierto:** el plan de Vercel. El gratuito (Hobby) es para uso personal y no
-  comercial; si la demo se usa para vender, probablemente toque el Pro.
+- **El plan de Vercel:** de momento, el que ya tiene Mariana (20/10/2026). El
+  gratuito (Hobby) es para uso personal y no comercial: si la demo se usa para
+  vender, se revisa (el Pro).
 
 ---
 
