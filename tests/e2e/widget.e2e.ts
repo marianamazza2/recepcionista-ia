@@ -43,7 +43,9 @@ let inicio: Date;
 
 let servidores: Awaited<ReturnType<typeof iniciarServidores>>;
 let navegador: Browser;
-const puertoApi = 3900 + Math.floor(Math.random() * 50);
+// API en 3800–3849 y demo en 3900–3949: fuera de los puertos que Chrome
+// bloquea (ERR_UNSAFE_PORT; con 3900+ la demo podía caer en el 4045).
+const puertoApi = 3800 + Math.floor(Math.random() * 50);
 /** Contra la nube cada mensaje hace varias consultas a Frankfurt: se espera con margen. */
 const ESPERA = { timeout: 30_000 };
 
@@ -111,12 +113,17 @@ describe('la demo en el navegador', () => {
     await abrirWidget(pagina);
     expect(await widget(pagina, '.cabecera h2').textContent()).toBe('Estética Aurora');
     expect(await widget(pagina, '.aviso').textContent()).toBe(
-      'Asistente virtual. Al escribir aceptas la política de privacidad de Estética Aurora.',
+      'Soy la asistente virtual de Estética Aurora, al escribir aceptas nuestra política de privacidad.',
     );
     // La de la base: en la nube apunta a la demo publicada (PW-08).
     const [n] = await sql<{ url: string }[]>`select privacidad_url as url from public.businesses where id = ${AURORA.businessId}`;
     expect(await widget(pagina, '.aviso a').getAttribute('href')).toBe(n!.url);
+    expect(await widget(pagina, '.aviso a').getAttribute('target')).toBe('_blank');
     expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Estética Aurora');
+    // PW-17: el círculo de la cabecera con su logo (o, si no tiene, la inicial).
+    const [l] = await sql<{ logo: string | null }[]>`select widget_logo as logo from public.businesses where id = ${AURORA.businessId}`;
+    if (l!.logo) expect(await widget(pagina, '.cabecera .logo img').getAttribute('src')).toBe(l!.logo);
+    else expect(await widget(pagina, '.cabecera .logo').textContent()).toBe('E');
   });
 
   it('se escribe, responde y acaba con una cita real en la base y su SMS de prueba', async () => {
@@ -182,5 +189,17 @@ describe('la demo en el navegador', () => {
     await expect.poll(() => fallidas.length, ESPERA).toBe(1);
     await p.waitForLoadState('networkidle');
     expect(await p.locator('[data-recepcionista-widget]').count()).toBe(0);
+  });
+
+  it('pasadas 2 h, al volver avisa de que terminó y empieza otra (PW-03, PW-12)', async () => {
+    const token = await guardarToken(pagina);
+    await sql`update public.conversations set ultimo_mensaje_at = now() - interval '2 hours 1 minute'
+               where session_token_hash = ${sha256(token!)}`;
+    await abrirWidget(pagina);
+    await expect.poll(() => widget(pagina, '.m.sistema').textContent(), ESPERA).toBe(
+      'Tu conversación anterior ha terminado. Empezamos una nueva.',
+    );
+    expect(await widget(pagina, '.m.clienta').count()).toBe(0);
+    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Estética Aurora');
   });
 });

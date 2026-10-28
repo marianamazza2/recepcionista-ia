@@ -6,7 +6,7 @@
 //   · Sesiones: el navegador guarda un token aleatorio; la base, solo su
 //     SHA-256 (conversations.session_token_hash). Una conversación se encuentra
 //     por (negocio, hash del token) y solo si su último mensaje es de las
-//     últimas 24 h (PW-03). El id de la conversación nunca viaja solo.
+//     últimas 2 h (PW-03, PW-12). El id de la conversación nunca viaja solo.
 //   · Lock por conversación: dos mensajes de la misma conversación se procesan
 //     de uno en uno (el historial es solo-añadir, D-45).
 //   · Lo que hace falta para idempotencia, límites e historial.
@@ -25,6 +25,8 @@ export interface WidgetBusiness {
   widgetKey: string;
   dominios: string[];
   color: string;
+  /** PW-17: data URL del logo o null. */
+  logo: string | null;
   privacidadUrl: string | null;
   mensajeBienvenida: string | null;
   telefonoHumano: string | null;
@@ -38,6 +40,7 @@ interface WidgetBusinessRow {
   widget_key: string;
   widget_dominios: string[];
   widget_color: string;
+  widget_logo: string | null;
   privacidad_url: string | null;
   mensaje_bienvenida: string | null;
   telefono_humano: string | null;
@@ -47,7 +50,7 @@ interface WidgetBusinessRow {
 /** El negocio de esa clave, si existe y atiende (activo o trial). */
 export async function businessByWidgetKey(sql: Sql, key: string): Promise<WidgetBusiness | null> {
   const [b] = await sql<WidgetBusinessRow[]>`
-    select id, nombre, timezone, widget_key, widget_dominios, widget_color, privacidad_url,
+    select id, nombre, timezone, widget_key, widget_dominios, widget_color, widget_logo, privacidad_url,
            mensaje_bienvenida, telefono_humano, tope_mensual_usd
       from public.businesses
      where widget_key = ${key} and estado in ('activo', 'trial')`;
@@ -59,6 +62,7 @@ export async function businessByWidgetKey(sql: Sql, key: string): Promise<Widget
     widgetKey: b.widget_key,
     dominios: b.widget_dominios,
     color: b.widget_color,
+    logo: b.widget_logo,
     privacidadUrl: b.privacidad_url,
     mensajeBienvenida: b.mensaje_bienvenida,
     telefonoHumano: b.telefono_humano,

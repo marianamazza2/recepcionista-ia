@@ -7,7 +7,9 @@ controlamos. Qué hace y cómo se usa: [`README.md`](README.md).
 
 1. **Cero dependencias de ejecución.** Nada de React, ni librerías, ni
    fuentes o imágenes externas. Todo sale en un solo `widget.js` (esbuild,
-   `iife`, `es2020`). Vigilá el tamaño que imprime el build.
+   `iife`, `es2020`). Vigilá el tamaño que imprime el build. El logo del
+   negocio (PW-17) tampoco se pide a otra web: llega dentro de la config como
+   data URL, y el widget solo acepta `data:image/…`.
 2. **Shadow DOM** para todo: los estilos de la web no lo rompen y los suyos no
    tocan la web. Nada de CSS ni de nodos fuera de su raíz, salvo el host.
 3. **Una sola instancia** por página (`__recepcionistaWidget`), y si falta la
@@ -28,6 +30,9 @@ controlamos. Qué hace y cómo se usa: [`README.md`](README.md).
 10. **`dist/` es generado**: no se edita a mano; se regenera con el build.
 11. Tiene su propio `tsconfig.json` (navegador). El `tsconfig` raíz no lo
     incluye: comprobá los tipos con `npx tsc -p widget`.
+12. **Lo que se quiera testear sin navegador va en su propio módulo** (como
+    `src/saludo.ts`, PW-02): `widget.ts` se monta al importarse y no se puede
+    cargar desde Vitest. El build lo junta todo en el mismo `widget.js`.
 
 ## Si cambiás algo de acá
 

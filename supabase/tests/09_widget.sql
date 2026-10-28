@@ -3,7 +3,7 @@
 -- =============================================================================
 -- Columnas nuevas de businesses, conversations y usage_events, y las tablas
 -- appointment_links y sms_messages: valores de serie, restricciones,
--- integridad entre negocios y RLS.
+-- integridad entre negocios y RLS. Y el logo del widget (PW-17, 28/10/2026).
 -- =============================================================================
 
 \set ON_ERROR_STOP on
@@ -72,6 +72,42 @@ select test.throws(
 select test.throws(
   $q$update public.businesses set tope_mensual_usd = -1 where id = '99999999-9999-4999-8999-000000000001'$q$,
   '23514', 'el tope no puede ser negativo'
+);
+
+-- --- businesses: logo del widget (PW-17) --------------------------------------
+select test.ok(
+  (select widget_logo is null from public.businesses where id = '99999999-9999-4999-8999-000000000001'),
+  'PW-17: de serie, sin logo (el widget muestra la inicial)'
+);
+
+select test.succeeds(
+  $q$update public.businesses set widget_logo = 'data:image/png;base64,iVBORw0KGgo='
+      where id = '99999999-9999-4999-8999-000000000001'$q$,
+  'PW-17: acepta un logo como data URL en base64'
+);
+
+select test.succeeds(
+  $q$update public.businesses set widget_logo = 'data:image/svg+xml;base64,PHN2Zy8+'
+      where id = '99999999-9999-4999-8999-000000000001'$q$,
+  'PW-17: también en SVG'
+);
+
+select test.throws(
+  $q$update public.businesses set widget_logo = 'https://esteticaaurora.es/logo.png'
+      where id = '99999999-9999-4999-8999-000000000001'$q$,
+  '23514', 'PW-17: el logo no puede ser un enlace a otra web'
+);
+
+select test.throws(
+  $q$update public.businesses set widget_logo = 'data:text/html;base64,PHNjcmlwdD4='
+      where id = '99999999-9999-4999-8999-000000000001'$q$,
+  '23514', 'PW-17: solo imágenes'
+);
+
+select test.throws(
+  $q$update public.businesses set widget_logo = 'data:image/png;base64,' || repeat('A', 200000)
+      where id = '99999999-9999-4999-8999-000000000001'$q$,
+  '23514', 'PW-17: como mucho 200.000 caracteres'
 );
 
 -- --- conversations: token de sesión -------------------------------------------

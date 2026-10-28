@@ -36,7 +36,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
 
-Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: ⚠️ por confirmar, salvo PW-08 y PW-10 (✅ decididas el 20/10/2026).
+Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
 ---
 
@@ -455,7 +455,7 @@ intentos o algo falla.
 
 ---
 
-## El widget web (Fase 3) · ⚠️ POR CONFIRMAR
+## El widget web (Fase 3) · ✅ DECIDIDAS
 
 Aparecieron al escribir el spec de la Fase 3 (`fase-3-widget-web.md`), el
 16/10/2026. Son **propuestas**: Mariana tiene que confirmarlas o cambiarlas
@@ -463,16 +463,16 @@ antes de lanzar la fase.
 
 | # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
-| PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ⚠️ por confirmar |
-| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Asistente virtual. Al escribir aceptas la política de privacidad de {negocio}", con enlace | URL de su política de privacidad | ⚠️ por confirmar |
-| PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **24 h**, la retoma; después, conversación nueva | — | ⚠️ por confirmar |
-| PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ⚠️ por confirmar |
-| PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ⚠️ por confirmar |
-| PW-06 | Dónde puede ir el widget | Solo en los **dominios que indique el negocio** | Lista de dominios | ⚠️ por confirmar |
-| PW-07 | SMS de confirmación (PA-09) | En la Fase 3 se construye todo **menos el envío real** (proveedor de prueba). La página del enlace muestra la cita y permite **cancelarla**; para cambiarla, remite al chat o al teléfono | — | ⚠️ por confirmar |
+| PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ✅ decidida 28/10/2026 |
+| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora | URL de su política de privacidad | ✅ decidida 28/10/2026 |
+| PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **2 h**, la retoma; después, conversación nueva | — | ✅ decidida 28/10/2026 |
+| PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ✅ decidida 28/10/2026 |
+| PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ✅ decidida 28/10/2026 |
+| PW-06 | Dónde puede ir el widget | Solo en los **dominios que indique el negocio** | Lista de dominios | ✅ decidida 28/10/2026 |
+| PW-07 | SMS de confirmación (PA-09) | En la Fase 3 se construye todo **menos el envío real** (proveedor de prueba). La página del enlace muestra la cita y permite **cancelarla**; para cambiarla, remite al chat o al teléfono | — | ✅ decidida 28/10/2026 |
 | PW-08 | La demo pública | Se publica en **Vercel** contra el Supabase de la nube, con dos dominios (la web de la demo y el servidor del widget) | — | ✅ decidida 20/10/2026 |
 
-### PW-01 · Marca del widget
+### PW-01 · Marca del widget · ✅ decidida el 28/10/2026
 
 La burbuja y la cabecera del chat llevan **el nombre y el color del negocio**:
 para la clienta, está hablando con "Estética Aurora", no con un producto. Como
@@ -480,7 +480,10 @@ el nombre del producto (PD-07) todavía no existe, no aparece. Cuando exista,
 la propuesta es como mucho un "Funciona con …" pequeño al pie, que también es
 publicidad gratuita.
 
-### PW-02 · Aviso de privacidad
+**Decisión (Mariana, 28/10/2026):** solo la marca del negocio. El "Funciona
+con …" se decide cuando exista el nombre del producto.
+
+### PW-02 · Aviso de privacidad · ✅ decidida el 28/10/2026
 
 Antes de que la clienta escriba, una línea fija: *"Asistente virtual. Al
 escribir aceptas la política de privacidad de {negocio}"*, con enlace a la
@@ -489,35 +492,70 @@ política del negocio si la tiene. Cumple dos cosas: avisar de que es una IA
 **No sustituye a PD-11** (contrato de encargado, base legal para datos de
 salud): eso sigue pendiente antes del primer cliente sanitario.
 
-### PW-03 · Cuánto dura la conversación en el navegador
+**Decisión (Mariana, 28/10/2026):** el aviso es obligatorio, pero en el tono
+más humano posible: *"Soy la asistente virtual de {negocio}, al escribir
+aceptas nuestra política de privacidad."* (texto ajustado por Mariana el mismo
+día; "la asistente", como en la bienvenida). "política de privacidad" es un enlace a la del negocio, que abre en una
+pestaña nueva. Y la bienvenida **saluda según la
+hora** de quien escribe: si el mensaje de bienvenida del negocio empieza por
+"¡Hola!", el widget lo convierte en "¡Hola, buenos días!" (de 6 a 14),
+"¡Hola, buenas tardes!" (de 14 a 21) o "¡Hola, buenas noches!".
 
-Si la clienta cierra la web y vuelve **antes de 24 horas**, ve sus mensajes y
+### PW-03 · Cuánto dura la conversación en el navegador · ✅ decidida el 28/10/2026
+
+Si la clienta cierra la web y vuelve **antes de 2 horas**, ve sus mensajes y
 sigue donde estaba. Después, empieza una conversación nueva (el agente la
 reconoce igual cuando da su teléfono). Una conversación solo la ve **el
 navegador que la empezó**.
 
-### PW-04 · Tope mensual por negocio
+**Decisión (Mariana, 28/10/2026):** 2 horas como máximo (la propuesta era
+24 h). Pedir una cita lleva minutos, y en un dispositivo compartido (la tablet
+de casa, el ordenador de una recepción) la siguiente persona no debe ver el
+nombre ni el teléfono de la anterior al día siguiente. Pesa más con clínicas,
+por los datos de salud (PD-11).
+
+### PW-04 · Tope mensual por negocio · ✅ decidida el 28/10/2026
 
 Para que un negocio con un uso raro (o un ataque) no se coma el margen. De
-serie **100 US$ al mes** de coste del agente, que con Opus 5 son unas 2.000
-conversaciones (≈ 0,05 US$ cada una). Al llegar al tope, el widget responde con
-un mensaje fijo con el teléfono del local, sin llamar a la IA. Al 80 %, aviso en
-el informe de consumo para que Mariana hable con el negocio (o suba el tope).
+serie **100 US$ al mes** de coste del agente. Al llegar al tope, el widget
+responde con un mensaje fijo con el teléfono del local, sin llamar a la IA. Al
+80 %, aviso en el informe de consumo para que Mariana hable con el negocio (o
+suba el tope).
 
-### PW-05 · Límites anti-abuso
+**Lo que cuesta de verdad (pruebas del 20 y el 28/10/2026, Opus 5):** el primer
+mensaje tras ~5 min sin nadie escribiendo cuesta ~0,06 US$ (la IA vuelve a leer
+las reglas del negocio); los siguientes, 0,007–0,025 US$. Una reserva completa
+salió en **0,10–0,16 US$**; con la IA "caliente" (escenarios seguidos), ~0,03.
+Un negocio pequeño, con conversaciones sueltas, estará en **0,10–0,15 US$ por
+conversación**: 10 al día ≈ 30–45 US$/mes, y 100 US$ ≈ 700–1.000
+conversaciones al mes. La estimación inicial (≈ 0,05, unas 2.000) era
+optimista para negocios pequeños.
+
+**Decisión (Mariana, 28/10/2026):** de serie 100 US$ como freno de seguridad,
+y **el tope de cada negocio se habla con el cliente** al contratar, según su
+plan y lo que se espera que use. Está también en "Costes y cosas a vigilar".
+
+### PW-05 · Límites anti-abuso · ✅ decidida el 28/10/2026
 
 El widget está en una web pública: cualquiera puede escribirle. Límites de
 serie: mensajes de hasta 1.000 caracteres, 20 mensajes por conversación y hora,
 y 10 conversaciones nuevas por hora desde la misma conexión. Una clienta normal
 no llega nunca. Al pasarse, un mensaje fijo amable con el teléfono del local.
 
-### PW-06 · Dónde puede ir el widget
+**Decisión (Mariana, 28/10/2026):** sí, con estos números. Comprobar además
+que quien escribe no es un bot queda como propuesta aparte (PW-16).
+
+### PW-06 · Dónde puede ir el widget · ✅ decidida el 28/10/2026
 
 Cada negocio dice en qué web(s) lo pega (por ejemplo `esteticaaurora.es`). El
 widget solo funciona ahí: si alguien copia el código en otra web, no carga. Es
 una pregunta más del cuestionario de alta.
 
-### PW-07 · SMS de confirmación (PA-09)
+**Decisión (Mariana, 28/10/2026):** sí. Es una regla **solo del widget web**
+(en qué webs aparece la burbuja); los demás canales, como WhatsApp (Fase 8),
+tendrán las suyas.
+
+### PW-07 · SMS de confirmación (PA-09) · ✅ decidida el 28/10/2026
 
 PA-09 decidió que al reservar llega un SMS con un enlace para cancelar o
 cambiar la cita. Enviar SMS de verdad pide **contratar un proveedor** (Twilio u
@@ -556,7 +594,7 @@ las claves van en las variables del proyecto, nunca en el repo.
 
 ---
 
-## Al construir el widget (Fase 3) · ⚠️ POR CONFIRMAR
+## Al construir el widget (Fase 3) · ✅ DECIDIDAS
 
 Aparecieron al implementar la Fase 3. **Ya funcionan así** con la propuesta de
 serie (para poder probar la demo), pero son decisiones de Mariana: si alguna
@@ -564,15 +602,17 @@ cambia, se ajusta el código.
 
 | # | Tema | Propuesta de serie (lo que hace ahora) | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
-| PW-09 | SMS al mover una cita | **Sí**: llega el mismo SMS de confirmación con la hora nueva y un enlace nuevo | — | ⚠️ por confirmar |
+| PW-09 | SMS al mover una cita | **Sí**: llega el mismo SMS de confirmación con la hora nueva y un enlace nuevo | — | ✅ decidida 28/10/2026 |
 | PW-10 | SMS al cancelar por el chat | **Sí**: un SMS corto de "cita cancelada", sin enlace (PA-09). Desde la página del enlace, no | — | ✅ decidida 20/10/2026 |
-| PW-11 | Color del widget si el negocio no elige | Un gris azulado neutro (`#4f6d7a`) | Sí (el color, PW-01) | ⚠️ por confirmar |
-| PW-12 | Desde cuándo cuentan las 24 h (PW-03) | Desde el **último mensaje** de la conversación | — | ⚠️ por confirmar |
-| PW-13 | Las 10 conversaciones por conexión (PW-05) | Se cuentan **por negocio** | — | ⚠️ por confirmar |
-| PW-14 | Textos fijos del widget | Los de abajo, con el teléfono del local | — | ⚠️ por confirmar |
-| PW-15 | Cancelar desde la página del SMS | Pide un **"¿Seguro?"** antes de cancelar | — | ⚠️ por confirmar |
+| PW-11 | Color del widget si el negocio no elige | Un gris azulado neutro (`#4f6d7a`) | Sí (el color, PW-01) | ✅ decidida 28/10/2026 |
+| PW-12 | Desde cuándo cuentan las 2 h (PW-03) | Desde el **último mensaje** de la conversación; al caducar, el widget lo avisa | — | ✅ decidida 28/10/2026 |
+| PW-13 | Las 10 conversaciones por conexión (PW-05) | Se cuentan **por negocio** | — | ✅ decidida 28/10/2026 |
+| PW-14 | Textos fijos del widget | Los de abajo, con el teléfono del local | — | ✅ decidida 28/10/2026 |
+| PW-15 | Cancelar desde la página del SMS | Pide un **"¿Seguro?"** antes de cancelar | — | ✅ decidida 28/10/2026 |
+| PW-17 | Logo del negocio en el widget | Un **círculo antes del nombre** en la cabecera del chat, con su logo o isotipo. Sin logo: la **inicial** del nombre | Sí (el logo) | ✅ decidida 28/10/2026 (lo de la inicial, ⚠️ por confirmar) |
+| PW-16 | Comprobar que no es un bot | Todavía no: si se ven abusos, comprobación invisible (Cloudflare Turnstile) | — | ✅ decidida 28/10/2026 |
 
-### PW-09 · SMS al mover una cita
+### PW-09 · SMS al mover una cita · ✅ decidida el 28/10/2026
 
 Al mover una cita, en la base la cita "nueva hora" es otra fila, así que el
 enlace del SMS anterior pasa a mostrar la cita vieja como cancelada. Para que
@@ -595,26 +635,30 @@ tu cita del {día} a las {hora} se ha cancelado. Si no fuiste tú, llama al
 SMS más por cancelación. Al cancelar desde la propia página del SMS no se manda
 (ya lo está viendo), y si la cita ya estaba cancelada tampoco.
 
-### PW-11 · Color del widget si el negocio no elige
+### PW-11 · Color del widget si el negocio no elige · ✅ decidida el 28/10/2026
 
 Un gris azulado neutro (`#4f6d7a`), que no parece la marca de nadie. El texto
 encima (blanco o casi negro) lo elige el widget solo, según el color, para que
 se lea bien. Para Estética Aurora la demo usa un rosa empolvado (`#8a5a63`).
 
-### PW-12 · Desde cuándo cuentan las 24 h (PW-03)
+### PW-12 · Desde cuándo cuentan las 2 h (PW-03) · ✅ decidida el 28/10/2026
 
-Desde el **último mensaje**, no desde que empezó: una clienta que escribió ayer
-a las 20:00 y vuelve hoy a las 19:00 la retoma, aunque la conversación empezara
-antes. Mirar el historial no cuenta como mensaje.
+Desde el **último mensaje**, no desde que empezó: con 2 h (PW-03), una clienta
+que escribió a las 10:00 y otra vez a las 11:30 la retoma hasta las 13:30.
+Mirar el historial no cuenta como mensaje.
 
-### PW-13 · Las 10 conversaciones por conexión (PW-05)
+**Decisión (Mariana, 28/10/2026):** sí, y cuando caduca el widget lo dice: *"Tu
+conversación anterior ha terminado. Empezamos una nueva."* (al volver a abrir
+el chat, o si caduca con el chat abierto y escribe otra vez).
+
+### PW-13 · Las 10 conversaciones por conexión (PW-05) · ✅ decidida el 28/10/2026
 
 Se cuentan **por negocio**: si desde la misma conexión (por ejemplo, la wifi de
 un centro comercial) se abren conversaciones en dos webs distintas, cada una
 lleva su cuenta. La IP no se guarda: solo un resumen cifrado que no permite
 recuperarla.
 
-### PW-14 · Textos fijos del widget
+### PW-14 · Textos fijos del widget · ✅ decidida el 28/10/2026
 
 Cuando responde el código y no la IA. *{tel}* es el teléfono del local:
 
@@ -627,17 +671,55 @@ Cuando responde el código y no la IA. *{tel}* es el teléfono del local:
 | Dos mensajes a la vez | "Sigo con tu mensaje anterior. Espera un momento y vuelve a enviarlo." |
 | Falla algo | "Perdona, ha habido un problema y no he podido responderte. Inténtalo de nuevo en un momento o llama al {tel}." |
 | Tarda más de 60 s (en el widget) | "Está tardando más de lo normal o se ha cortado la conexión." + botón **Reintentar** |
+| La conversación caducó (PW-12, en el widget) | "Tu conversación anterior ha terminado. Empezamos una nueva." |
 
 El del tope no dice que hay un tope: para la clienta, simplemente hoy se pide
 por teléfono.
 
-### PW-15 · Cancelar desde la página del SMS
+### PW-15 · Cancelar desde la página del SMS · ✅ decidida el 28/10/2026
 
 Como PA-01 en el chat (confirmar antes de cancelar): la página muestra la cita
 y un botón **"Cancelar la cita"**; al pulsarlo pregunta *"¿Seguro que quieres
 cancelar tu cita?"*, con la política de cancelación del negocio, y solo con
 **"Sí, cancelar la cita"** se cancela. Además evita que una app que abre el
 enlace para previsualizarlo cancele sin querer.
+
+### PW-16 · Comprobar que no es un bot · ✅ decidida el 28/10/2026
+
+Apareció al confirmar PW-05 (28/10/2026): ¿hay otra forma de frenar a los bots
+además de los límites? Sí, y se puede sumar sin molestar a la clienta:
+
+- **Comprobación invisible** (por ejemplo, Cloudflare Turnstile, gratis): el
+  navegador resuelve una prueba en segundo plano antes del primer mensaje; una
+  persona no ve nada y un bot simple no pasa. Hay que dar de alta una cuenta
+  de Cloudflare y es un servicio externo más (sin datos de la clienta).
+- **Campo trampa**: un campo oculto que solo rellenan los bots. Muy simple,
+  pero solo para bots torpes.
+
+*Propuesta:* no hacerlo todavía. Los límites (PW-05) y el tope (PW-04) ya
+acotan el gasto; si en la demo publicada o con el primer cliente se ven abusos
+en el informe de consumo, se añade la comprobación invisible. Sería trabajo de
+una fase posterior y necesita el visto bueno de Mariana (servicio externo).
+
+**Decisión (Mariana, 28/10/2026):** sí, como se propone: todavía no; se
+añade si se ven abusos.
+
+### PW-17 · Logo del negocio en el widget · ✅ decidida el 28/10/2026
+
+**Decisión (Mariana, 28/10/2026):** en la cabecera del chat, antes del nombre
+del negocio, un **círculo con su logo o isotipo**, para que se vea aún más
+suyo (PW-01). Es un ajuste por negocio más: el cuestionario de alta pide el
+logo (mejor cuadrado, PNG, SVG o JPG, hasta ~150 KB).
+
+- El logo se guarda **en la base**, no como enlace a la web del negocio: así
+  el chat no carga nada de otra web (más rápido, y sin que esa web sepa quién
+  abre el chat).
+- El círculo va en blanco, para que cualquier logo se vea bien sobre el color
+  del negocio.
+- *Propuesta, ⚠️ por confirmar:* **sin logo**, el círculo muestra la
+  **inicial** del nombre ("E" de Estética Aurora) en el color del negocio.
+  Alternativa: sin logo, no hay círculo.
+- Para Estética Aurora la demo usa un isotipo inventado (un sol que asoma).
 
 **Dominios (detalle de PW-06):** se compara el dominio exacto. `esteticaaurora.es`
 y `www.esteticaaurora.es` son dos entradas: el cuestionario de alta pide los

@@ -15,12 +15,13 @@ igual en el servidor local (`src/dev/server.ts`) y en la función de Vercel (`sr
 
 ### `GET /api/widget/config?key=wk_…`
 
-Lo público del negocio para pintar el widget (PW-01, PW-02). Nada más: ni ids,
-ni ajustes internos, ni tope.
+Lo público del negocio para pintar el widget (PW-01, PW-02, PW-17). Nada más:
+ni ids, ni ajustes internos, ni tope. `logo` es la imagen entera como data URL
+(hasta ~150 KB): el widget no la pide a ninguna otra web.
 
 ```json
-{ "nombre": "…", "color": "#…", "bienvenida": "…|null",
-  "aviso": { "texto": "Asistente virtual. Al escribir aceptas…", "enlace": "https://…|null" },
+{ "nombre": "…", "color": "#…", "logo": "data:image/…;base64,…|null", "bienvenida": "…|null",
+  "aviso": { "texto": "Soy la asistente virtual de {negocio}, al escribir aceptas…", "enlace": "https://…|null" },
   "maxCaracteres": 1000 }
 ```
 
