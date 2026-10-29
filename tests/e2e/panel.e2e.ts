@@ -125,7 +125,7 @@ describe('el panel en el navegador', () => {
     await panel.getByRole('button', { name: 'Crear' }).click();
     await expect.poll(() => panel.locator('h1').textContent(), ESPERA).toBe(NOMBRE);
     negocioId = /negocios\/([0-9a-f-]{36})/.exec(panel.url())![1]!;
-    expect(await seccion('publicar').textContent()).toContain('Falta: un servicio activo');
+    expect(await seccion('publicar').getByRole('group', { name: 'Falta para activar' }).textContent()).toContain('Un servicio activo');
 
     await seccion('datos').getByLabel('Teléfono del local').fill('+34910000777');
     await seccion('datos').getByRole('button', { name: 'Guardar' }).click();
@@ -180,6 +180,10 @@ describe('el panel en el navegador', () => {
     // Y sigue visible con lo ya guardado (al volver a la ficha más tarde).
     expect(await propio.getByRole('note', { name: 'Aviso de horario' }).isVisible()).toBe(true);
     await propio.screenshot({ path: join(CAPTURAS, '1-aviso-pi18.png') });
+    // Y arriba, en "Publicar", junto a lo que falta: para revisar, sin impedir activar.
+    const revisar = panel.getByRole('group', { name: 'Para revisar' });
+    await expect.poll(() => revisar.textContent(), ESPERA).toContain('Nora trabaja fuera del horario del local: sábado 15:00–20:00');
+    await panel.locator('#publicar').screenshot({ path: join(CAPTURAS, '1-publicar.png') });
 
     await seccion('chat').getByLabel('Dominios donde aparece (uno por línea)').fill('localhost');
     const png = join(CAPTURAS, 'logo-grande.png');

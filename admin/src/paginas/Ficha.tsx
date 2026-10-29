@@ -3,7 +3,7 @@
 // =============================================================================
 // En el orden del cuestionario de alta: negocio, servicios, profesionales,
 // horarios, festivos, reglas, preguntas frecuentes y el chat en su web. Arriba,
-// "Publicar": lo que falta, activar/pausar (PI-03) y el código del widget
+// "Publicar": lo que falta y lo que conviene revisar (PI-03, PI-18), activar/pausar y el código del widget
 // (PI-09). En horarios: "Copiar a…" entre días y el aviso de PI-18 (horario
 // propio fuera del horario del local: tramos en ámbar, un aviso fijo debajo y
 // confirmación al guardar). Cada bloque se guarda por separado; la API devuelve el negocio
@@ -13,7 +13,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { api, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
-import { copiarDia, fueraDelLocal, LABORABLES, TODA_LA_SEMANA } from '../horario';
+import { avisosHorario, copiarDia, fueraDelLocal, LABORABLES, TODA_LA_SEMANA } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
 
@@ -69,13 +69,33 @@ function Campo({ etiqueta, children, ayuda }: { etiqueta: string; children: Reac
 const nada = (s: string) => (s.trim() === '' ? null : s);
 
 // -----------------------------------------------------------------------------
-// Publicar (PI-03, PI-09)
+// Publicar (PI-03, PI-09, PI-18)
 // -----------------------------------------------------------------------------
+
+/** Dónde se arregla cada cosa que falta (códigos de negocio_lo_que_falta, PI-03). */
+const SECCION_DE_FALTA: Record<string, string> = {
+  servicio: 'servicios',
+  profesional: 'profesionales',
+  horario: 'horarios',
+  telefono: 'datos',
+  dominio: 'chat',
+};
+
+function IrA({ seccion }: { seccion: string | undefined }) {
+  if (!seccion) return null;
+  return (
+    <button type="button" className="ml-1 text-xs underline opacity-80 hover:opacity-100" onClick={() => document.getElementById(seccion)?.scrollIntoView({ behavior: 'smooth' })}>
+      Ir
+    </button>
+  );
+}
 
 function Publicar({ negocio: n, poner }: Props) {
   const a = useAccion();
   const [copiado, setCopiado] = useState(false);
   const codigo = `<script src="${n.widgetJs}" data-key="${n.widgetKey}" async></script>`;
+  // PI-03 (lo que falta, bloquea "Activar") y PI-18 (avisos, no bloquean), juntos arriba.
+  const avisos = avisosHorario(n.horario, n.profesionales);
   const copiar = async () => {
     try {
       await navigator.clipboard.writeText(codigo);
@@ -88,12 +108,31 @@ function Publicar({ negocio: n, poner }: Props) {
   return (
     <Bloque id="publicar" titulo="Publicar">
       {n.loQueFalta.length > 0 ? (
-        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>Falta:</strong> {n.loQueFalta.map((f) => f.texto).join(' · ')}
-        </p>
+        <div role="group" aria-label="Falta para activar" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+          <p className="font-semibold">Falta para poder activarlo</p>
+          <ul className="mt-1 space-y-0.5">
+            {n.loQueFalta.map((f) => (
+              <li key={f.codigo}>
+                {f.texto.charAt(0).toUpperCase() + f.texto.slice(1)} <IrA seccion={SECCION_DE_FALTA[f.codigo]} />
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : (
         <p className="text-sm text-emerald-700">Tiene lo mínimo para atender.</p>
       )}
+      {avisos.length > 0 ? (
+        <div role="group" aria-label="Para revisar" className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <p className="font-semibold">Para revisar <span className="font-normal">(no impide activarlo)</span></p>
+          <ul className="mt-1 space-y-0.5">
+            {avisos.map((av) => (
+              <li key={av.nombre}>
+                {av.nombre} trabaja fuera del horario del local: {av.tramos.map((t) => `${SEMANA.find((d) => d.weekday === t.weekday)!.nombre.toLowerCase()} ${t.apertura}–${t.cierre}`).join(' · ')} <IrA seccion="horarios" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         {n.estado !== 'activo' ? (
           <button type="button" className="boton" disabled={a.ocupado || n.loQueFalta.length > 0} onClick={() => a.hacer(async () => poner(await api('POST', `negocios/${n.id}/activar`)), 'Negocio activado.')}>

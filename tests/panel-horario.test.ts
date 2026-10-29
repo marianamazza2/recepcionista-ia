@@ -1,9 +1,10 @@
-// Cuentas de horarios del panel (Fase 4 · 4.3): el aviso de PI-18 y "Copiar a…".
+// Cuentas de horarios del panel (Fase 4 · 4.3): el aviso de PI-18 (en el horario
+// y en el panel "Publicar" de arriba) y "Copiar a…".
 // Funciones puras de admin/src/horario.ts: sin base ni navegador.
 
 import { describe, expect, it } from 'vitest';
 
-import { copiarDia, fueraDelLocal, LABORABLES } from '../admin/src/horario.js';
+import { avisosHorario, copiarDia, fueraDelLocal, LABORABLES } from '../admin/src/horario.js';
 
 // Un local como Aurora: L–X partido, J tarde larga, V continuo, S solo mañana, D cerrado.
 const LOCAL = [
@@ -74,3 +75,30 @@ describe('Copiar a…', () => {
     expect(copiarDia(lunes, 1, [1])).toEqual(lunes);
   });
 });
+
+describe('PI-18 en el panel "Publicar": avisos por profesional', () => {
+  const local = LOCAL.map((t) => ({ ...t, staffId: null }));
+  const profesionales = [
+    { id: 'r', nombre: 'Rodrigo Gómez', activo: true },
+    { id: 'm', nombre: 'Maria Cervelles', activo: true },
+    { id: 'x', nombre: 'Baja', activo: false },
+  ];
+
+  it('lista solo a quien tiene tramos fuera, con esos tramos', () => {
+    const horario = [
+      ...local,
+      { staffId: 'r', weekday: 4, apertura: '10:00', cierre: '14:00' },
+      { staffId: 'r', weekday: 6, apertura: '15:00', cierre: '20:00' },
+      { staffId: 'm', weekday: 1, apertura: '09:00', cierre: '14:00' },
+    ];
+    expect(avisosHorario(horario, profesionales)).toEqual([
+      { nombre: 'Rodrigo Gómez', tramos: [{ staffId: 'r', weekday: 6, apertura: '15:00', cierre: '20:00' }] },
+    ]);
+  });
+
+  it('una profesional desactivada no avisa', () => {
+    const horario = [...local, { staffId: 'x', weekday: 0, apertura: '10:00', cierre: '12:00' }];
+    expect(avisosHorario(horario, profesionales)).toEqual([]);
+  });
+});
+

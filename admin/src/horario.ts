@@ -8,6 +8,8 @@
 //     local cierra). Se PERMITE guardarlos (PD-01: el horario propio manda ese
 //     día), pero el panel avisa y pide confirmación antes. No es una regla de
 //     la base: es un aviso para no equivocarse al cargarlo.
+//   · avisosHorario (PI-18): por cada profesional activa, sus tramos guardados
+//     fuera del horario del local, para el panel "Publicar" de arriba.
 //   · copiarDia: los tramos de un día, copiados a otros días (sustituyen los
 //     que tuvieran). Mejora de la interfaz, sin regla de negocio.
 //
@@ -43,6 +45,18 @@ export function fueraDelLocal<T extends TramoDia>(propios: T[], local: TramoDia[
     const delDia = local.filter((l) => l.weekday === p.weekday).map((l) => ({ desde: minutos(l.apertura), hasta: minutos(l.cierre) }));
     return quedaFuera(minutos(p.apertura), minutos(p.cierre), delDia);
   });
+}
+
+/** PI-18: las profesionales activas con tramos guardados fuera del horario del local. */
+export function avisosHorario<T extends TramoDia & { staffId: string | null }>(
+  horario: T[],
+  profesionales: { id: string; nombre: string; activo: boolean }[],
+): { nombre: string; tramos: T[] }[] {
+  const local = horario.filter((t) => t.staffId === null);
+  return profesionales
+    .filter((p) => p.activo)
+    .map((p) => ({ nombre: p.nombre, tramos: fueraDelLocal(horario.filter((t) => t.staffId === p.id), local) }))
+    .filter((a) => a.tramos.length > 0);
 }
 
 /** Copia los tramos del día `origen` a los días `destinos`, sustituyendo los que tuvieran. */
