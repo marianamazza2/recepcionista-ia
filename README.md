@@ -6,13 +6,23 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > **Reglas de negocio:** [`_specs/decisiones-producto.md`](_specs/decisiones-producto.md)
 > — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
 > cancelar o mover una cita. Las de las fases 0 a 2, decididas el 16/10/2026;
-> las del widget (PW-01 a PW-15), ⚠️ por confirmar.
+> las del widget (PW-01 a PW-17) y las del panel (PI-01 a PI-14), decididas el
+> 28/10/2026; las que aparecieron al construirlo y probarlo (PI-15 a PI-18), el 29/10/2026.
 >
 > **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 3 (canal widget web) terminada.** El agente de la Fase 2 ya
+**Estado: Fase 4 (panel interno) construida, a falta de que Mariana la
+revise y la publique.** Hay un **panel** (`admin/`, `npm run dev` →
+http://localhost:4312/panel/) donde se da de alta un negocio entero sin SQL
+(datos, servicios, profesionales, horarios, festivos, reglas, preguntas
+frecuentes y el chat en su web), se activa o se pausa, se copia el código del
+widget, se prueba el chat, se ven las conversaciones (con las herramientas que
+usó el agente), las derivaciones, la agenda (con citas a mano fuera de la
+rejilla, PR-04) y el consumo. Ver [Panel interno (Fase 4)](#panel-interno-fase-4).
+
+Fase 3 (canal widget web): el agente de la Fase 2 ya
 atiende **desde una web**: una burbuja de chat que el negocio pega con una
 línea, un endpoint que resuelve el negocio por la clave pública del widget, el
 registro de lo que consume cada negocio (con tope mensual) y el SMS de
@@ -35,19 +45,19 @@ reservas (Fase 1).
 
 ```
 supabase/
-├── migrations/          16 migraciones, versionadas y en orden de dependencias
+├── migrations/          17 migraciones, versionadas y en orden de dependencias
 ├── seed.sql             negocio de prueba "Estética Aurora"
-└── tests/               tests SQL de aserción (9 archivos, 179 aserciones)
+└── tests/               tests SQL de aserción (10 archivos, 224 aserciones)
 scripts/
 ├── run-sql-tests.sh     runner de los tests SQL
 └── con-supabase.sh      ejecutar un comando contra la nube
 src/
-├── api/                 FASE 3: las rutas HTTP (widget, chat, página de la cita)
+├── api/                 las rutas HTTP: widget, chat, página de la cita (Fase 3) y el panel en admin/ (Fase 4)
 ├── adapters/
 │   ├── booking/         BookingAdapter (maestro §7), SupabaseAdapter y errores tipados
 │   ├── channels/        web-widget.ts: sesión, idempotencia, límites, tope, consumo, SMS
 │   └── sms/             SmsProvider y el proveedor de prueba
-├── citas/               SMS de confirmación y de cancelación, y página del enlace (PW-07, PW-10)
+├── citas/               SMS de confirmación y de cancelación, página del enlace, agenda y citas a mano (PI-14)
 ├── config/business.ts   lo que el agente sabe de un negocio, leído de la base
 ├── core/                EL NÚCLEO (Fase 2). No se toca por cliente
 │   ├── agent.ts         el loop: tool use, historial, límites, derivar
@@ -57,15 +67,17 @@ src/
 │   ├── time.ts          hora local del negocio ↔ UTC (cambio de hora incluido)
 │   ├── phone.ts         teléfonos a formato +34…
 │   └── costes.ts        coste aproximado de las llamadas
-├── db/                  cliente, tenant, clientas, conversaciones, consumo, widget
-├── dev/                 npm run dev: el servidor local de la demo
+├── db/                  cliente, tenant, clientas, conversaciones, consumo, widget, negocios, visor, personas del panel
+├── dev/                 npm run dev: la demo y el panel en local
 └── cli/
     ├── chat.ts          npm run chat: conversar por la Terminal
-    ├── eval.ts          npm run agent:eval: los 12 escenarios con el modelo real
+    ├── eval.ts          npm run agent:eval: los 13 escenarios con el modelo real
     ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
+    ├── panel-cuenta.ts  npm run panel:cuenta: crear una cuenta del panel
     └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
 widget/                  el chat embebible (TypeScript sin dependencias)
-demo/                    la web inventada de Estética Aurora, con el widget pegado
+admin/                   el panel interno (React + Vite + Tailwind, Fase 4)
+demo/                    la web inventada de Estética Aurora, con el widget pegado, y prueba.html (cualquier negocio)
 tests/                   tests TypeScript (motor, herramientas, prompt, loop, widget…)
 ```
 
@@ -88,6 +100,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261016120600_lock_por_clienta` | PR-08: lock por clienta en `book_appointment`, para dos reservas simultáneas de la misma clienta |
 | `20261016130000_widget_web` | Fase 3: clave, dominios, color, privacidad y tope del widget en `businesses`; token de sesión (hash) e IP (hash) en `conversations`; `usage_events` en US$ y con su conversación; `appointment_links` y `sms_messages` |
 | `20261028100000_widget_logo` | Fase 3: `businesses.widget_logo`, el logo del círculo de la cabecera del widget como data URL (PW-17) |
+| `20261028120000_panel_interno` | Fase 4: `panel.personas` (quién entra al panel, PI-01), preguntas frecuentes en `knowledge_docs` con su límite (PI-08, `RA007`), `conversations.prueba` (PI-13), `escalations.resuelta_at` (PI-07), `negocio_lo_que_falta()` y no activar sin lo mínimo (PI-03, `RA008`), y el modo manual de `slot_es_valido`/`book_appointment` (PR-04, PI-14) |
 
 ### Las dos garantías que ya están puestas
 
@@ -159,6 +172,8 @@ el agente no tenga que conocer Postgres:
 | `RA004` | `BufferConflictError` | Pisa el margen de otra cita | Ofrecer otro hueco |
 | `RA005` | `NoStaffAvailableError` | Asignación automática sin nadie libre | Ofrecer otros huecos |
 | `RA006` | `CustomerBusyError` | La clienta ya tiene una cita que se pisa (PR-08) | Decir qué cita tiene; si quiere, mover o anular la anterior |
+| `RA007` | — (panel) | Más de 20 preguntas frecuentes o de 4.000 caracteres (PI-08) | El panel lo dice con palabras |
+| `RA008` | — (panel) | Activar un negocio al que le falta lo mínimo (PI-03) | El panel dice qué falta |
 | `23514` | `StaffDoesNotProvideServiceError` | La profesional no hace ese servicio | Proponer otra profesional |
 | `23503` | `InvalidReferenceError` | Algo no es de ese negocio o está inactivo | Error de programación: log y derivar |
 | `22023` | `InvalidRangeError` | Rango de fechas inválido o de más de 31 días | Error de programación |
@@ -197,7 +212,7 @@ psql "$DATABASE_URL" -c "select c.nombre, s.nombre as profesional,
 ### Los escenarios con el modelo real
 
 ```bash
-npm run agent:eval                # los 12 escenarios (≈ 0,36 US$ con Opus 5)
+npm run agent:eval                # los 13 escenarios (≈ 0,40 US$ con Opus 5)
 npm run agent:eval -- --solo 3    # solo uno
 npm run agent:eval -- --ver       # con la conversación entera
 ```
@@ -271,7 +286,9 @@ publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
 <script src="https://<nuestro-servidor>/widget.js" data-key="wk_CLAVE_DEL_NEGOCIO" async></script>
 ```
 
-Por negocio, en `businesses` (hasta la Fase 4, por SQL): `widget_key` (la
+Desde la Fase 4, todo esto se configura en el panel (bloque "El chat en su
+web" y "Publicar", que da el código listo para copiar). En la base, por
+negocio, en `businesses`: `widget_key` (la
 genera la base), `widget_dominios` (los hosts exactos de su web: con y sin
 `www.` son dos), `widget_color`, `widget_logo` (data URL de su logo, PW-17),
 `privacidad_url` y `tope_mensual_usd` (de
@@ -302,7 +319,58 @@ npm run consumo -- --negocio estetica-aurora --mes 2026-10
 
 Mensajes, conversaciones, citas, tokens y coste (US$) del mes, y el % del tope;
 avisa desde el 80 %. Cuenta lo que pasa por el widget (no las pruebas por la
-Terminal).
+Terminal); las de "Probar el chat" del panel, aparte. Lo mismo, para todos los
+negocios a la vez, en el panel → Consumo.
+
+---
+
+## Panel interno (Fase 4)
+
+La herramienta de Mariana (no la del cliente, que es la Fase 9). Spec:
+[`_specs/fase-4-panel-interno.md`](_specs/fase-4-panel-interno.md); reglas
+PI-01 a PI-18 en `decisiones-producto.md`; cómo está hecho en
+[`admin/README.md`](admin/README.md).
+
+### Crear tu cuenta (una vez)
+
+Las cuentas son de **Supabase Auth** del proyecto en la nube (sin Docker no hay
+Auth local) y, además, hay que estar en la lista `panel.personas` de la base
+(PI-01). No hay registro público.
+
+1. En `.env`: `SUPABASE_PROJECT_REF` y `SUPABASE_ANON_KEY` (ya estaban) y
+   `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API; solo la usa
+   este comando, nunca sale de tu máquina).
+2. En Supabase → Authentication → Sign In / Providers, desactivá **"Allow new
+   users to sign up"** (sin registro público).
+3. Crear la cuenta y darte acceso en la base local; la contraseña la pide la
+   Terminal sin mostrarla:
+
+   ```bash
+   npm run panel:cuenta -- --email tu@email
+   ```
+
+4. Para el panel publicado, lo mismo contra la nube (la cuenta ya existe: solo
+   comprueba la contraseña y te añade a la lista de esa base):
+
+   ```bash
+   ./scripts/con-supabase.sh npm run panel:cuenta -- --email tu@email
+   ```
+
+### Usarlo en local
+
+`npm run dev` y abrí **http://localhost:4312/panel/**. Además de la demo de
+Aurora, `http://localhost:4310/prueba.html?key=wk_…` es una web de prueba que
+carga el widget de **cualquier** negocio activo con `localhost` en sus
+dominios. El widget solo aparece con el negocio **activo** (PI-16): antes de
+activarlo, se prueba con "Probar el chat" del panel.
+
+### Publicarlo (solo con el visto bueno de Mariana, PI-02)
+
+Va en el mismo proyecto de Vercel, bajo `/panel/`: el build ya lo incluye.
+Falta: añadir en Vercel las variables `SUPABASE_PROJECT_REF` y
+`SUPABASE_ANON_KEY` (sin ellas el panel responde "no configurado") y, si se
+quiere una dirección propia, un tercer dominio y `PANEL_HOST` con ese dominio
+(su raíz lleva al panel).
 
 ---
 
@@ -369,11 +437,11 @@ Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
 `DATABASE_URL`. Los dos comandos la leen de ahí.
 
 ```bash
-npm run test:sql                    # tests SQL (9 archivos)
+npm run test:sql                    # tests SQL (10 archivos)
 ./scripts/run-sql-tests.sh 07       # solo uno
-npm test                            # tests TypeScript (136), el de concurrencia incluido
-npm run test:e2e                    # la demo en Google Chrome, con el modelo simulado
-npm run typecheck                   # comprobación de tipos (también la del widget)
+npm test                            # tests TypeScript (169), el de concurrencia incluido
+npm run test:e2e                    # la demo y el panel en Google Chrome, con el modelo simulado
+npm run typecheck                   # comprobación de tipos (también la del widget y la del panel)
 
 # Contra otra base, sin tocar .env:
 DATABASE_URL="postgresql://…" npm test
@@ -397,6 +465,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `07_disponibilidad.sql` | `available_slots`: tramo partido, cierre (PR-02 en sus dos modos), intervalo, festivo, ausencia, filtro por servicio, horario propio, margen, canceladas, antelación, cambio de hora, rango máximo |
 | `08_reserva_completa.sql` | `book_appointment`: cada motivo de rechazo con su código, asignación automática, `ultima_profesional`, que reserva y disponibilidad coincidan, y RLS |
 | `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS; el formato y el tamaño del logo (PW-17) |
+| `10_panel.sql` | Fase 4: `panel.personas` fuera de `public`, con RLS y sin política; preguntas frecuentes y su límite (RA007); conversación de prueba; derivación resuelta; lo que falta y no activar sin ello (RA008); citas a mano: sin rejilla ni antelación, pero nunca fuera de horario, en festivo, en una ausencia por horas, pisando otra cita o el margen |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -416,6 +485,9 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/cita-sms.test.ts` | El SMS de prueba al reservar (texto, enlace, sin token en la base), SMS fallido sin perder la cita, el SMS de cancelación por el chat (PW-10), la página del enlace (ver, cancelar en dos pasos, PR-07 en sus dos modos, enlace inventado o caducado) |
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
+| `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
+| `tests/panel-horario.test.ts` | Las cuentas de horarios del panel: qué tramos propios caen fuera del horario del local (PI-18) y "Copiar a…" entre días |
+| `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
 | `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
@@ -439,6 +511,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
 | Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
 | Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, isotipo inventado (`demo/aurora-isotipo.svg`), tope 100 US$ |
+| Preguntas frecuentes | Aparcamiento, formas de pago y bonos regalo (PI-08) |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
 
 Marta no hace láser y Lucía no hace corporal a propósito: obliga al agente a
@@ -452,7 +525,7 @@ elegir profesional según el servicio en vez de al azar.
 |---|---|
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Panel para cargar la configuración | 4 |
+| Publicar el panel en Vercel | cuando Mariana lo confirme (PI-02) |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |

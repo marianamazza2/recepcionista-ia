@@ -219,7 +219,8 @@ export class SupabaseAdapter implements BookingAdapter {
                p_start_at    => ${params.start}::timestamptz,
                p_notas       => ${params.notes ?? null}::text,
                p_origen      => ${params.origin ?? 'agente'}::public.appointment_origen,
-               p_external_id => ${params.externalId ?? null}::text)`;
+               p_external_id => ${params.externalId ?? null}::text,
+               p_manual      => ${params.manual ?? false}::boolean)`;
     if (!row) {
       throw new Error('book_appointment no devolvió ninguna fila');
     }

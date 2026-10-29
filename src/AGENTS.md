@@ -5,7 +5,7 @@ TypeScript sobre Node 22, ESM, sin framework. Las cuatro capas del maestro
 
 ```
 src/
-├── api/              CANAL (HTTP)   handlers (Request) => Response: widget, chat, página de la cita
+├── api/              CANAL (HTTP)   handlers (Request) => Response: widget, chat, página de la cita y el panel (admin/)
 ├── adapters/
 │   ├── channels/     CANAL          lo que pasa con un mensaje de cada canal (web-widget.ts)
 │   ├── booking/      ADAPTADORES    la agenda detrás de BookingAdapter (SupabaseAdapter)
@@ -13,9 +13,9 @@ src/
 ├── core/             NÚCLEO         el loop del agente, prompt, herramientas, guardrails. Igual para todos
 ├── config/           CONFIGURACIÓN  lo que el agente sabe de UN negocio, leído de la base
 ├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget
-├── citas/            SMS de confirmación y de cancelación, y página del enlace (PA-09, PW-07, PW-10)
-├── cli/              comandos de npm (chat, eval, consumo, build del widget)
-├── dev/              servidor local de la demo
+├── citas/            SMS de confirmación y de cancelación, página del enlace, agenda y citas a mano (PA-09, PW-07, PW-10, PI-14)
+├── cli/              comandos de npm (chat, eval, consumo, build del widget, cuenta del panel)
+├── dev/              servidor local de la demo y del panel, y la compilación del widget y del panel
 └── vercel/           la publicación en Vercel: la función (handler.ts) y el build (build.ts)
 ```
 
@@ -24,6 +24,8 @@ src/
 ```
 api → adapters/channels → core → config, db, adapters/booking
                        ↘ citas → core (time, tools/common, tools/reservas → plazo de PR-07), adapters/sms, db
+api/admin → db (negocios, visor, personas, usage), citas (manual), adapters/channels (probar el chat)
+citas/manual → adapters/booking (con manual: true), config, core (time, phone), db
 cli, dev, vercel → cualquiera
 ```
 
@@ -80,7 +82,9 @@ cli, dev, vercel → cualquiera
   programa ocupa el puerto en `::1`, el navegador iría a él sin avisar. No es
   código de producción: no metas lógica de negocio ahí. `dev/widget-build.ts`
   empaqueta el widget con esbuild (devDependency, igual que `playwright-core`
-  para la prueba en el navegador).
+  para la prueba en el navegador). Desde la Fase 4 hay un tercer origen, el
+  panel (:4312, `PANEL_PORT`): `dev/panel-build.ts` compila `admin/` con Vite
+  (devDependency, también) y lo vuelve a compilar al cambiar un archivo.
 
 ## Si cambiás algo de acá
 

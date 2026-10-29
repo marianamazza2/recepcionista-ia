@@ -102,14 +102,26 @@ describe('buildSystemPrompt', () => {
     expect(p).not.toContain('pregunta si la reservas. Llama a crear_reserva solo después');
   });
 
+  it('PI-08: las preguntas frecuentes van en los datos del negocio, en su orden y tal cual', () => {
+    const p = buildSystemPrompt(aurora);
+    expect(p).toContain('responde con su respuesta tal cual');
+    const a = p.indexOf('- P: ¿Hay aparcamiento cerca?');
+    const b = p.indexOf('- P: ¿Cómo se puede pagar?');
+    const c = p.indexOf('- P: ¿Tenéis bonos regalo?\n  R: Sí. Se compran en recepción y valen para cualquier servicio durante un año.');
+    expect(a).toBeGreaterThan(p.indexOf('# Datos del negocio'));
+    expect(a < b && b < c && c < p.indexOf('# Cuándo pasar con una persona')).toBe(true);
+    const sinPreguntas = buildSystemPrompt({ ...aurora, preguntasFrecuentes: [] });
+    expect(sinPreguntas).not.toContain('Preguntas frecuentes del negocio');
+  });
+
   it('no lleva fecha ni hora (rompería la caché)', () => {
     expect(buildSystemPrompt(aurora)).not.toMatch(/\b20\d\d\b/);
   });
 
   it('regla de oro: el código del núcleo no tiene datos de ningún negocio', () => {
-    for (const f of ['src/core/prompt.ts', 'src/core/agent.ts', 'src/core/guardrails.ts', 'src/core/tools/common.ts']) {
+    for (const f of ['src/core/prompt.ts', 'src/core/agent.ts', 'src/core/guardrails.ts', 'src/core/tools/common.ts', 'src/config/business.ts']) {
       const codigo = readFileSync(f, 'utf8');
-      for (const dato of ['Aurora', 'Marta', 'Lucía', 'Calle Mayor', '+3491']) {
+      for (const dato of ['Aurora', 'Marta', 'Lucía', 'Calle Mayor', '+3491', 'aparcamiento', 'Plaza de la Fuente', 'bonos regalo']) {
         expect(codigo, `${f} contiene "${dato}"`).not.toContain(dato);
       }
     }

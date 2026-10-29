@@ -47,6 +47,18 @@ describe('lo que se publica', () => {
     expect(readFileSync(join(out, 'static/privacidad.html'), 'utf8')).toContain('Política de privacidad');
   });
 
+  it('el panel (Fase 4) va en /panel/ con su CSP, y PANEL_HOST lleva su raíz al panel', async () => {
+    expect(readFileSync(join(out, 'static/panel/index.html'), 'utf8')).toContain('/panel/assets/');
+    const config = JSON.parse(readFileSync(join(out, 'config.json'), 'utf8')) as { routes: { src?: string; headers?: Record<string, string>; has?: unknown }[] };
+    const cabeceras = config.routes.find((r) => r.src === '^/panel/.*$')!.headers!;
+    expect(cabeceras['content-security-policy']).toContain("default-src 'self'");
+    expect(cabeceras['x-frame-options']).toBe('DENY');
+    expect(config.routes.some((r) => r.has)).toBe(false);
+    const conHost = await construirVercel({ apiUrl: API, panelHost: 'panel.example', outDir: join(out, '..', 'con-host') });
+    const r = (JSON.parse(readFileSync(join(conHost, 'config.json'), 'utf8')) as { routes: { has?: { value: string }[]; headers?: Record<string, string> }[] }).routes.find((x) => x.has)!;
+    expect(r).toMatchObject({ has: [{ type: 'host', value: 'panel.example' }], headers: { location: '/panel/' } });
+  }, 60_000);
+
   it('la función: Node 22, Frankfurt, 300 s; y las rutas /api y /cita van a ella', () => {
     expect(JSON.parse(readFileSync(join(out, 'functions/api.func/.vc-config.json'), 'utf8'))).toEqual({
       runtime: 'nodejs22.x',
@@ -79,5 +91,10 @@ describe('la función empaquetada', () => {
   it('un enlace de cita inventado da 404, y una ruta desconocida también', async () => {
     expect((await fetch(`${url}/cita/${'a'.repeat(22)}`)).status).toBe(404);
     expect((await fetch(`${url}/api/no-existe`)).status).toBe(404);
+  });
+
+  it('la API del panel está en la función y sin cuenta responde 401 (o 503 si no hay cuentas configuradas)', async () => {
+    const r = await fetch(`${url}/api/admin/negocios`);
+    expect([401, 503]).toContain(r.status);
   });
 });

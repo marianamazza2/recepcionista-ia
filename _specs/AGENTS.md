@@ -17,6 +17,7 @@ adapta a estos documentos, no al revés.
 | `PR-` | Reglas del motor de reservas | PR-07 cancelar dentro del plazo |
 | `PA-` | Cómo conversa el agente | PA-08 solo sus citas |
 | `PW-` | El widget web (Fase 3) | PW-06 dominios permitidos |
+| `PI-` | El panel interno (Fase 4) | PI-03 un negocio nuevo empieza en prueba |
 | `D-` / `T-` / `DT-` | Decisiones técnicas, trampas y deuda técnica | viven en `docs/DECISIONES.md` (local) |
 
 Cada regla distingue **regla del motor** (igual para todos) y **ajuste por
@@ -33,7 +34,9 @@ base, no constantes en el código.
   toma el siguiente libre de su prefijo.
 - **Al tocar una regla**, se actualiza también la tabla "Resumen" del
   principio de `decisiones-producto.md`.
-- **Los specs de fase se escriben antes de la fase**, con el mismo formato que
+- **Los specs de fase se escriben antes de la fase**, en la rama de esa fase
+  (un solo PR por fase, spec e implementación juntos: ver §3 del `AGENTS.md`
+  raíz), con el mismo formato que
   los existentes (copiá la estructura de `fase-3-widget-web.md`). Una vez
   cerrada la fase no se reescriben: lo que cambió se registra en
   `docs/DECISIONES.md`.

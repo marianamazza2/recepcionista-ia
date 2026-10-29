@@ -10,7 +10,10 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
 | `customers.ts` | Clientas: buscar y crear por teléfono (D-51) |
 | `conversations.ts` | Conversaciones, mensajes (historial solo-añadir) y derivaciones |
 | `usage.ts` | `usage_events`, coste del mes, tope e informe de consumo (US$) |
-| `widget.ts` | Negocio por clave del widget, sesiones por hash, lock por conversación, límites |
+| `widget.ts` | Negocio por clave del widget (y por id para "Probar el chat", PI-13), sesiones por hash (las de prueba aparte), lock por conversación, límites |
+| `negocios.ts` | Fase 4: alta y edición de un negocio por bloques, lo que falta (PI-03), activar/pausar, cambiar la clave (PI-09) |
+| `visor.ts` | Fase 4: lista y detalle de conversaciones con sus herramientas (PI-06), derivaciones pendientes y resolverlas (PI-07) |
+| `personas.ts` | Fase 4: quién entra al panel (`panel.personas`, PI-01) |
 
 ## Reglas
 
@@ -19,7 +22,10 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
   consulta filtra `where business_id = …` (T-03): la conexión del backend hace
   BYPASSRLS, así que ese filtro es la barrera principal, no algo redundante.
 - Las pocas lecturas sin tenant son las que lo resuelven (negocio por slug o
-  por `widget_key`). Cualquier otra excepción se justifica en un comentario.
+  por `widget_key`). Cualquier otra excepción se justifica en un comentario:
+  en la Fase 4, la lista de negocios del panel y el consumo de todos
+  (`listarNegocios`, `informeConsumoTodos`: el panel los ve todos, PI-01) y
+  `panel.personas`, que no es de ningún negocio.
 - **SQL con tagged templates** (`` tx`… ${valor}` ``), nunca concatenando
   strings. Esquema explícito (`public.messages`).
 - **Concurrencia en la base**, no en memoria: `on conflict do nothing` sobre
@@ -37,6 +43,10 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
 **Obligatorio:** si tu cambio toca la arquitectura, una regla de negocio o la
 forma de trabajo de esta carpeta, actualizá este `AGENTS.md` (y el raíz si
 aplica) en el mismo cambio. Ver §8 del [`AGENTS.md` raíz](../../AGENTS.md#8-mantener-esta-documentación).
+
+`db/` no conoce el agente; las excepciones son `usage.ts` (precios de
+`core/costes.ts`) y `visor.ts` (`core/guardrails.textoParaLaClienta`, para
+enseñar en el visor lo mismo que vio la clienta).
 
 Una columna o tabla nueva va primero en una migración (ver
 [`supabase/AGENTS.md`](../../supabase/AGENTS.md)); acá solo se lee y escribe.
