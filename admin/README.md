@@ -16,7 +16,7 @@ origen que la API:
 |---|---|---|
 | (sin sesión) | Entrar: email y contraseña, sin registro | PI-01 |
 | `#/` | Negocios con su estado, lo que falta y derivaciones pendientes; dar de alta uno | PI-03 |
-| `#/negocios/:id/ficha` | Publicar (lo que falta, activar/pausar —el widget solo aparece activo, PI-16—, código del widget, cambiar la clave) y los bloques del cuestionario de alta: negocio, servicios, profesionales, horarios, festivos, reglas, preguntas frecuentes y el chat en su web | PI-03, PI-04, PI-05, PI-08, PI-09, PI-10, PI-12, PI-16 |
+| `#/negocios/:id/ficha` | Publicar (lo que falta, activar/pausar —el widget solo aparece activo, PI-16—, código del widget, cambiar la clave) y los bloques del cuestionario de alta: negocio, servicios, profesionales, horarios (con "Copiar a…" entre días y el aviso de PI-18), festivos, reglas, preguntas frecuentes y el chat en su web | PI-03, PI-04, PI-05, PI-08, PI-09, PI-10, PI-12, PI-16, PI-18 |
 | `#/negocios/:id/probar` | Conversar con el agente del negocio, también en prueba (cuesta lo mismo, descuenta del tope y queda como prueba) | PI-13, PI-15 |
 | `#/negocios/:id/conversaciones(/:cid)` | Lista (todas, derivadas, pruebas) y una conversación con sus herramientas | PI-06 |
 | `#/negocios/:id/derivaciones` | Pendientes, con enlace a la conversación y "Resuelta" | PI-07 |
@@ -29,6 +29,7 @@ origen que la API:
 |---|---|
 | `src/api.ts` | Cliente de `/api/admin/…`, sesión y tipos de lo que devuelve la API |
 | `src/ui.tsx` | Rutas por hash, carga, acciones, avisos y formatos |
+| `src/horario.ts` | Cuentas puras de horarios: qué tramos propios caen fuera del local (PI-18) y "Copiar a…" entre días |
 | `src/logo.ts` | Reducir el logo a 256 × 256 si pesa más de 150 KB (PI-10); contraste del texto sobre el color |
 | `src/App.tsx` | Marco, sesión y rutas |
 | `src/paginas/` | Una por pantalla (la ficha, en `Ficha.tsx`) |

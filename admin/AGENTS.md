@@ -18,7 +18,10 @@ Qué hace y cómo se usa: [`README.md`](README.md).
    forma (tipos de campo, `maxLength`).
 4. **Lo que borra o corta, con confirmación:** pausar, cambiar la clave del
    widget (PI-09), desactivar algo con citas futuras (PI-04), cancelar una
-   cita.
+   cita. Y un aviso que sí es del panel y no de la base: un horario propio
+   fuera del horario del local se puede guardar (PD-01), pero se confirma
+   antes (PI-18). Las cuentas de horarios son funciones puras en
+   `src/horario.ts`, testeadas desde `tests/panel-horario.test.ts`.
 5. **Lo que se ve de una conversación se pinta como texto** (React escapa):
    nunca `dangerouslySetInnerHTML`. Lo escribe gente de fuera.
 6. **El logo se reduce en el navegador** (`src/logo.ts`, PI-10): el servidor

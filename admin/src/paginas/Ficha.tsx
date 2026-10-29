@@ -4,13 +4,15 @@
 // En el orden del cuestionario de alta: negocio, servicios, profesionales,
 // horarios, festivos, reglas, preguntas frecuentes y el chat en su web. Arriba,
 // "Publicar": lo que falta, activar/pausar (PI-03) y el código del widget
-// (PI-09). Cada bloque se guarda por separado; la API devuelve el negocio
+// (PI-09). En horarios: "Copiar a…" entre días y el aviso de PI-18 (horario
+// propio fuera del horario del local). Cada bloque se guarda por separado; la API devuelve el negocio
 // entero ya actualizado (PI-05: el agente lo usa en el siguiente mensaje).
 // =============================================================================
 
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { api, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
+import { copiarDia, fueraDelLocal, LABORABLES, TODA_LA_SEMANA } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
 
@@ -320,33 +322,80 @@ function Horarios({ negocio: n, poner }: Props) {
 function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId: string | null; titulo: string }) {
   const actuales = n.horario.filter((t) => t.staffId === staffId);
   const [tramos, setTramos] = useState<Tramo[]>(actuales);
+  const [copiando, setCopiando] = useState<number | null>(null);
+  const [destinos, setDestinos] = useState<number[]>([]);
   useEffect(() => setTramos(n.horario.filter((t) => t.staffId === staffId)), [n, staffId]);
   const a = useAccion();
   const cambiar = (i: number, k: 'apertura' | 'cierre', v: string) => setTramos(tramos.map((t, j) => (j === i ? { ...t, [k]: v } : t)));
+  const nombreDia = (w: number) => SEMANA.find((d) => d.weekday === w)!.nombre.toLowerCase();
+
+  const empezarCopia = (w: number) => {
+    setCopiando(copiando === w ? null : w);
+    setDestinos([]);
+  };
+  const copiar = () => {
+    if (copiando === null) return;
+    setTramos(copiarDia(tramos, copiando, destinos));
+    setCopiando(null);
+    setDestinos([]);
+  };
+
+  const guardar = () => {
+    // PI-18: un horario propio puede salirse del horario del local (PD-01: manda
+    // el propio), pero se avisa antes de guardar, por si es un error al cargarlo.
+    if (staffId !== null) {
+      const fuera = fueraDelLocal(tramos, n.horario.filter((t) => t.staffId === null));
+      const quien = n.profesionales.find((p) => p.id === staffId)?.nombre ?? 'Esta profesional';
+      if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${fuera.map((t) => `${nombreDia(t.weekday)} ${t.apertura}–${t.cierre}`).join(' · ')}. ¿Guardar igual?`)) return;
+    }
+    void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos })));
+  };
+
   return (
-    <div>
+    <div role="group" aria-label={titulo}>
       <h3 className="text-sm font-semibold">{titulo}</h3>
       {staffId !== null && tramos.length === 0 ? <p className="mt-1 text-xs text-slate-500">Sin horario propio: trabaja en el horario del local.</p> : null}
       <div className="mt-2 space-y-1.5">
         {SEMANA.map((d) => (
-          <div key={d.weekday} className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="w-24 text-slate-600">{d.nombre}</span>
-            {tramos.map((t, i) =>
-              t.weekday === d.weekday ? (
-                <span key={i} className="flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-1">
-                  <input type="time" aria-label={`${d.nombre}, apertura`} className="rounded border border-slate-300 px-1 text-sm" value={t.apertura} onChange={(e) => cambiar(i, 'apertura', e.target.value)} />
-                  –
-                  <input type="text" aria-label={`${d.nombre}, cierre`} className="w-16 rounded border border-slate-300 px-1 text-sm" value={t.cierre} onChange={(e) => cambiar(i, 'cierre', e.target.value)} placeholder="HH:MM" />
-                  <button type="button" aria-label="Quitar tramo" className="px-1 text-slate-400 hover:text-red-600" onClick={() => setTramos(tramos.filter((_, j) => j !== i))}>×</button>
-                </span>
-              ) : null,
-            )}
-            {!tramos.some((t) => t.weekday === d.weekday) ? <span className="text-xs text-slate-400">{staffId === null ? 'cerrado' : '—'}</span> : null}
-            <button type="button" className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => setTramos([...tramos, { staffId, weekday: d.weekday, apertura: '10:00', cierre: '14:00' }])}>+ tramo</button>
+          <div key={d.weekday}>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="w-24 text-slate-600">{d.nombre}</span>
+              {tramos.map((t, i) =>
+                t.weekday === d.weekday ? (
+                  <span key={i} className="flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-1">
+                    <input type="time" aria-label={`${d.nombre}, apertura`} className="rounded border border-slate-300 px-1 text-sm" value={t.apertura} onChange={(e) => cambiar(i, 'apertura', e.target.value)} />
+                    –
+                    <input type="text" aria-label={`${d.nombre}, cierre`} className="w-16 rounded border border-slate-300 px-1 text-sm" value={t.cierre} onChange={(e) => cambiar(i, 'cierre', e.target.value)} placeholder="HH:MM" />
+                    <button type="button" aria-label="Quitar tramo" className="px-1 text-slate-400 hover:text-red-600" onClick={() => setTramos(tramos.filter((_, j) => j !== i))}>×</button>
+                  </span>
+                ) : null,
+              )}
+              {!tramos.some((t) => t.weekday === d.weekday) ? <span className="text-xs text-slate-400">{staffId === null ? 'cerrado' : '—'}</span> : null}
+              <button type="button" className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => setTramos([...tramos, { staffId, weekday: d.weekday, apertura: '10:00', cierre: '14:00' }])}>+ tramo</button>
+              {tramos.some((t) => t.weekday === d.weekday) ? (
+                <button type="button" aria-expanded={copiando === d.weekday} className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => empezarCopia(d.weekday)}>Copiar a…</button>
+              ) : null}
+            </div>
+            {copiando === d.weekday ? (
+              <div role="group" aria-label={`Copiar el ${nombreDia(d.weekday)} a otros días`} className="ml-26 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                <span className="text-slate-600">Copiar el {nombreDia(d.weekday)} a:</span>
+                <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(LABORABLES.filter((w) => w !== d.weekday))}>Días laborables</button>
+                <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(TODA_LA_SEMANA.filter((w) => w !== d.weekday))}>Toda la semana</button>
+                {SEMANA.filter((o) => o.weekday !== d.weekday).map((o) => (
+                  <label key={o.weekday} className="flex items-center gap-1">
+                    <input type="checkbox" checked={destinos.includes(o.weekday)} onChange={(e) => setDestinos(e.target.checked ? [...destinos, o.weekday] : destinos.filter((w) => w !== o.weekday))} />
+                    {o.nombre.slice(0, 3)}
+                  </label>
+                ))}
+                <button type="button" className="boton px-2 py-1 text-xs" disabled={destinos.length === 0} onClick={copiar}>Copiar</button>
+                <button type="button" className="text-slate-500 underline" onClick={() => setCopiando(null)}>Cancelar</button>
+                <span className="basis-full text-slate-500">Sustituye lo que tuvieran esos días. Después, "Guardar horario".</span>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
-      <button type="button" className="boton mt-3" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos })))}>Guardar horario</button>
+      <button type="button" className="boton mt-3" disabled={a.ocupado} onClick={guardar}>Guardar horario</button>
       <Aviso error={a.error} ok={a.ok} />
     </div>
   );

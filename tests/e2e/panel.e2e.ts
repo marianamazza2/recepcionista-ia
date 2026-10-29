@@ -1,8 +1,9 @@
 // El panel interno en el navegador (Fase 4 · 4.8) — npm run test:e2e
 //
 // Lo que haría Mariana: entrar, dar de alta un negocio mínimo solo con el
-// panel (servicio, profesional, horario, teléfono, dominio y un logo grande que
-// el panel reduce solo, PI-10), activarlo, abrir la web de prueba con su
+// panel (servicio, profesional, horario copiado a los días laborables, un
+// horario propio fuera del local con su aviso de PI-18, teléfono, dominio y un
+// logo grande que el panel reduce solo, PI-10), activarlo, abrir la web de prueba con su
 // widget y reservar (modelo SIMULADO, sin coste), y verlo en el visor y en la
 // agenda, donde además se carga una cita a mano a una hora fuera de la rejilla.
 //
@@ -86,7 +87,9 @@ beforeAll(async () => {
     sms,
     apiPort: puerto,
     demoPort: puerto + 100,
-    panelPort: puerto + 200,
+    // Panel en 4100–4149: fuera de 4045, que Chrome bloquea (ERR_UNSAFE_PORT), y
+    // de los 4310–4312 de `npm run dev`.
+    panelPort: puerto + 300,
     auth,
     now: () => AHORA,
   });
@@ -137,10 +140,41 @@ describe('el panel en el navegador', () => {
     await filaNueva('profesionales').getByRole('button', { name: 'Añadir' }).click();
     await expect.poll(() => seccion('profesionales').locator('.space-y-3 > div').count(), ESPERA).toBe(2);
 
-    const local = seccion('horarios').locator('> div > div').first();
+    // Horario del local: un tramo el martes y "Copiar a…" los días laborables.
+    const local = panel.getByRole('group', { name: 'Horario del local' });
     await local.locator('div.flex', { hasText: 'Martes' }).first().getByRole('button', { name: '+ tramo' }).click();
+    await local.locator('div.flex', { hasText: 'Martes' }).first().getByRole('button', { name: 'Copiar a…' }).click();
+    await local.getByRole('group', { name: 'Copiar el martes a otros días' }).getByRole('button', { name: 'Días laborables' }).click();
+    await local.screenshot({ path: join(CAPTURAS, '0-copiar-horario.png') });
+    await local.getByRole('group', { name: 'Copiar el martes a otros días' }).getByRole('button', { name: 'Copiar', exact: true }).click();
     await local.getByRole('button', { name: 'Guardar horario' }).click();
     await expect.poll(() => local.getByRole('status').textContent(), ESPERA).toBe('Guardado.');
+    const tramosLocal = await sql<{ weekday: number }[]>`
+      select weekday from public.business_hours where business_id = ${negocioId} and staff_id is null order by weekday`;
+    expect(tramosLocal.map((t) => t.weekday)).toEqual([1, 2, 3, 4, 5]);
+
+    // PI-18: un horario propio el sábado (el local cierra) avisa antes de guardar.
+    const propio = panel.getByRole('group', { name: 'Horario propio de Nora' });
+    await propio.locator('div.flex', { hasText: 'Sábado' }).first().getByRole('button', { name: '+ tramo' }).click();
+    await propio.getByLabel('Sábado, apertura').fill('15:00');
+    await propio.getByLabel('Sábado, cierre').fill('20:00');
+    const avisos: string[] = [];
+    panel.once('dialog', (d) => {
+      avisos.push(d.message());
+      void d.dismiss();
+    });
+    await propio.getByRole('button', { name: 'Guardar horario' }).click();
+    await expect.poll(() => avisos.length, ESPERA).toBe(1);
+    expect(avisos[0]).toBe('Nora trabajaría fuera del horario del local: sábado 15:00–20:00. ¿Guardar igual?');
+    const sinGuardar = await sql`select 1 from public.business_hours where business_id = ${negocioId} and staff_id is not null`;
+    expect(sinGuardar).toHaveLength(0);
+    panel.once('dialog', (d) => void d.accept());
+    await propio.getByRole('button', { name: 'Guardar horario' }).click();
+    await expect.poll(() => propio.getByRole('status').textContent(), ESPERA).toBe('Guardado.');
+    const [sabado] = await sql<{ apertura: string; cierre: string }[]>`
+      select to_char(hora_apertura, 'HH24:MI') as apertura, to_char(hora_cierre, 'HH24:MI') as cierre
+        from public.business_hours where business_id = ${negocioId} and staff_id is not null and weekday = 6`;
+    expect(sabado).toEqual({ apertura: '15:00', cierre: '20:00' });
 
     await seccion('chat').getByLabel('Dominios donde aparece (uno por línea)').fill('localhost');
     const png = join(CAPTURAS, 'logo-grande.png');

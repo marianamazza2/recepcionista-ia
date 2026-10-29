@@ -7,7 +7,7 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
 > cancelar o mover una cita. Las de las fases 0 a 2, decididas el 16/10/2026;
 > las del widget (PW-01 a PW-17) y las del panel (PI-01 a PI-14), decididas el
-> 28/10/2026; las que aparecieron al construirlo (PI-15 a PI-17), el 29/10/2026.
+> 28/10/2026; las que aparecieron al construirlo y probarlo (PI-15 a PI-18), el 29/10/2026.
 >
 > **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
@@ -328,7 +328,7 @@ negocios a la vez, en el panel → Consumo.
 
 La herramienta de Mariana (no la del cliente, que es la Fase 9). Spec:
 [`_specs/fase-4-panel-interno.md`](_specs/fase-4-panel-interno.md); reglas
-PI-01 a PI-17 en `decisiones-producto.md`; cómo está hecho en
+PI-01 a PI-18 en `decisiones-producto.md`; cómo está hecho en
 [`admin/README.md`](admin/README.md).
 
 ### Crear tu cuenta (una vez)
@@ -439,7 +439,7 @@ Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
 ```bash
 npm run test:sql                    # tests SQL (10 archivos)
 ./scripts/run-sql-tests.sh 07       # solo uno
-npm test                            # tests TypeScript (160), el de concurrencia incluido
+npm test                            # tests TypeScript (169), el de concurrencia incluido
 npm run test:e2e                    # la demo y el panel en Google Chrome, con el modelo simulado
 npm run typecheck                   # comprobación de tipos (también la del widget y la del panel)
 
@@ -486,7 +486,8 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
 | `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
-| `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
+| `tests/panel-horario.test.ts` | Las cuentas de horarios del panel: qué tramos propios caen fuera del horario del local (PI-18) y "Copiar a…" entre días |
+| `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
 | `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra

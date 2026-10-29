@@ -38,7 +38,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
-Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17), ✅ decididas el 29/10/2026.
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026.
 
 ---
 
@@ -896,6 +896,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA (descuenta del tope del negocio). El informe las enseña aparte | — | ✅ decidida 29/10/2026 |
 | PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
+| PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel avisa antes de guardar y guarda solo si se confirma | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
 
@@ -954,4 +955,23 @@ se pausa solo el chat pero la recepción sigue dando citas). Pide separar
 
 **Decisión (Mariana, 29/10/2026):** como se propone. Si algún día hace
 falta, se separan "pausar el chat" y "pausar el negocio".
+
+### PI-18 · Horario propio fuera del horario del local · ✅ decidida el 29/10/2026
+
+Apareció al probar el panel: Mariana cargó un horario propio de una
+profesional el **sábado de 15:00 a 20:00**, con el local cerrando el sábado
+a las 14:00, y el panel lo guardó sin decir nada.
+
+**Decisión (Mariana, 29/10/2026):** **se permite.** Por PD-01, el horario
+propio de una profesional manda ese día, así que el agente ofrece esas horas
+(una profesional puede atender cuando el local está cerrado, por ejemplo una
+tarde de sábado con cita). Pero **el panel avisa antes de guardar** cuando
+algún tramo propio cae, total o parcialmente, fuera del horario del local ese
+día (o en un día que el local cierra), y guarda solo si se confirma:
+
+> "Rodrigo trabajaría fuera del horario del local: sábado 15:00–20:00.
+> ¿Guardar igual?"
+
+Es un aviso del panel para no equivocarse al cargarlo, **no una restricción
+de la base**.
 
