@@ -2,7 +2,7 @@
 // Datos del canal widget web (Fase 3 · 3.2)
 // =============================================================================
 //   · El negocio por su clave pública (todavía sin tenant que declarar, como
-//     loadBusinessConfig).
+//     loadBusinessConfig), solo si está activo (PI-16).
 //   · Sesiones: el navegador guarda un token aleatorio; la base, solo su
 //     SHA-256 (conversations.session_token_hash). Una conversación se encuentra
 //     por (negocio, hash del token) y solo si su último mensaje es de las
@@ -47,13 +47,18 @@ interface WidgetBusinessRow {
   tope_mensual_usd: string;
 }
 
-/** El negocio de esa clave, si existe y atiende (activo o trial). */
+/**
+ * El negocio de esa clave, si está ACTIVO. PI-16 (29/10/2026): "Activar" es
+ * el interruptor de publicar: en prueba o pausado, el widget no aparece en
+ * ninguna web aunque tenga dominios y el código pegado. Para probar antes de
+ * activar está "Probar el chat" del panel (businessParaProbar).
+ */
 export async function businessByWidgetKey(sql: Sql, key: string): Promise<WidgetBusiness | null> {
   const [b] = await sql<WidgetBusinessRow[]>`
     select id, nombre, timezone, widget_key, widget_dominios, widget_color, widget_logo, privacidad_url,
            mensaje_bienvenida, telefono_humano, tope_mensual_usd
       from public.businesses
-     where widget_key = ${key} and estado in ('activo', 'trial')`;
+     where widget_key = ${key} and estado = 'activo'`;
   return b ? aWidgetBusiness(b) : null;
 }
 

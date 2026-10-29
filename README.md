@@ -7,8 +7,7 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
 > cancelar o mover una cita. Las de las fases 0 a 2, decididas el 16/10/2026;
 > las del widget (PW-01 a PW-17) y las del panel (PI-01 a PI-14), decididas el
-> 28/10/2026. Las que aparecieron al construir el panel (PI-15 a PI-17), ⚠️ por
-> confirmar.
+> 28/10/2026; las que aparecieron al construirlo (PI-15 a PI-17), el 29/10/2026.
 >
 > **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
@@ -361,7 +360,9 @@ Auth local) y, además, hay que estar en la lista `panel.personas` de la base
 
 `npm run dev` y abrí **http://localhost:4312/panel/**. Además de la demo de
 Aurora, `http://localhost:4310/prueba.html?key=wk_…` es una web de prueba que
-carga el widget de **cualquier** negocio (con `localhost` en sus dominios).
+carga el widget de **cualquier** negocio activo con `localhost` en sus
+dominios. El widget solo aparece con el negocio **activo** (PI-16): antes de
+activarlo, se prueba con "Probar el chat" del panel.
 
 ### Publicarlo (solo con el visto bueno de Mariana, PI-02)
 

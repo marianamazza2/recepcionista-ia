@@ -64,7 +64,7 @@ página de "enlace no válido" (404).
 | 400 | `peticion_no_valida` | JSON roto o campos con forma incorrecta |
 | 401 | `sesion_no_valida` | Historial sin token válido |
 | 403 | `origen_no_permitido` | El `Origin` no está en los dominios del negocio (PW-06). Sin cabeceras CORS |
-| 404 | `clave_desconocida` / `no_encontrado` | Clave del widget inexistente / ruta desconocida |
+| 404 | `clave_desconocida` / `no_encontrado` | Clave del widget inexistente o de un negocio que no está activo (en prueba o pausado, PI-16) / ruta desconocida |
 | 405 | `metodo_no_permitido` | Método equivocado |
 | 413 | `demasiado_grande` | Cuerpo de más de 16 KB |
 | 503 | `no_disponible` | Fallo antes de poder resolver el negocio |

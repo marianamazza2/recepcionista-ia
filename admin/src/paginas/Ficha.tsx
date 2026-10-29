@@ -127,7 +127,7 @@ function Publicar({ negocio: n, poner }: Props) {
             Cambiar la clave
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-500">El chat solo aparece en los dominios de "El chat en su web". Para probarlo en local, añade <code>localhost</code> y abre la web de prueba: <code>http://localhost:4310/prueba.html?key={n.widgetKey}</code></p>
+        <p className="mt-2 text-xs text-slate-500">El chat aparece en su web cuando el negocio está <strong>activo</strong> y en los dominios de "El chat en su web" (PI-16): en prueba o pausado, no sale aunque el código esté pegado. Antes de activar, usa "Probar el chat". Ya activo, para verlo en local añade <code>localhost</code> y abre la web de prueba: <code>http://localhost:4310/prueba.html?key={n.widgetKey}</code></p>
       </div>
     </Bloque>
   );

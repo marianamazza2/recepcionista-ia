@@ -5,7 +5,8 @@
 
     http://localhost:4310/prueba.html?key=wk_…
 
-  El negocio tiene que tener `localhost` en sus dominios (PW-06). Negocio
+  El negocio tiene que estar activo (PI-16) y tener `localhost` en sus
+  dominios (PW-06). Negocio
   ficticio, sin marcas reales. La sirve `npm run dev` (no se publica en Vercel).
 -->
 <html lang="es">
@@ -39,7 +40,7 @@
       estado.textContent = 'Falta la clave del widget: abre esta página con ?key=wk_… (la tienes en el panel, en "Publicar").';
       return;
     }
-    estado.textContent = 'Clave: ' + key + '. Si el chat no aparece, revisa que el negocio tenga "localhost" en sus dominios y no esté pausado.';
+    estado.textContent = 'Clave: ' + key + '. Si el chat no aparece, revisa que el negocio esté activo y tenga "localhost" en sus dominios.';
     var s = document.createElement('script');
     s.src = 'http://localhost:4311/widget.js';
     s.async = true;

@@ -16,7 +16,7 @@
 //
 // Fase 4 (PI-11, PI-13): el informe separa las conversaciones de prueba del
 // panel ("Probar el chat") de las de clientas. El tope cuenta las dos: es
-// gasto real de la API (⚠️ por confirmar en decisiones-producto.md).
+// gasto real de la API (PI-15, decidida el 29/10/2026).
 // =============================================================================
 
 import type { JSONValue, Sql } from 'postgres';

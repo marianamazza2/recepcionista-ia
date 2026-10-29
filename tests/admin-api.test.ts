@@ -245,6 +245,7 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
   it('cambiar la clave: la anterior deja de funcionar en el widget al momento', async () => {
     const n = await alta('Clave Test');
     const h = api();
+    await pedir(h, 'POST', `negocios/${n.id}/activar`);
     const config = (k: string) => h(new Request(`http://api.test/api/widget/config?key=${k}`, { headers: { origin: ORIGEN } }), { ip: null });
     expect((await config(n.key)).status).toBe(200);
     const r = await pedir(h, 'POST', `negocios/${n.id}/clave`);
@@ -365,7 +366,8 @@ describe('probar el chat (PI-13), visor (PI-06, PI-07) y consumo (PI-11)', () =>
     const p2 = await pedir(h, 'POST', `negocios/${n.id}/probar`, { sessionToken: p1.body.sessionToken, texto: '¿Hay aparcamiento?' });
     expect(p2.body.nuevaConversacion).toBe(false);
 
-    // La sesión de prueba no sirve en el widget.
+    // La sesión de prueba no sirve en el widget (ni con el negocio activo, PI-16).
+    await pedir(h, 'POST', `negocios/${n.id}/activar`);
     const widget = await h(
       new Request('http://api.test/api/chat/historial?key=' + n.key, { headers: { origin: ORIGEN, authorization: `Bearer ${p1.body.sessionToken}` } }),
       { ip: null },
@@ -399,6 +401,24 @@ describe('probar el chat (PI-13), visor (PI-06, PI-07) y consumo (PI-11)', () =>
     const todos = await pedir(h, 'GET', 'consumo');
     expect(todos.body.find((x: { businessId: string }) => x.businessId === n.id)).toMatchObject({ pruebas: { mensajes: 2 } });
     expect((await pedir(h, 'GET', `consumo?mes=${mes}`)).status).toBe(200);
+  });
+
+  it('PI-16: en prueba, con dominio y el código pegado, el widget no aparece; al activar, sí; pausado, ya no', async () => {
+    const n = await alta('Publicar Test');
+    const h = api(new ModeloSimulado([texto('Hola, soy la asistente.')]));
+    const config = () => h(new Request(`http://api.test/api/widget/config?key=${n.key}`, { headers: { origin: ORIGEN } }), { ip: null });
+    const chat = () =>
+      h(new Request('http://api.test/api/chat', { method: 'POST', headers: { 'content-type': 'application/json', origin: ORIGEN }, body: JSON.stringify({ key: n.key, clientMessageId: randomUUID(), texto: 'Hola' }) }), { ip: '10.42.0.1' });
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body).toMatchObject({ estado: 'trial', chat: { dominios: ['localhost'] } });
+    expect((await config()).status).toBe(404);
+    expect((await chat()).status).toBe(404);
+    // Pero "Probar el chat" del panel sí funciona en prueba (PI-13).
+    expect((await pedir(h, 'POST', `negocios/${n.id}/probar`, { texto: 'Hola' })).status).toBe(200);
+
+    await pedir(h, 'POST', `negocios/${n.id}/activar`);
+    expect((await config()).status).toBe(200);
+    await pedir(h, 'POST', `negocios/${n.id}/pausar`);
+    expect((await config()).status).toBe(404);
   });
 
   it('un negocio pausado no se prueba ni atiende', async () => {

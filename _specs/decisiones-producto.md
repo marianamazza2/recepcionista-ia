@@ -38,7 +38,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
-Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) están ⚠️ por confirmar.
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17), ✅ decididas el 29/10/2026.
 
 ---
 
@@ -777,7 +777,8 @@ con el visto bueno de Mariana.
 ### PI-03 · Un negocio nuevo · ✅ decidida el 28/10/2026
 
 Al crear un negocio, empieza **en prueba** y **sin dominios**: el widget no
-aparece en ninguna web aunque alguien tenga el código. El panel muestra "lo que
+aparece en ninguna web aunque alguien tenga el código (y, por PI-16, aunque
+ya tenga dominios: solo aparece al activarlo). El panel muestra "lo que
 falta" para poder atender: al menos un servicio, una profesional que lo haga,
 horario, teléfono del local y un dominio. **Activar** solo se puede con eso
 completo. Ejemplo: "Falta: horario del local · un dominio para el chat".
@@ -884,19 +885,19 @@ ejemplo, 10:15), y la clienta por su teléfono (si no existe, se crea).
 
 ---
 
-## Al construir el panel (Fase 4) · ⚠️ POR CONFIRMAR
+## Al construir el panel (Fase 4) · ✅ DECIDIDAS
 
-Aparecieron al construir el panel, el 28/10/2026. **Están implementadas tal
-como se proponen** (es lo que hace hoy el código), pero son decisiones de
-Mariana: si alguna cambia, es un ajuste pequeño.
+Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
+29/10/2026**: PI-15 y PI-17 tal como se proponían; PI-16 con la alternativa
+(el widget solo funciona con el negocio activo).
 
 | # | Tema | Propuesta | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
-| PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA. El informe las enseña aparte | — | ⚠️ por confirmar |
-| PI-16 | El widget de un negocio en prueba | Funciona en los dominios que tenga. "Activar" es el paso de pasar a atender de verdad, no lo que enciende el widget | — | ⚠️ por confirmar |
-| PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ⚠️ por confirmar |
+| PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA (descuenta del tope del negocio). El informe las enseña aparte | — | ✅ decidida 29/10/2026 |
+| PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
+| PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 
-### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ⚠️ por confirmar
+### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
 
 PI-13 dice que "Probar el chat" cuesta lo mismo y que el informe separa las
 pruebas. Falta decidir si ese coste cuenta para el tope mensual del negocio
@@ -912,7 +913,10 @@ clientas.
 *Alternativa:* que no cuenten. Entonces una prueba no podría quedarse sin
 respuesta por el tope, pero el gasto de las pruebas no tendría límite.
 
-### PI-16 · El widget de un negocio en prueba · ⚠️ por confirmar
+**Decisión (Mariana, 29/10/2026):** sí cuentan, como se propone: lo que se
+gasta probando descuenta del tope del negocio.
+
+### PI-16 · El widget de un negocio en prueba · ✅ decidida el 29/10/2026
 
 PI-03 dice que un negocio nuevo empieza en prueba y sin dominios, "y el
 widget no aparece hasta que lo actives". Lo que lo impide de verdad es que no
@@ -927,7 +931,15 @@ el widget al momento.
 *Alternativa:* que el widget solo funcione con el negocio activo. Entonces
 para probarlo en la web de prueba habría que activarlo antes.
 
-### PI-17 · Un negocio pausado en el panel · ⚠️ por confirmar
+**Decisión (Mariana, 29/10/2026): la alternativa.** El widget **solo
+aparece con el negocio activo**. Se puede cargar todo desde el principio,
+su dominio incluido, y el negocio puede pegar el código cuando quiera: no
+sale en su web hasta que se pulsa **Activar**, y desaparece al pausarlo.
+Antes de activar se prueba con "Probar el chat" del panel (PI-13), que sí
+funciona en prueba. Es lo que ya decía PI-03 ("el widget no aparece en
+ninguna web hasta que lo actives").
+
+### PI-17 · Un negocio pausado en el panel · ✅ decidida el 29/10/2026
 
 Pausar (PI-04) hace que el widget no responda y el agente no atienda. En el
 panel, un negocio pausado **no** deja probar el chat ni cargar o cancelar
@@ -939,4 +951,7 @@ conversaciones, la agenda y el consumo se siguen viendo y editando.
 *Alternativa:* permitir citas a mano en un negocio pausado (por ejemplo, si
 se pausa solo el chat pero la recepción sigue dando citas). Pide separar
 "pausar el chat" de "pausar el negocio".
+
+**Decisión (Mariana, 29/10/2026):** como se propone. Si algún día hace
+falta, se separan "pausar el chat" y "pausar el negocio".
 

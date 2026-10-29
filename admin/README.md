@@ -16,8 +16,8 @@ origen que la API:
 |---|---|---|
 | (sin sesión) | Entrar: email y contraseña, sin registro | PI-01 |
 | `#/` | Negocios con su estado, lo que falta y derivaciones pendientes; dar de alta uno | PI-03 |
-| `#/negocios/:id/ficha` | Publicar (lo que falta, activar/pausar, código del widget, cambiar la clave) y los bloques del cuestionario de alta: negocio, servicios, profesionales, horarios, festivos, reglas, preguntas frecuentes y el chat en su web | PI-03, PI-04, PI-05, PI-08, PI-09, PI-10, PI-12 |
-| `#/negocios/:id/probar` | Conversar con el agente del negocio (cuesta lo mismo; queda como prueba) | PI-13 |
+| `#/negocios/:id/ficha` | Publicar (lo que falta, activar/pausar —el widget solo aparece activo, PI-16—, código del widget, cambiar la clave) y los bloques del cuestionario de alta: negocio, servicios, profesionales, horarios, festivos, reglas, preguntas frecuentes y el chat en su web | PI-03, PI-04, PI-05, PI-08, PI-09, PI-10, PI-12, PI-16 |
+| `#/negocios/:id/probar` | Conversar con el agente del negocio, también en prueba (cuesta lo mismo, descuenta del tope y queda como prueba) | PI-13, PI-15 |
 | `#/negocios/:id/conversaciones(/:cid)` | Lista (todas, derivadas, pruebas) y una conversación con sus herramientas | PI-06 |
 | `#/negocios/:id/derivaciones` | Pendientes, con enlace a la conversación y "Resuelta" | PI-07 |
 | `#/negocios/:id/agenda` | Las citas del día; cargar una a mano o cancelarla | PR-04, PI-14, PW-10 |
