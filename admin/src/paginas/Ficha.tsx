@@ -5,7 +5,8 @@
 // horarios, festivos, reglas, preguntas frecuentes y el chat en su web. Arriba,
 // "Publicar": lo que falta, activar/pausar (PI-03) y el código del widget
 // (PI-09). En horarios: "Copiar a…" entre días y el aviso de PI-18 (horario
-// propio fuera del horario del local). Cada bloque se guarda por separado; la API devuelve el negocio
+// propio fuera del horario del local: tramos en ámbar, un aviso fijo debajo y
+// confirmación al guardar). Cada bloque se guarda por separado; la API devuelve el negocio
 // entero ya actualizado (PI-05: el agente lo usa en el siguiente mensaje).
 // =============================================================================
 
@@ -340,14 +341,15 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
     setDestinos([]);
   };
 
+  // PI-18: un horario propio puede salirse del horario del local (PD-01: manda
+  // el propio). Se avisa siempre en pantalla (también con lo ya guardado) y se
+  // pide confirmación al guardar, por si es un error al cargarlo.
+  const fuera = staffId === null ? [] : fueraDelLocal(tramos, n.horario.filter((t) => t.staffId === null));
+  const quien = n.profesionales.find((p) => p.id === staffId)?.nombre ?? 'Esta profesional';
+  const listaFuera = fuera.map((t) => `${nombreDia(t.weekday)} ${t.apertura}–${t.cierre}`).join(' · ');
+
   const guardar = () => {
-    // PI-18: un horario propio puede salirse del horario del local (PD-01: manda
-    // el propio), pero se avisa antes de guardar, por si es un error al cargarlo.
-    if (staffId !== null) {
-      const fuera = fueraDelLocal(tramos, n.horario.filter((t) => t.staffId === null));
-      const quien = n.profesionales.find((p) => p.id === staffId)?.nombre ?? 'Esta profesional';
-      if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${fuera.map((t) => `${nombreDia(t.weekday)} ${t.apertura}–${t.cierre}`).join(' · ')}. ¿Guardar igual?`)) return;
-    }
+    if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${listaFuera}. ¿Guardar igual?`)) return;
     void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos })));
   };
 
@@ -362,7 +364,7 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
               <span className="w-24 text-slate-600">{d.nombre}</span>
               {tramos.map((t, i) =>
                 t.weekday === d.weekday ? (
-                  <span key={i} className="flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-1">
+                  <span key={i} title={fuera.includes(t) ? 'Fuera del horario del local' : undefined} className={`flex items-center gap-1 rounded-md px-1.5 py-1 ${fuera.includes(t) ? 'bg-amber-100 ring-1 ring-amber-400' : 'bg-slate-100'}`}>
                     <input type="time" aria-label={`${d.nombre}, apertura`} className="rounded border border-slate-300 px-1 text-sm" value={t.apertura} onChange={(e) => cambiar(i, 'apertura', e.target.value)} />
                     –
                     <input type="text" aria-label={`${d.nombre}, cierre`} className="w-16 rounded border border-slate-300 px-1 text-sm" value={t.cierre} onChange={(e) => cambiar(i, 'cierre', e.target.value)} placeholder="HH:MM" />
@@ -395,6 +397,11 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
           </div>
         ))}
       </div>
+      {fuera.length > 0 ? (
+        <p role="note" aria-label="Aviso de horario" className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <strong>Fuera del horario del local:</strong> {listaFuera}. Se puede (ese día manda su horario) y el agente ofrecerá esas horas; revisa que no sea un error al cargarlo.
+        </p>
+      ) : null}
       <button type="button" className="boton mt-3" disabled={a.ocupado} onClick={guardar}>Guardar horario</button>
       <Aviso error={a.error} ok={a.ok} />
     </div>

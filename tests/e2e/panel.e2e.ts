@@ -158,6 +158,8 @@ describe('el panel en el navegador', () => {
     await propio.locator('div.flex', { hasText: 'Sábado' }).first().getByRole('button', { name: '+ tramo' }).click();
     await propio.getByLabel('Sábado, apertura').fill('15:00');
     await propio.getByLabel('Sábado, cierre').fill('20:00');
+    // Visible en pantalla antes de guardar, no solo en la confirmación.
+    await expect.poll(() => propio.getByRole('note', { name: 'Aviso de horario' }).textContent(), ESPERA).toContain('Fuera del horario del local: sábado 15:00–20:00.');
     const avisos: string[] = [];
     panel.once('dialog', (d) => {
       avisos.push(d.message());
@@ -175,6 +177,9 @@ describe('el panel en el navegador', () => {
       select to_char(hora_apertura, 'HH24:MI') as apertura, to_char(hora_cierre, 'HH24:MI') as cierre
         from public.business_hours where business_id = ${negocioId} and staff_id is not null and weekday = 6`;
     expect(sabado).toEqual({ apertura: '15:00', cierre: '20:00' });
+    // Y sigue visible con lo ya guardado (al volver a la ficha más tarde).
+    expect(await propio.getByRole('note', { name: 'Aviso de horario' }).isVisible()).toBe(true);
+    await propio.screenshot({ path: join(CAPTURAS, '1-aviso-pi18.png') });
 
     await seccion('chat').getByLabel('Dominios donde aparece (uno por línea)').fill('localhost');
     const png = join(CAPTURAS, 'logo-grande.png');

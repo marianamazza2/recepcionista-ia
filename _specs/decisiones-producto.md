@@ -896,7 +896,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA (descuenta del tope del negocio). El informe las enseña aparte | — | ✅ decidida 29/10/2026 |
 | PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
-| PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel avisa antes de guardar y guarda solo si se confirma | — | ✅ decidida 29/10/2026 |
+| PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar y aviso fijo) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
 
@@ -971,6 +971,11 @@ día (o en un día que el local cierra), y guarda solo si se confirma:
 
 > "Rodrigo trabajaría fuera del horario del local: sábado 15:00–20:00.
 > ¿Guardar igual?"
+
+Además, el aviso **se ve siempre en la ficha**, no solo al guardar: el tramo
+queda en ámbar y debajo del horario sale *"Fuera del horario del local: sábado
+15:00–20:00…"*, también con lo ya guardado (Mariana no lo veía con el horario
+de Rodrigo, que había guardado antes de que existiera el aviso).
 
 Es un aviso del panel para no equivocarse al cargarlo, **no una restricción
 de la base**.
