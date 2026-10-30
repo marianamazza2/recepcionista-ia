@@ -111,6 +111,8 @@ export interface NegocioPanel extends DatosNegocio {
   servicios: (ServicioPanel & { id: string; citasFuturas: number })[];
   profesionales: (ProfesionalPanel & { id: string; citasFuturas: number })[];
   horario: (TramoPanel & { staffId: string | null })[];
+  /** PI-19: los días de la semana que cada profesional no trabaja. */
+  diasLibres: { staffId: string; weekday: number }[];
   /** PI-12: solo los que no han terminado (los pasados se ocultan). */
   festivos: (FestivoPanel & { id: string })[];
   preguntas: (PreguntaPanel & { id: string })[];
@@ -247,6 +249,11 @@ export async function leerNegocio(sql: Sql, id: string): Promise<NegocioPanel | 
        where business_id = ${id}::uuid
        order by staff_id nulls first, weekday, hora_apertura`;
 
+    const libres = await tx<{ staff_id: string; weekday: number }[]>`
+      select staff_id, weekday from public.staff_dias_libres
+       where business_id = ${id}::uuid
+       order by staff_id, weekday`;
+
     const festivos = await tx<{ id: string; staff_id: string | null; desde: Date; hasta: Date; motivo: string | null }[]>`
       select id, staff_id, desde, hasta, motivo
         from public.time_off
@@ -300,6 +307,7 @@ export async function leerNegocio(sql: Sql, id: string): Promise<NegocioPanel | 
       })),
       profesionales: profesionales.map((p) => ({ id: p.id, nombre: p.nombre, activo: p.activo, servicioIds: p.servicios, citasFuturas: p.futuras })),
       horario: horario.map((h) => ({ staffId: h.staff_id, weekday: h.weekday, apertura: h.apertura, cierre: h.cierre })),
+      diasLibres: libres.map((l) => ({ staffId: l.staff_id, weekday: l.weekday })),
       festivos: festivos.map((f) => ({ id: f.id, staffId: f.staff_id, desde: f.desde, hasta: f.hasta, motivo: f.motivo })),
       preguntas: preguntas.map((q) => ({ id: q.id, pregunta: q.titulo, respuesta: q.contenido_raw, orden: q.orden })),
       loQueFalta: b.falta,
@@ -431,9 +439,11 @@ export async function guardarProfesional(sql: Sql, id: string, staffId: string, 
 
 /**
  * Sustituye los tramos del local (staffId null) o el horario propio de una
- * profesional. Todo en una transacción: si un tramo no vale, no cambia nada.
+ * profesional, y (PI-19) los días que esa profesional no trabaja. Todo en una
+ * transacción: si un tramo no vale, no cambia nada. Un día no puede tener a
+ * la vez horas propias y "no trabaja" (lo comprueba la API antes).
  */
-export async function guardarHorario(sql: Sql, id: string, staffId: string | null, tramos: TramoPanel[]): Promise<void> {
+export async function guardarHorario(sql: Sql, id: string, staffId: string | null, tramos: TramoPanel[], diasLibres: number[] = []): Promise<void> {
   await inTenant(sql, id, async (tx) => {
     if (staffId !== null) {
       const [st] = await tx`select 1 from public.staff where business_id = ${id}::uuid and id = ${staffId}::uuid`;
@@ -446,6 +456,14 @@ export async function guardarHorario(sql: Sql, id: string, staffId: string | nul
       await tx`
         insert into public.business_hours (business_id, staff_id, weekday, hora_apertura, hora_cierre)
         values (${id}::uuid, ${staffId}::uuid, ${t.weekday}, ${t.apertura}::time, ${t.cierre}::time)`;
+    }
+    if (staffId !== null) {
+      await tx`delete from public.staff_dias_libres where business_id = ${id}::uuid and staff_id = ${staffId}::uuid`;
+      for (const w of diasLibres) {
+        await tx`
+          insert into public.staff_dias_libres (business_id, staff_id, weekday)
+          values (${id}::uuid, ${staffId}::uuid, ${w})`;
+      }
     }
   });
 }

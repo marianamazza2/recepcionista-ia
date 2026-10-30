@@ -11,7 +11,7 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
 | `conversations.ts` | Conversaciones, mensajes (historial solo-añadir) y derivaciones |
 | `usage.ts` | `usage_events`, coste del mes, tope e informe de consumo (US$) |
 | `widget.ts` | Negocio por clave del widget (y por id para "Probar el chat", PI-13), sesiones por hash (las de prueba aparte), lock por conversación, límites |
-| `negocios.ts` | Fase 4: alta y edición de un negocio por bloques, lo que falta (PI-03), activar/pausar, cambiar la clave (PI-09) |
+| `negocios.ts` | Fase 4: alta y edición de un negocio por bloques (con los días que cada profesional no trabaja, PI-19), lo que falta (PI-03), activar/pausar, cambiar la clave (PI-09) |
 | `visor.ts` | Fase 4: lista y detalle de conversaciones con sus herramientas (PI-06), derivaciones pendientes y resolverlas (PI-07) |
 | `personas.ts` | Fase 4: quién entra al panel (`panel.personas`, PI-01) |
 

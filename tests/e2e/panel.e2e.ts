@@ -2,7 +2,8 @@
 //
 // Lo que haría Mariana: entrar, dar de alta un negocio mínimo solo con el
 // panel (servicio, profesional, horario copiado a los días laborables, un
-// horario propio fuera del local con su aviso de PI-18, teléfono, dominio y un
+// horario propio fuera del local con su aviso de PI-18, un día que no trabaja
+// (PI-19), teléfono, dominio y un
 // logo grande que el panel reduce solo, PI-10), activarlo, abrir la web de prueba con su
 // widget y reservar (modelo SIMULADO, sin coste), y verlo en el visor y en la
 // agenda, donde además se carga una cita a mano a una hora fuera de la rejilla.
@@ -158,6 +159,10 @@ describe('el panel en el navegador', () => {
     await propio.locator('div.flex', { hasText: 'Sábado' }).first().getByRole('button', { name: '+ tramo' }).click();
     await propio.getByLabel('Sábado, apertura').fill('15:00');
     await propio.getByLabel('Sábado, cierre').fill('20:00');
+    // PI-19: el viernes Nora no trabaja, aunque el local abra.
+    await propio.getByLabel('Viernes, cómo trabaja').selectOption('libre');
+    expect(await propio.getByLabel('Sábado, cómo trabaja').inputValue()).toBe('propias');
+    expect(await propio.getByLabel('Lunes, cómo trabaja').inputValue()).toBe('local');
     // Visible en pantalla antes de guardar, no solo en la confirmación.
     await expect.poll(() => propio.getByRole('note', { name: 'Aviso de horario' }).textContent(), ESPERA).toContain('Fuera del horario del local: sábado 15:00–20:00.');
     const avisos: string[] = [];
@@ -177,6 +182,8 @@ describe('el panel en el navegador', () => {
       select to_char(hora_apertura, 'HH24:MI') as apertura, to_char(hora_cierre, 'HH24:MI') as cierre
         from public.business_hours where business_id = ${negocioId} and staff_id is not null and weekday = 6`;
     expect(sabado).toEqual({ apertura: '15:00', cierre: '20:00' });
+    const libres = await sql<{ weekday: number }[]>`select weekday from public.staff_dias_libres where business_id = ${negocioId}`;
+    expect(libres.map((l) => l.weekday)).toEqual([5]);
     // Y sigue visible con lo ya guardado (al volver a la ficha más tarde).
     expect(await propio.getByRole('note', { name: 'Aviso de horario' }).isVisible()).toBe(true);
     await propio.screenshot({ path: join(CAPTURAS, '1-aviso-pi18.png') });

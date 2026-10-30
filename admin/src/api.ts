@@ -197,6 +197,8 @@ export interface Negocio {
   servicios: Servicio[];
   profesionales: Profesional[];
   horario: Tramo[];
+  /** PI-19: los días de la semana que cada profesional no trabaja. */
+  diasLibres: { staffId: string; weekday: number }[];
   festivos: Festivo[];
   preguntas: Pregunta[];
   loQueFalta: Falta[];

@@ -162,7 +162,8 @@ export const consultarDisponibilidad: AgentTool = {
 
 /**
  * Sin huecos en el rango: ¿es porque el local cierra todo el rango (festivo,
- * vacaciones) o la profesional pedida no está? Solo cuentan los cierres que
+ * vacaciones) o la profesional pedida no está (ausencia, o no trabaja esos
+ * días de la semana, PI-19)? Solo cuentan los cierres que
  * cubren los días enteros; uno de unas horas no explica que no haya nada.
  */
 async function cierreQueCubre(
@@ -178,6 +179,18 @@ async function cierreQueCubre(
      where business_id = ${ctx.config.id} and staff_id is null and desde <= ${inicio} and hasta >= ${fin}
      limit 1`;
   if (local.length > 0) return 'el_local_cierra_esos_dias';
+  // PI-19: la profesional pedida no trabaja ninguno de los días del rango.
+  const prof = staffId ? ctx.config.profesionales.find((p) => p.id === staffId) : undefined;
+  if (prof && prof.diasLibres.length > 0) {
+    let todosLibres = true;
+    for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
+      if (!prof.diasLibres.includes(weekdayDe(d))) {
+        todosLibres = false;
+        break;
+      }
+    }
+    if (todosLibres) return 'la_profesional_no_esta_esos_dias';
+  }
   if (staffId) {
     const suya = await ctx.sql`
       select 1 from public.time_off

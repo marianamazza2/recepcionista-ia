@@ -12,6 +12,9 @@
 //     fuera del horario del local, para el panel "Publicar" de arriba.
 //   · copiarDia: los tramos de un día, copiados a otros días (sustituyen los
 //     que tuvieran). Mejora de la interfaz, sin regla de negocio.
+//   · estadoDia, ponerEstado y copiarLibres (PI-19): cada día de una
+//     profesional es "como el local", "no trabaja" u "horas propias". Copiar
+//     un día copia también su estado.
 //
 // Horas 'HH:MM' locales del negocio; '24:00' es la medianoche del cierre.
 // weekday: 0 = domingo … 6 = sábado (D-10).
@@ -72,3 +75,45 @@ export function copiarDia<T extends TramoDia>(tramos: T[], origen: number, desti
 /** Días laborables (lunes a viernes) y toda la semana, para "Copiar a…". */
 export const LABORABLES = [1, 2, 3, 4, 5];
 export const TODA_LA_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+// -----------------------------------------------------------------------------
+// PI-19: los tres estados de un día de una profesional
+// -----------------------------------------------------------------------------
+
+export type EstadoDia = 'local' | 'libre' | 'propias';
+
+/** "No trabaja" gana a las horas propias, como en el motor. */
+export function estadoDia(tramos: TramoDia[], libres: number[], weekday: number): EstadoDia {
+  if (libres.includes(weekday)) return 'libre';
+  return tramos.some((t) => t.weekday === weekday) ? 'propias' : 'local';
+}
+
+/**
+ * Cambia el estado de un día. "Horas propias" empieza con el horario del local
+ * de ese día (o 10:00–14:00 si el local cierra), para editarlo.
+ */
+export function ponerEstado<T extends TramoDia>(
+  tramos: T[],
+  libres: number[],
+  weekday: number,
+  estado: EstadoDia,
+  nuevo: (t: TramoDia) => T,
+  local: TramoDia[],
+): { tramos: T[]; libres: number[] } {
+  const sinDia = tramos.filter((t) => t.weekday !== weekday);
+  const sinLibre = libres.filter((w) => w !== weekday);
+  if (estado === 'local') return { tramos: sinDia, libres: sinLibre };
+  if (estado === 'libre') return { tramos: sinDia, libres: [...sinLibre, weekday].sort() };
+  if (tramos.some((t) => t.weekday === weekday)) return { tramos, libres: sinLibre };
+  const delLocal = local.filter((t) => t.weekday === weekday);
+  const base = delLocal.length > 0 ? delLocal : [{ weekday, apertura: '10:00', cierre: '14:00' }];
+  return { tramos: [...sinDia, ...base.map((t) => nuevo({ weekday, apertura: t.apertura, cierre: t.cierre }))], libres: sinLibre };
+}
+
+/** "Copiar a…" también copia si ese día no trabaja: los destinos quedan igual que el origen. */
+export function copiarLibres(libres: number[], origen: number, destinos: number[]): number[] {
+  const otros = destinos.filter((d) => d !== origen);
+  const quedan = libres.filter((w) => !otros.includes(w));
+  return (libres.includes(origen) ? [...quedan, ...otros] : quedan).sort();
+}
+

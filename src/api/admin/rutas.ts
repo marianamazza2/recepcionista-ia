@@ -250,7 +250,18 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
           apertura: t.hora('apertura', 'la apertura'),
           cierre: horaDeTramo(t, 'cierre', 'el cierre'),
         }));
-        await guardarHorario(deps.sql, params[0]!, staffId, tramos);
+        // PI-19: los días que la profesional no trabaja (solo en un horario propio).
+        const crudos = e.valor('diasLibres') ?? [];
+        if (!Array.isArray(crudos) || crudos.some((w) => !Number.isInteger(w) || (w as number) < 0 || (w as number) > 6)) {
+          throw new ErrorPanel(400, 'Los días que no trabaja tienen que ser días de la semana (0 = domingo … 6 = sábado).');
+        }
+        const diasLibres = [...new Set(crudos as number[])].sort();
+        if (staffId === null && diasLibres.length > 0) throw new ErrorPanel(400, 'El local no tiene días "no trabaja": un día sin tramos es un día cerrado.');
+        const choca = diasLibres.find((w) => tramos.some((t) => t.weekday === w));
+        if (choca !== undefined) {
+          throw new ErrorPanel(400, `El ${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][choca]} no puede tener horas propias y "no trabaja" a la vez.`);
+        }
+        await guardarHorario(deps.sql, params[0]!, staffId, tramos, diasLibres);
         return detalle(params[0]!);
       },
     },

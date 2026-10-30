@@ -299,6 +299,66 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
   });
 });
 
+describe('PI-19: días que una profesional no trabaja', () => {
+  it('se guardan con su horario propio, el agente los sabe y el motor no ofrece ni reserva ese día', async () => {
+    const n = await alta('Dias Libres Test');
+    const h = api();
+    // Nora: jueves de 10 a 14 y sábado de 15 a 20 propios, el viernes no trabaja; el resto, como el local.
+    const r = await pedir(h, 'PUT', `negocios/${n.id}/horario`, {
+      staffId: n.profesionalId,
+      tramos: [
+        { weekday: 4, apertura: '10:00', cierre: '14:00' },
+        { weekday: 6, apertura: '15:00', cierre: '20:00' },
+      ],
+      diasLibres: [5],
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.diasLibres).toEqual([{ staffId: n.profesionalId, weekday: 5 }]);
+
+    const config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.profesionales[0]!.diasLibres).toEqual([5]);
+    const prompt = buildSystemPrompt(config);
+    expect(prompt).toContain('- Nora, los jueves: de 10:00 a 14:00\n- Nora, los viernes: no trabaja\n- Nora, los sábados: de 15:00 a 20:00');
+    expect(prompt).toContain('los días que no salen aquí trabaja en el horario del local');
+
+    // El agente pregunta por el viernes 18 con Nora: no hay huecos y le dice por qué.
+    let motivo: unknown = null;
+    const modelo = new ModeloSimulado([
+      herramientas({ name: 'consultar_disponibilidad', input: { servicio: 'Corte', fecha_desde: '2030-10-18', profesional: 'Nora' } }),
+      (p): Guion => {
+        const resultado = JSON.stringify(p.messages.at(-1));
+        motivo = /la_profesional_no_esta_esos_dias/.test(resultado) ? 'la_profesional_no_esta_esos_dias' : resultado;
+        return texto('Nora no trabaja los viernes.');
+      },
+    ]);
+    await pedir(api(modelo), 'POST', `negocios/${n.id}/probar`, { texto: '¿Nora el viernes 18?' });
+    expect(motivo).toBe('la_profesional_no_esta_esos_dias');
+
+    // Ni a mano (PI-14): no se salta el horario.
+    const aMano = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-18', hora: '10:15', telefono: '+34999000777', nombre: 'Clienta Viernes' });
+    expect(aMano.body.motivo).toBe('outside_hours');
+    // El lunes sigue como el local.
+    const lunes = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '10:15', telefono: '+34999000777', nombre: 'Clienta Lunes' });
+    expect(lunes.status).toBe(201);
+
+    // Volver a "como el local" borra el día libre.
+    const otra = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [], diasLibres: [] });
+    expect(otra.body.diasLibres).toEqual([]);
+  });
+
+  it('un día no puede tener horas propias y "no trabaja" a la vez; el local no tiene días libres', async () => {
+    const n = await alta('Dias Libres Mal Test');
+    const h = api();
+    const ambos = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 5, apertura: '10:00', cierre: '12:00' }], diasLibres: [5] });
+    expect(ambos.status).toBe(400);
+    expect(ambos.body.mensaje).toBe('El viernes no puede tener horas propias y "no trabaja" a la vez.');
+    const local = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA, diasLibres: [6] });
+    expect(local.status).toBe(400);
+    const fuera = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [], diasLibres: [7] });
+    expect(fuera.status).toBe(400);
+  });
+});
+
 describe('citas a mano (PR-04, PI-14)', () => {
   it('a las 10:15 (fuera de la rejilla) y dentro de la antelación se crean, con SMS; fuera de horario, en festivo o pisando otra, no', async () => {
     const n = await alta('Agenda Test');

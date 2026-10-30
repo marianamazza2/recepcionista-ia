@@ -13,7 +13,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { api, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
-import { avisosHorario, copiarDia, fueraDelLocal, LABORABLES, TODA_LA_SEMANA } from '../horario';
+import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, type EstadoDia } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
 
@@ -348,7 +348,11 @@ function FilaProfesional({ negocio: n, poner, profesional: p }: Props & { profes
 
 function Horarios({ negocio: n, poner }: Props) {
   return (
-    <Bloque id="horarios" titulo="Horarios" ayuda="El horario propio de una profesional reemplaza al del local los días que lo tenga; los demás días hereda el del local.">
+    <Bloque
+      id="horarios"
+      titulo="Horarios"
+      ayuda="Cada día, cada profesional trabaja como el local (de serie), no trabaja (aunque el local abra) o con sus horas propias, que ese día reemplazan a las del local."
+    >
       <EditorHorario negocio={n} poner={poner} staffId={null} titulo="Horario del local" />
       {n.profesionales.filter((p) => p.activo).map((p) => (
         <div key={p.id} className="mt-6 border-t border-slate-100 pt-4">
@@ -359,16 +363,43 @@ function Horarios({ negocio: n, poner }: Props) {
   );
 }
 
+const ESTADOS_DIA: { valor: EstadoDia; texto: string }[] = [
+  { valor: 'local', texto: 'Como el local' },
+  { valor: 'libre', texto: 'No trabaja' },
+  { valor: 'propias', texto: 'Horas propias' },
+];
+
 function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId: string | null; titulo: string }) {
-  const actuales = n.horario.filter((t) => t.staffId === staffId);
-  const [tramos, setTramos] = useState<Tramo[]>(actuales);
+  const deServidor = () => ({
+    tramos: n.horario.filter((t) => t.staffId === staffId),
+    libres: staffId === null ? [] : n.diasLibres.filter((l) => l.staffId === staffId).map((l) => l.weekday),
+  });
+  const [tramos, setTramos] = useState<Tramo[]>(() => deServidor().tramos);
+  // PI-19: los días que esta profesional no trabaja (el local no tiene).
+  const [libres, setLibres] = useState<number[]>(() => deServidor().libres);
   const [copiando, setCopiando] = useState<number | null>(null);
   const [destinos, setDestinos] = useState<number[]>([]);
-  useEffect(() => setTramos(n.horario.filter((t) => t.staffId === staffId)), [n, staffId]);
+  useEffect(() => {
+    const v = deServidor();
+    setTramos(v.tramos);
+    setLibres(v.libres);
+  }, [n, staffId]); // eslint-disable-line react-hooks/exhaustive-deps
   const a = useAccion();
+  const esProfesional = staffId !== null;
+  const local = n.horario.filter((t) => t.staffId === null);
   const cambiar = (i: number, k: 'apertura' | 'cierre', v: string) => setTramos(tramos.map((t, j) => (j === i ? { ...t, [k]: v } : t)));
   const nombreDia = (w: number) => SEMANA.find((d) => d.weekday === w)!.nombre.toLowerCase();
 
+  const cambiarEstado = (w: number, estado: EstadoDia) => {
+    const r = ponerEstado(tramos, libres, w, estado, (t) => ({ ...t, staffId }), local);
+    setTramos(r.tramos);
+    setLibres(r.libres);
+  };
+  const anadirTramo = (w: number) => {
+    // Añadir un tramo es tener horas propias ese día (PI-19).
+    setTramos([...tramos, { staffId, weekday: w, apertura: '10:00', cierre: '14:00' }]);
+    setLibres(libres.filter((x) => x !== w));
+  };
   const empezarCopia = (w: number) => {
     setCopiando(copiando === w ? null : w);
     setDestinos([]);
@@ -376,6 +407,7 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
   const copiar = () => {
     if (copiando === null) return;
     setTramos(copiarDia(tramos, copiando, destinos));
+    setLibres(copiarLibres(libres, copiando, destinos));
     setCopiando(null);
     setDestinos([]);
   };
@@ -383,58 +415,81 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
   // PI-18: un horario propio puede salirse del horario del local (PD-01: manda
   // el propio). Se avisa siempre en pantalla (también con lo ya guardado) y se
   // pide confirmación al guardar, por si es un error al cargarlo.
-  const fuera = staffId === null ? [] : fueraDelLocal(tramos, n.horario.filter((t) => t.staffId === null));
+  const fuera = esProfesional ? fueraDelLocal(tramos, local) : [];
   const quien = n.profesionales.find((p) => p.id === staffId)?.nombre ?? 'Esta profesional';
   const listaFuera = fuera.map((t) => `${nombreDia(t.weekday)} ${t.apertura}–${t.cierre}`).join(' · ');
 
   const guardar = () => {
     if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${listaFuera}. ¿Guardar igual?`)) return;
-    void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos })));
+    void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}) })));
   };
 
   return (
     <div role="group" aria-label={titulo}>
       <h3 className="text-sm font-semibold">{titulo}</h3>
-      {staffId !== null && tramos.length === 0 ? <p className="mt-1 text-xs text-slate-500">Sin horario propio: trabaja en el horario del local.</p> : null}
+      {esProfesional && tramos.length === 0 && libres.length === 0 ? <p className="mt-1 text-xs text-slate-500">Trabaja todos los días como el local.</p> : null}
       <div className="mt-2 space-y-1.5">
-        {SEMANA.map((d) => (
-          <div key={d.weekday}>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="w-24 text-slate-600">{d.nombre}</span>
-              {tramos.map((t, i) =>
-                t.weekday === d.weekday ? (
-                  <span key={i} title={fuera.includes(t) ? 'Fuera del horario del local' : undefined} className={`flex items-center gap-1 rounded-md px-1.5 py-1 ${fuera.includes(t) ? 'bg-amber-100 ring-1 ring-amber-400' : 'bg-slate-100'}`}>
-                    <input type="time" aria-label={`${d.nombre}, apertura`} className="rounded border border-slate-300 px-1 text-sm" value={t.apertura} onChange={(e) => cambiar(i, 'apertura', e.target.value)} />
-                    –
-                    <input type="text" aria-label={`${d.nombre}, cierre`} className="w-16 rounded border border-slate-300 px-1 text-sm" value={t.cierre} onChange={(e) => cambiar(i, 'cierre', e.target.value)} placeholder="HH:MM" />
-                    <button type="button" aria-label="Quitar tramo" className="px-1 text-slate-400 hover:text-red-600" onClick={() => setTramos(tramos.filter((_, j) => j !== i))}>×</button>
-                  </span>
-                ) : null,
-              )}
-              {!tramos.some((t) => t.weekday === d.weekday) ? <span className="text-xs text-slate-400">{staffId === null ? 'cerrado' : '—'}</span> : null}
-              <button type="button" className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => setTramos([...tramos, { staffId, weekday: d.weekday, apertura: '10:00', cierre: '14:00' }])}>+ tramo</button>
-              {tramos.some((t) => t.weekday === d.weekday) ? (
-                <button type="button" aria-expanded={copiando === d.weekday} className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => empezarCopia(d.weekday)}>Copiar a…</button>
+        {SEMANA.map((d) => {
+          const estado = esProfesional ? estadoDia(tramos, libres, d.weekday) : null;
+          const conTramos = tramos.some((t) => t.weekday === d.weekday);
+          return (
+            <div key={d.weekday}>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="w-24 text-slate-600">{d.nombre}</span>
+                {estado !== null ? (
+                  <select
+                    aria-label={`${d.nombre}, cómo trabaja`}
+                    className={`rounded border px-1.5 py-1 text-xs ${estado === 'libre' ? 'border-slate-300 bg-slate-100 text-slate-600' : estado === 'propias' ? 'border-slate-400 bg-white' : 'border-slate-200 bg-white text-slate-500'}`}
+                    value={estado}
+                    onChange={(e) => cambiarEstado(d.weekday, e.target.value as EstadoDia)}
+                  >
+                    {ESTADOS_DIA.map((o) => (
+                      <option key={o.valor} value={o.valor}>{o.texto}</option>
+                    ))}
+                  </select>
+                ) : null}
+                {estado !== 'libre'
+                  ? tramos.map((t, i) =>
+                      t.weekday === d.weekday ? (
+                        <span key={i} title={fuera.includes(t) ? 'Fuera del horario del local' : undefined} className={`flex items-center gap-1 rounded-md px-1.5 py-1 ${fuera.includes(t) ? 'bg-amber-100 ring-1 ring-amber-400' : 'bg-slate-100'}`}>
+                          <input type="time" aria-label={`${d.nombre}, apertura`} className="rounded border border-slate-300 px-1 text-sm" value={t.apertura} onChange={(e) => cambiar(i, 'apertura', e.target.value)} />
+                          –
+                          <input type="text" aria-label={`${d.nombre}, cierre`} className="w-16 rounded border border-slate-300 px-1 text-sm" value={t.cierre} onChange={(e) => cambiar(i, 'cierre', e.target.value)} placeholder="HH:MM" />
+                          <button type="button" aria-label="Quitar tramo" className="px-1 text-slate-400 hover:text-red-600" onClick={() => setTramos(tramos.filter((_, j) => j !== i))}>×</button>
+                        </span>
+                      ) : null,
+                    )
+                  : null}
+                {!esProfesional && !conTramos ? <span className="text-xs text-slate-400">cerrado</span> : null}
+                {estado === 'local' ? (
+                  <span className="text-xs text-slate-400">{local.filter((t) => t.weekday === d.weekday).map((t) => `${t.apertura}–${t.cierre}`).join(' y ') || 'el local cierra'}</span>
+                ) : null}
+                {estado !== 'libre' ? (
+                  <button type="button" className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => anadirTramo(d.weekday)}>+ tramo</button>
+                ) : null}
+                {conTramos || esProfesional ? (
+                  <button type="button" aria-expanded={copiando === d.weekday} className="text-xs text-slate-500 underline hover:text-slate-900" onClick={() => empezarCopia(d.weekday)}>Copiar a…</button>
+                ) : null}
+              </div>
+              {copiando === d.weekday ? (
+                <div role="group" aria-label={`Copiar el ${nombreDia(d.weekday)} a otros días`} className="ml-26 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                  <span className="text-slate-600">Copiar el {nombreDia(d.weekday)} a:</span>
+                  <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(LABORABLES.filter((w) => w !== d.weekday))}>Días laborables</button>
+                  <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(TODA_LA_SEMANA.filter((w) => w !== d.weekday))}>Toda la semana</button>
+                  {SEMANA.filter((o) => o.weekday !== d.weekday).map((o) => (
+                    <label key={o.weekday} className="flex items-center gap-1">
+                      <input type="checkbox" checked={destinos.includes(o.weekday)} onChange={(e) => setDestinos(e.target.checked ? [...destinos, o.weekday] : destinos.filter((w) => w !== o.weekday))} />
+                      {o.nombre.slice(0, 3)}
+                    </label>
+                  ))}
+                  <button type="button" className="boton px-2 py-1 text-xs" disabled={destinos.length === 0} onClick={copiar}>Copiar</button>
+                  <button type="button" className="text-slate-500 underline" onClick={() => setCopiando(null)}>Cancelar</button>
+                  <span className="basis-full text-slate-500">Sustituye lo que tuvieran esos días{esProfesional ? ' (también si no trabaja)' : ''}. Después, "Guardar horario".</span>
+                </div>
               ) : null}
             </div>
-            {copiando === d.weekday ? (
-              <div role="group" aria-label={`Copiar el ${nombreDia(d.weekday)} a otros días`} className="ml-26 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-                <span className="text-slate-600">Copiar el {nombreDia(d.weekday)} a:</span>
-                <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(LABORABLES.filter((w) => w !== d.weekday))}>Días laborables</button>
-                <button type="button" className="boton-suave px-2 py-1 text-xs" onClick={() => setDestinos(TODA_LA_SEMANA.filter((w) => w !== d.weekday))}>Toda la semana</button>
-                {SEMANA.filter((o) => o.weekday !== d.weekday).map((o) => (
-                  <label key={o.weekday} className="flex items-center gap-1">
-                    <input type="checkbox" checked={destinos.includes(o.weekday)} onChange={(e) => setDestinos(e.target.checked ? [...destinos, o.weekday] : destinos.filter((w) => w !== o.weekday))} />
-                    {o.nombre.slice(0, 3)}
-                  </label>
-                ))}
-                <button type="button" className="boton px-2 py-1 text-xs" disabled={destinos.length === 0} onClick={copiar}>Copiar</button>
-                <button type="button" className="text-slate-500 underline" onClick={() => setCopiando(null)}>Cancelar</button>
-                <span className="basis-full text-slate-500">Sustituye lo que tuvieran esos días. Después, "Guardar horario".</span>
-              </div>
-            ) : null}
-          </div>
-        ))}
+          );
+        })}
       </div>
       {fuera.length > 0 ? (
         <p role="note" aria-label="Aviso de horario" className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">

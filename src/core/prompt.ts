@@ -11,8 +11,8 @@
 // de sistema en cada turno (ver contextoDelTurno).
 //
 // Fase 4 (PI-08): las preguntas frecuentes del negocio van al final de los
-// datos del negocio, para usarlas tal cual. Es el único cambio del núcleo en
-// la Fase 4.
+// datos del negocio, para usarlas tal cual. Y (PI-19) los días que una
+// profesional no trabaja, junto a su horario propio.
 //
 // Orden (spec 2.2): identidad y tono (PA-04) · qué puede y qué no · reglas ·
 // datos del negocio (maestro §8) · cuándo pasar con una persona (PA-05).
@@ -147,14 +147,21 @@ function datosDelNegocio(c: BusinessConfig): string {
   for (const d of ORDEN_SEMANA) {
     lineas.push(`- ${DIAS_SEMANA[d]}: ${tramos(c.horario.filter((t) => t.weekday === d))}`);
   }
+  // PD-01 + PI-19: por profesional y día, sus horas propias o que no trabaja
+  // (gana "no trabaja", como en el motor). Los demás días, como el local.
   const propios = c.profesionales.flatMap((p) => {
     const suyos = c.horariosPropios.filter((h) => h.staffId === p.id);
-    return ORDEN_SEMANA.filter((d) => suyos.some((h) => h.weekday === d)).map(
-      (d) => `- ${p.nombre}, los ${plural(DIAS_SEMANA[d]!)}: ${tramos(suyos.filter((h) => h.weekday === d))}`,
+    return ORDEN_SEMANA.filter((d) => p.diasLibres.includes(d) || suyos.some((h) => h.weekday === d)).map(
+      (d) =>
+        `- ${p.nombre}, los ${plural(DIAS_SEMANA[d]!)}: ${p.diasLibres.includes(d) ? 'no trabaja' : tramos(suyos.filter((h) => h.weekday === d))}`,
     );
   });
   if (propios.length > 0) {
-    lineas.push('', 'Horarios propios (ese día la profesional solo trabaja en este horario):', ...propios);
+    lineas.push(
+      '',
+      'Horarios propios (ese día la profesional solo trabaja en este horario, o no trabaja aunque el local abra; los días que no salen aquí trabaja en el horario del local):',
+      ...propios,
+    );
   }
   lineas.push('Los festivos y ausencias no están aquí: los tiene en cuenta consultar_disponibilidad.');
 

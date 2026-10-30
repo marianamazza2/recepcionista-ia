@@ -21,7 +21,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 | # | Tema | Regla del motor (fija) | Ajuste por negocio (de serie) | Decidido |
 |---|---|---|---|---|
-| PD-01 | Horarios | El horario propio de una profesional **reemplaza** al del local ese día. Sin horario propio, hereda el del local | Horario del local y de cada profesional | 16/10/2026 |
+| PD-01 | Horarios | El horario propio de una profesional **reemplaza** al del local ese día. Sin horario propio, hereda el del local. Un día marcado "no trabaja" no tiene huecos (PI-19) | Horario del local y de cada profesional, y sus días libres | 16/10/2026 (ampliada 30/10/2026) |
 | PD-02 | Margen entre citas | El margen **se respeta siempre** | Minutos de margen por servicio (0 = sin margen) | 16/10/2026 |
 | PD-03 | Elección de profesional | Si la clienta no tiene preferencia: primer hueco libre o la que menos citas tenga | Cómo se elige (de serie: **el agente pregunta**) | 16/10/2026 |
 | PD-04 | Fuera de horario | Dice que no abre y **ofrece los huecos más cercanos**. Si insiste, ofrece pasar con una persona | — | 16/10/2026 |
@@ -38,7 +38,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
-Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026.
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026. PI-20, ⚠️ por confirmar.
 
 ---
 
@@ -63,6 +63,12 @@ esté trabajando, porque no hace ese servicio.
 
 **Ajuste por negocio:** el horario del local y, si los hay, los horarios propios
 de cada profesional.
+
+**Ampliada el 30/10/2026 (PI-19):** cada día, cada profesional trabaja **como
+el local** (lo de arriba, de serie), **no trabaja** (ese día no tiene ningún
+hueco aunque el local abra) o con **horas propias** (mandan las suyas). Antes
+no había forma de decir que una profesional no trabaja un día que el local
+abre.
 
 ## PD-02 · Margen entre citas
 
@@ -896,6 +902,8 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA (descuenta del tope del negocio). El informe las enseña aparte | — | ✅ decidida 29/10/2026 |
 | PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
+| PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
+| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -985,4 +993,47 @@ revisar va en ámbar y no lo bloquea.
 
 Es un aviso del panel para no equivocarse al cargarlo, **no una restricción
 de la base**.
+
+### PI-19 · Días que una profesional no trabaja (amplía PD-01) · ✅ decidida el 30/10/2026
+
+Apareció al probar el panel: en "Probar el chat" de una clínica inventada,
+Mariana pidió una limpieza con Rodrigo y el agente le ofreció el **viernes**.
+Rodrigo tiene horario propio solo el jueves (10–14) y el sábado (15–20); por
+PD-01, un día sin horario propio hereda el del local, así que el viernes
+"trabajaba" de 10 a 19. No había forma de decir que no trabaja.
+
+**Decisión (Mariana, 30/10/2026):** cada día de cada profesional tiene **tres
+estados**:
+
+- **Como el local** (de serie, lo de siempre): trabaja en el horario del
+  local ese día.
+- **No trabaja**: ese día no tiene ningún hueco, aunque el local abra.
+- **Horas propias**: si se cargan horas de entrada y salida ese día, es su
+  horario propio y manda ese (PD-01).
+
+**Lo aplica el motor**, no el prompt: un día "no trabaja" la profesional no
+aparece en los huecos ni se le puede reservar, **tampoco con una cita a mano**
+(PI-14: la cita a mano se salta la rejilla y la antelación, nunca el
+horario). El agente lo sabe (lo ve junto a su horario propio) y, si piden a
+esa profesional ese día, dice que no está ese día y ofrece alternativas.
+
+En el panel, cada día del horario de una profesional tiene un selector
+"Como el local / No trabaja / Horas propias"; añadir un tramo pasa el día a
+"Horas propias", y "Copiar a…" copia también el estado del día. El aviso de
+PI-18 sigue igual.
+
+### PI-20 · ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? · ⚠️ por confirmar
+
+Apareció al construir PI-19. Para activar un negocio hace falta "una
+profesional activa que haga algún servicio" (PI-03). Con PI-19 se puede
+marcar que una profesional **no trabaja ningún día**: técnicamente sigue
+"activa" y hace servicios, pero nunca tendrá huecos.
+
+*Propuesta:* que **no cuente**. Si todas las profesionales que hacen
+servicios están marcadas "no trabaja" todos los días, el panel diría "Falta:
+una profesional activa que haga algún servicio" y no dejaría activar. Lo
+normal para alguien que no va a trabajar más es desactivarla (PI-04).
+
+*Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
+profesional activa.
 

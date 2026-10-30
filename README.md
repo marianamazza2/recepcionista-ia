@@ -7,7 +7,8 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > — cómo se calculan los huecos, márgenes, antelación, quién atiende, qué pasa al
 > cancelar o mover una cita. Las de las fases 0 a 2, decididas el 16/10/2026;
 > las del widget (PW-01 a PW-17) y las del panel (PI-01 a PI-14), decididas el
-> 28/10/2026; las que aparecieron al construirlo y probarlo (PI-15 a PI-18), el 29/10/2026.
+> 28/10/2026; las que aparecieron al construirlo y probarlo (PI-15 a PI-19), el 29 y el 30/10/2026
+> (PI-20, ⚠️ por confirmar).
 >
 > **Decisiones técnicas:** `docs/DECISIONES.md` (local, no se sube): por qué el
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
@@ -45,9 +46,9 @@ reservas (Fase 1).
 
 ```
 supabase/
-├── migrations/          17 migraciones, versionadas y en orden de dependencias
+├── migrations/          18 migraciones, versionadas y en orden de dependencias
 ├── seed.sql             negocio de prueba "Estética Aurora"
-└── tests/               tests SQL de aserción (10 archivos, 224 aserciones)
+└── tests/               tests SQL de aserción (11 archivos, 243 aserciones)
 scripts/
 ├── run-sql-tests.sh     runner de los tests SQL
 └── con-supabase.sh      ejecutar un comando contra la nube
@@ -100,6 +101,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261016120600_lock_por_clienta` | PR-08: lock por clienta en `book_appointment`, para dos reservas simultáneas de la misma clienta |
 | `20261016130000_widget_web` | Fase 3: clave, dominios, color, privacidad y tope del widget en `businesses`; token de sesión (hash) e IP (hash) en `conversations`; `usage_events` en US$ y con su conversación; `appointment_links` y `sms_messages` |
 | `20261028100000_widget_logo` | Fase 3: `businesses.widget_logo`, el logo del círculo de la cabecera del widget como data URL (PW-17) |
+| `20261030120000_dias_libres` | Fase 4: `staff_dias_libres`, los días que una profesional no trabaja aunque el local abra (PI-19); `app.tramos_efectivos` no le da horario esos días |
 | `20261028120000_panel_interno` | Fase 4: `panel.personas` (quién entra al panel, PI-01), preguntas frecuentes en `knowledge_docs` con su límite (PI-08, `RA007`), `conversations.prueba` (PI-13), `escalations.resuelta_at` (PI-07), `negocio_lo_que_falta()` y no activar sin lo mínimo (PI-03, `RA008`), y el modo manual de `slot_es_valido`/`book_appointment` (PR-04, PI-14) |
 
 ### Las dos garantías que ya están puestas
@@ -328,7 +330,7 @@ negocios a la vez, en el panel → Consumo.
 
 La herramienta de Mariana (no la del cliente, que es la Fase 9). Spec:
 [`_specs/fase-4-panel-interno.md`](_specs/fase-4-panel-interno.md); reglas
-PI-01 a PI-18 en `decisiones-producto.md`; cómo está hecho en
+PI-01 a PI-20 en `decisiones-producto.md`; cómo está hecho en
 [`admin/README.md`](admin/README.md).
 
 ### Crear tu cuenta (una vez)
@@ -437,9 +439,9 @@ Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
 `DATABASE_URL`. Los dos comandos la leen de ahí.
 
 ```bash
-npm run test:sql                    # tests SQL (10 archivos)
+npm run test:sql                    # tests SQL (11 archivos)
 ./scripts/run-sql-tests.sh 07       # solo uno
-npm test                            # tests TypeScript (169), el de concurrencia incluido
+npm test                            # tests TypeScript (179), el de concurrencia incluido
 npm run test:e2e                    # la demo y el panel en Google Chrome, con el modelo simulado
 npm run typecheck                   # comprobación de tipos (también la del widget y la del panel)
 
@@ -465,6 +467,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `07_disponibilidad.sql` | `available_slots`: tramo partido, cierre (PR-02 en sus dos modos), intervalo, festivo, ausencia, filtro por servicio, horario propio, margen, canceladas, antelación, cambio de hora, rango máximo |
 | `08_reserva_completa.sql` | `book_appointment`: cada motivo de rechazo con su código, asignación automática, `ultima_profesional`, que reserva y disponibilidad coincidan, y RLS |
 | `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS; el formato y el tamaño del logo (PW-17) |
+| `11_dias_libres.sql` | PI-19: la tabla de días libres (duplicados, día válido, otro negocio, RLS) y el motor: ese día no hay tramos ni huecos, no se reserva tampoco a mano, la asignación automática va a otra profesional, "no trabaja" gana a las horas propias, y `available_slots` y `slot_es_valido` coinciden minuto a minuto |
 | `10_panel.sql` | Fase 4: `panel.personas` fuera de `public`, con RLS y sin política; preguntas frecuentes y su límite (RA007); conversación de prueba; derivación resuelta; lo que falta y no activar sin ello (RA008); citas a mano: sin rejilla ni antelación, pero nunca fuera de horario, en festivo, en una ausencia por horas, pisando otra cita o el margen |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien

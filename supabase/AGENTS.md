@@ -44,7 +44,9 @@ supabase/
 9. **Funciones del motor** (`book_appointment`, `available_slots`…):
    `SECURITY INVOKER`, no declaran el tenant (lo hace quien llama, D-17).
    Todo lo que decide si un hueco es válido pasa por `app.slot_es_valido`
-   (D-26): nunca se duplica esa lógica. Desde la Fase 4 tiene un quinto
+   (D-26): nunca se duplica esa lógica. Qué horas trabaja una profesional
+   un día sale de `app.tramos_efectivos`: horario propio (PD-01), el del
+   local, o ninguno si ese día no trabaja (`staff_dias_libres`, PI-19). Desde la Fase 4 tiene un quinto
    argumento, `p_manual` (PR-04, PI-14: sin rejilla ni antelación), igual que
    `book_appointment`. Al añadir un argumento con valor de serie a una
    función, se **borra** la firma anterior en la misma migración: si no, las
