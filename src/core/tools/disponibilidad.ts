@@ -1,8 +1,13 @@
 // consultar_disponibilidad — huecos libres de un servicio (maestro §6, PA-03, PD-04)
+//
+// Sin huecos, dice por qué cuando se sabe (PD-04): el local no abre ese día de
+// la semana, el local cierra todo el rango (festivo, vacaciones: time_off sin
+// profesional) o la profesional pedida no está. Nunca el motivo escrito en el
+// festivo: puede ser interno ("vacaciones de Lucía").
 
 import { CustomerBusyError } from '../../adapters/booking/errors.js';
 import type { BusinessConfig } from '../../config/business.js';
-import { diasEntre, isFecha, isHora, localToUtc, weekdayDe } from '../time.js';
+import { diasEntre, isFecha, isHora, localToUtc, sumarDias, weekdayDe } from '../time.js';
 import {
   HUECOS_POR_RESPUESTA,
   alternativas,
@@ -139,10 +144,11 @@ export const consultarDisponibilidad: AgentTool = {
     const unSoloDia = desde === hasta;
     const cerradoEseDia =
       unSoloDia && !profesional && !ctx.config.horario.some((t) => t.weekday === weekdayDe(desde));
+    const motivo = cerradoEseDia ? 'el_local_no_abre_ese_dia' : await cierreQueCubre(ctx, desde, hasta, profesional?.id ?? null);
     return ok({
       ...base,
       huecos: [],
-      motivo_sin_huecos: cerradoEseDia ? 'el_local_no_abre_ese_dia' : 'no_quedan_huecos_libres',
+      motivo_sin_huecos: motivo,
       alternativas: await alternativas(ctx, {
         servicioId: servicio.id,
         staffId: profesional?.id,
@@ -153,3 +159,32 @@ export const consultarDisponibilidad: AgentTool = {
     });
   },
 };
+
+/**
+ * Sin huecos en el rango: ¿es porque el local cierra todo el rango (festivo,
+ * vacaciones) o la profesional pedida no está? Solo cuentan los cierres que
+ * cubren los días enteros; uno de unas horas no explica que no haya nada.
+ */
+async function cierreQueCubre(
+  ctx: Parameters<AgentTool['run']>[1],
+  desde: string,
+  hasta: string,
+  staffId: string | null,
+): Promise<'el_local_cierra_esos_dias' | 'la_profesional_no_esta_esos_dias' | 'no_quedan_huecos_libres'> {
+  const inicio = localToUtc(desde, '00:00', ctx.config.timezone);
+  const fin = localToUtc(sumarDias(hasta, 1), '00:00', ctx.config.timezone);
+  const local = await ctx.sql`
+    select 1 from public.time_off
+     where business_id = ${ctx.config.id} and staff_id is null and desde <= ${inicio} and hasta >= ${fin}
+     limit 1`;
+  if (local.length > 0) return 'el_local_cierra_esos_dias';
+  if (staffId) {
+    const suya = await ctx.sql`
+      select 1 from public.time_off
+       where business_id = ${ctx.config.id} and staff_id = ${staffId} and desde <= ${inicio} and hasta >= ${fin}
+       limit 1`;
+    if (suya.length > 0) return 'la_profesional_no_esta_esos_dias';
+  }
+  return 'no_quedan_huecos_libres';
+}
+

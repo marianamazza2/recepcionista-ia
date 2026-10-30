@@ -192,6 +192,34 @@ describe('consultar_disponibilidad', () => {
     expect(d.alternativas[0]).toMatchObject({ fecha: '2030-10-28', hora: '09:00' });
   });
 
+  it('un día que el local cierra (festivo, vacaciones): lo dice, sin el motivo escrito (PD-04)', async () => {
+    await sql`
+      insert into public.time_off (business_id, desde, hasta, motivo)
+      values (${AURORA.businessId}, ${localToUtc('2030-10-29', '00:00', TZ)}, ${localToUtc('2030-11-01', '00:00', TZ)}, 'test fase 2')`;
+    const ctx = await nuevoCtx();
+    const unDia = datos(await executeTool('consultar_disponibilidad', { servicio: 'Limpieza facial profunda', fecha_desde: '2030-10-30' }, ctx));
+    expect(unDia.huecos).toEqual([]);
+    expect(unDia.motivo_sin_huecos).toBe('el_local_cierra_esos_dias');
+    expect(JSON.stringify(unDia)).not.toContain('test fase 2');
+    expect(unDia.alternativas.every((h: any) => !['2030-10-29', '2030-10-30', '2030-10-31'].includes(h.fecha))).toBe(true);
+    const variosDias = datos(
+      await executeTool('consultar_disponibilidad', { servicio: 'Limpieza facial profunda', fecha_desde: '2030-10-29', fecha_hasta: '2030-10-31' }, ctx),
+    );
+    expect(variosDias.motivo_sin_huecos).toBe('el_local_cierra_esos_dias');
+    // Esos días los usan otros tests de este archivo para reservar.
+    await sql`delete from public.time_off where business_id = ${AURORA.businessId} and motivo = 'test fase 2'`;
+  });
+
+  it('la profesional pedida no está ese día: lo dice (PD-04)', async () => {
+    await sql`
+      insert into public.time_off (business_id, staff_id, desde, hasta, motivo)
+      values (${AURORA.businessId}, ${AURORA.staff.marta}, ${localToUtc('2030-10-24', '00:00', TZ)}, ${localToUtc('2030-10-25', '00:00', TZ)}, 'test fase 2')`;
+    const ctx = await nuevoCtx();
+    const d = datos(await executeTool('consultar_disponibilidad', { servicio: 'Limpieza facial profunda', fecha_desde: '2030-10-24', profesional: 'Marta' }, ctx));
+    expect(d.motivo_sin_huecos).toBe('la_profesional_no_esta_esos_dias');
+    await sql`delete from public.time_off where business_id = ${AURORA.businessId} and motivo = 'test fase 2'`;
+  });
+
   it('con profesional, solo sus huecos; si no hace el servicio, lo dice y nombra a quien sí', async () => {
     const ctx = await nuevoCtx();
     const conMarta = datos(
