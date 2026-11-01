@@ -21,6 +21,7 @@ Space: **"mm - agente recepcionista"** (`spc_20261015t1816fv77wyc`).
 | **Cualquier cosa de cómo funciona el producto** (siempre) | Cómo funciona el Recepcionista — el manual, el principal | `art_20261016t05187b4pfjv` |
 | Un ajuste por negocio (nuevo o cambiado) | Cuestionario de alta: la pregunta, el ejemplo de Aurora y la ficha exportada | `art_20261016t0518xh6vgg1` |
 | El estado de las fases o la tabla de decisiones | Hoja de ruta Recepcionista IA | `art_20261016t0418n68yyee` |
+| **Cada paso que se cierra o empieza** (siempre, aunque no cambie el producto) | Mapa de avance · Recepcionista IA: lo que Mariana mira de un vistazo. Solo se tocan los datos del bloque `DATOS` del script (`HERE`, `TODO`, estados de `CURRENT.steps` y `NEXT`, `UPDATED`). Las fases cerradas pasan a `CLOSED` sin pasos | `art_20261101t1623jpfmw10` |
 | `_specs/decisiones-producto.md` | Decisiones de producto: es una **copia** del .md; se reescribe entera | `art_20261016t09377swes0b` |
 | Costes, tiempos o riesgos (tokens medidos, modelo o precios, cosas para hablar más adelante) | Costes y cosas a vigilar (documento vivo) | `art_20261016t0937svta3z4` |
 | Se escribe el spec de una fase (§3b del `AGENTS.md` raíz) | Plan de pruebas · Fase N: nota nueva, con un hueco "Tus pruebas" para Mariana. Al ejecutarlo, leer antes lo que ella añadió | Fase 4: `art_20261101t1252add1xpx` |
