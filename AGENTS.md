@@ -97,6 +97,36 @@ No se adelanta trabajo de fases futuras: lo que está "fuera del alcance" de la
 fase en curso no se hace (por ejemplo, no se declara una herramienta que
 todavía no hace nada).
 
+### 3b. Mariana pone las reglas; Claude Code prueba todo
+
+Decidido por Mariana el 01/11/2026: **ella no prueba a mano**. En cada fase:
+
+1. Con el spec, Claude Code escribe un **plan de pruebas de aceptación**: todo
+   lo que va a intentar para romper lo construido (permisos, datos raros,
+   casos límite, clientas difíciles, la nube…). Va como nota en Research Desk
+   ("Plan de pruebas · Fase N"), con un hueco "Tus pruebas" al final.
+2. **Mariana lo revisa**: tacha lo que sobra y añade sus casos con sus
+   palabras.
+3. Claude Code lo **ejecuta**: tests automáticos, recorridos en el navegador
+   con Playwright y capturas (con cuentas y negocios de prueba, nunca los de
+   Mariana), conversaciones con el modelo real haciendo de clienta (avisando
+   del coste) y comprobación en la base. Todo en local; en la nube, solo con
+   su visto bueno.
+4. Cada fallo se arregla **con un test automático** que lo cubra. Lo que no
+   es un fallo sino una decisión de producto se le pregunta (⚠️ por confirmar,
+   §2), con una propuesta.
+5. Claude Code publica el **informe** ("Informe de pruebas · Fase N" en
+   Research Desk): cada prueba en OK / FALLA, con capturas. **Mariana lo
+   revisa** y mergea el PR.
+
+Lo único que queda para Mariana, además de decidir y revisar: lo que solo
+puede hacer ella. Contraseñas y claves secretas (las escribe ella, en su
+Terminal, en `.env` o en la web del servicio), cuentas, contratos y pagos con
+proveedores, iniciar sesión una vez en sus herramientas (`gh auth login`),
+mergear, y dar el visto bueno a lo que toca la nube, publica o cuesta dinero.
+Si un paso de la Hoja de ruta le pide probar algo a mano, ese paso está mal:
+se reescribe para que lo haga Claude Code.
+
 ## 4. Comandos
 
 ```bash
@@ -142,6 +172,8 @@ Postgres sin avisar.**
       `npm run test:e2e` si tocaste el widget, la API o la demo).
 - [ ] Si tocaste el agente (prompt, herramientas, loop): `npm run agent:eval`
       sigue todo OK. Cuesta dinero: avisá antes de correrlo varias veces.
+- [ ] Si es el cierre de una fase: el plan de pruebas de aceptación revisado
+      por Mariana está ejecutado y su informe publicado (§3b).
 - [ ] Si tocaste la base: también contra Supabase en la nube
       (`./scripts/con-supabase.sh …`) antes de cerrar una fase.
 - [ ] Tests nuevos para lo nuevo (SQL para la base, TypeScript para el resto).

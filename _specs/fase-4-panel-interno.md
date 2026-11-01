@@ -180,13 +180,18 @@ Trabajar contra el Postgres local (`recepcionista_dev`). No apagar ni reiniciar 
 
 ---
 
+## PLAN DE PRUEBAS DE ACEPTACIÓN
+
+Desde el 01/11/2026 las pruebas las hace Claude Code, no Mariana (§3b del `AGENTS.md` raíz). El plan está en la nota **"Plan de pruebas · Fase 4"** de Research Desk (79 pruebas en 15 bloques: acceso y seguridad, alta y validaciones, activar y pausar, servicios y profesionales, horarios, festivos, preguntas frecuentes, el chat en su web, probar el chat, clientas difíciles con el modelo real, agenda y citas a mano, visor y derivaciones, consumo y tope, robustez, y la nube después del merge). Mariana lo revisa y añade sus casos; Claude Code lo ejecuta y publica el **"Informe de pruebas · Fase 4"**.
+
 ## CÓMO SABÉS QUE PODÉS PASAR A LA FASE 5
+
+Lo comprueba Claude Code y lo resume en el informe:
 
 1. `npm run test:sql`, `npm test` y `npm run test:e2e` → todo en verde, en local y en Supabase.
 2. `npm run agent:eval` → todo OK, con el escenario de preguntas frecuentes.
-3. Entrás al panel, das de alta un negocio inventado nuevo sin tocar SQL, lo activás, pegás su widget en una web de prueba y te da una cita.
-4. Ves esa conversación en el visor, con sus herramientas y su coste, y el consumo del mes la cuenta.
-5. Desactivás un servicio y el agente deja de ofrecerlo; cambiás la clave y el widget viejo deja de aparecer.
-6. Cargás una cita a mano a una hora fuera de la rejilla y aparece en la agenda.
+3. El plan de pruebas de aceptación, revisado por Mariana, ejecutado: todo en OK o con su arreglo y su test, y las decisiones que salieron, decididas.
+4. Un negocio inventado nuevo dado de alta solo con el panel, activado, con su widget en una web de prueba que reserva una cita; la conversación en el visor con sus herramientas y su coste, y el consumo del mes contándola.
+5. Un servicio desactivado que el agente deja de ofrecer, una clave cambiada que deja sin widget la web vieja y una cita a mano fuera de la rejilla en la agenda.
 
 Recién ahí, Mariana mergea el PR de la fase (#2) y sesión nueva para la Fase 5.

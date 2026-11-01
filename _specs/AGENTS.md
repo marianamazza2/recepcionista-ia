@@ -40,6 +40,11 @@ base, no constantes en el código.
   los existentes (copiá la estructura de `fase-3-widget-web.md`). Una vez
   cerrada la fase no se reescriben: lo que cambió se registra en
   `docs/DECISIONES.md`.
+- **Cada spec de fase lleva su plan de pruebas de aceptación** (§3b del
+  `AGENTS.md` raíz): lo que Claude Code va a intentar para romper la fase, que
+  Mariana revisa antes de lanzarla o mientras se construye. Su "Cómo sabés que
+  podés pasar a la fase siguiente" lo comprueba Claude Code y lo resume en el
+  informe; **nunca le pide a Mariana probar a mano**.
 - Si el código y un spec no coinciden, **no "arregles" el spec en silencio**:
   o el código está mal, o hay una decisión que registrar. Preguntá.
 - Estos documentos están en el registro de Mariana (voseo) y en lenguaje de
