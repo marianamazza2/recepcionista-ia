@@ -208,7 +208,7 @@ const CONVERSACION_TERMINADA = 'Tu conversación anterior ha terminado. Empezamo
     }
 
     function pintarAviso(): void {
-      // PW-02: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad."
+      // PW-02: "Soy la asistente virtual de {negocio}, una IA. Al escribir aceptas nuestra política de privacidad."
       aviso.textContent = '';
       const frase = 'política de privacidad';
       const i = config.aviso.texto.indexOf(frase);

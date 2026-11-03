@@ -24,7 +24,7 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `supabase/` | Migraciones, seed y tests SQL | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 | `tests/` | Tests TypeScript (Vitest) contra una base real | [`tests/AGENTS.md`](tests/AGENTS.md) |
 | `widget/` | El chat embebible que va en la web del negocio | [`widget/AGENTS.md`](widget/AGENTS.md) · [`README`](widget/README.md) |
-| `demo/` | La web inventada de Estética Aurora con el widget pegado (la sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales |
+| `demo/` | La web inventada de Clínica Olea (medicina estética, Barcelona) con el widget pegado: la que se enseña en ventas (la sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales, sin promesas de resultados (publicidad sanitaria) |
 | `scripts/` | Runner de tests SQL y acceso a la nube | [`scripts/README.md`](scripts/README.md) |
 | `.claude/skills/` | Procedimientos de todos los días (verificar, migrar, consultar, Research Desk) | [§7b](#7b-skills-del-proyecto) |
 

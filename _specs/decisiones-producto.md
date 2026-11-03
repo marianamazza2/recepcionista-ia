@@ -464,7 +464,7 @@ antes de lanzar la fase.
 | # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
 | PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ✅ decidida 28/10/2026 |
-| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora | URL de su política de privacidad | ✅ decidida 28/10/2026 |
+| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Soy la asistente virtual de {negocio}, una IA. Al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora | URL de su política de privacidad | ✅ decidida 28/10/2026 · ⚠️ "una IA" añadido el 03/11/2026, por confirmar |
 | PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **2 h**, la retoma; después, conversación nueva | — | ✅ decidida 28/10/2026 |
 | PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ✅ decidida 28/10/2026 |
 | PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ✅ decidida 28/10/2026 |
@@ -500,6 +500,15 @@ pestaña nueva. Y la bienvenida **saluda según la
 hora** de quien escribe: si el mensaje de bienvenida del negocio empieza por
 "¡Hola!", el widget lo convierte en "¡Hola, buenos días!" (de 6 a 14),
 "¡Hola, buenas tardes!" (de 14 a 21) o "¡Hola, buenas noches!".
+
+**Cambio propuesto (A6, 03/11/2026) · ⚠️ por confirmar:** el informe legal
+A8 pide, para enseñar la demo, que el widget diga **claramente** que es una
+IA. "Asistente virtual" solo puede leerse como una persona que atiende a
+distancia, así que el aviso pasa a ser *"Soy la asistente virtual de
+{negocio}, una IA. Al escribir aceptas nuestra política de privacidad."*
+(`src/api/widget.ts`). Es para todos los negocios. Si Mariana prefiere otra
+forma, se cambia esa línea y sus tests (`tests/widget-api.test.ts`,
+`tests/e2e/widget.e2e.ts`).
 
 ### PW-03 · Cuánto dura la conversación en el navegador · ✅ decidida el 28/10/2026
 

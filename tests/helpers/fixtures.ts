@@ -6,7 +6,8 @@
 // como los SQL. En su lugar:
 //   · los negocios de prueba se crean al empezar y se borran al terminar (el
 //     borrado del negocio arrastra todo en cascada, D-03);
-//   · contra Estética Aurora solo se escribe con una clienta propia del test,
+//   · contra Estética Aurora (y Clínica Olea, la de la demo) solo se escribe
+//     con una clienta propia del test,
 //     en fechas de 2030, y se borra al terminar.
 //
 // Las fechas son fijas y lejanas para no depender del día en que se corren.
@@ -27,6 +28,12 @@ export const AURORA = {
     marta: 'c0000000-0000-4000-8000-000000000001',
     lucia: 'c0000000-0000-4000-8000-000000000002',
   },
+} as const;
+
+/** Clínica Olea: el negocio de la demo (demo/index.html, A6). Solo lo usa la prueba con el navegador. */
+export const OLEA = {
+  businessId: 'a1000000-0000-4000-8000-000000000001',
+  widgetKey: 'wk_demo_clinica_olea_0001',
 } as const;
 
 /** Prefijo de teléfono de las clientas que crean los tests (para limpiar restos). */

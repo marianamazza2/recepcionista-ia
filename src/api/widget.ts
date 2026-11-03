@@ -34,10 +34,14 @@ async function negocioYOrigen(deps: WebChatDeps, req: Request, key: unknown): Pr
   return { negocio, origin: origin! };
 }
 
-/** PW-02: dice que es una IA y enlaza la política, con el texto que eligió Mariana (28/10/2026). */
+/**
+ * PW-02: dice que es una IA y enlaza la política. Texto de Mariana (28/10/2026)
+ * con "una IA" añadido en A6 (03/11/2026, ⚠️ por confirmar): "asistente
+ * virtual" solo no deja claro que no es una persona (informe legal A8).
+ */
 export function avisoPrivacidad(negocio: Pick<WidgetBusiness, 'nombre' | 'privacidadUrl'>): { texto: string; enlace: string | null } {
   return {
-    texto: `Soy la asistente virtual de ${negocio.nombre}, al escribir aceptas nuestra política de privacidad.`,
+    texto: `Soy la asistente virtual de ${negocio.nombre}, una IA. Al escribir aceptas nuestra política de privacidad.`,
     enlace: negocio.privacidadUrl,
   };
 }

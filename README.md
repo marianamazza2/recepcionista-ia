@@ -17,7 +17,8 @@ atiende **desde una web**: una burbuja de chat que el negocio pega con una
 línea, un endpoint que resuelve el negocio por la clave pública del widget, el
 registro de lo que consume cada negocio (con tope mensual) y el SMS de
 confirmación con la página de la cita (con un proveedor de prueba: no se envía
-nada de verdad). Se prueba con la demo de Estética Aurora (`npm run dev`).
+nada de verdad). Se prueba con la demo de Clínica Olea, una clínica de
+medicina estética inventada de Barcelona (`npm run dev`).
 
 Debajo siguen el núcleo del agente (Fase 2: entiende lo que pide la clienta,
 usa el motor con herramientas y responde en el tono del negocio) y el motor de
@@ -36,7 +37,7 @@ reservas (Fase 1).
 ```
 supabase/
 ├── migrations/          16 migraciones, versionadas y en orden de dependencias
-├── seed.sql             negocio de prueba "Estética Aurora"
+├── seed.sql             "Estética Aurora" (tests) y "Clínica Olea" (demo)
 └── tests/               tests SQL de aserción (9 archivos, 179 aserciones)
 scripts/
 ├── run-sql-tests.sh     runner de los tests SQL
@@ -65,7 +66,7 @@ src/
     ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
     └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
 widget/                  el chat embebible (TypeScript sin dependencias)
-demo/                    la web inventada de Estética Aurora, con el widget pegado
+demo/                    la web inventada de Clínica Olea, con el widget pegado
 tests/                   tests TypeScript (motor, herramientas, prompt, loop, widget…)
 ```
 
@@ -234,7 +235,7 @@ Hace falta `ANTHROPIC_API_KEY` en `.env` y el Postgres local en marcha.
 npm run dev
 ```
 
-- Abrí **http://localhost:4310**: la web inventada de Estética Aurora con la
+- Abrí **http://localhost:4310**: la web inventada de Clínica Olea con la
   burbuja abajo a la derecha. Escribí como una clienta; al reservar, el **SMS de
   prueba** sale en la consola de `npm run dev`, con su enlace.
 - El enlace (`http://localhost:4311/cita/…`) abre la página de la cita: la
@@ -258,12 +259,28 @@ publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
 
 - **Dos dominios** en el proyecto: el de la demo (el que se enseña) y el del
   servidor del widget (`PUBLIC_API_URL`). El widget solo aparece en el de la
-  demo, que tiene que estar en los `widget_dominios` de Aurora en la nube.
+  demo, que tiene que estar en los `widget_dominios` de Clínica Olea en la nube.
 - **Variables del proyecto** (Settings → Environment Variables):
   `DATABASE_URL` (Supabase, pooler en modo transacción, puerto 6543),
   `ANTHROPIC_API_KEY` y `PUBLIC_API_URL`.
 - El SMS de prueba sale en los logs de la función (Vercel → Logs).
 - Probar el build en local: `PUBLIC_API_URL=https://ejemplo.vercel.app npm run build:vercel`.
+
+**La demo de ventas (Clínica Olea, A6).** Hoy en producción:
+`recepcionista-ia-jet.vercel.app` (la web) y `recepcionista-ia-api.vercel.app`
+(el widget). Al fusionar el PR de A6, la web de producción pasa a ser la de
+Clínica Olea. Para tener además una dirección propia y fija, sin esperar a
+fusionar (con el visto bueno de Mariana):
+
+```bash
+PUBLIC_API_URL=https://recepcionista-ia-api.vercel.app npm run build:vercel
+vercel deploy --prebuilt                      # devuelve la URL del despliegue
+vercel alias set <url-del-despliegue> demo-clinica-olea.vercel.app
+```
+
+En la nube, Clínica Olea ya admite `demo-clinica-olea.vercel.app`,
+`mazzmkt.com` y `www.mazzmkt.com` (y `localhost`). Si la dirección cambia, hay
+que cambiar `widget_dominios` y `privacidad_url` por SQL.
 
 ### Pegar el widget en una web
 
@@ -443,6 +460,23 @@ referirse a ellos desde los tests y las pruebas manuales:
 
 Marta no hace láser y Lucía no hace corporal a propósito: obliga al agente a
 elegir profesional según el servicio en vez de al azar.
+
+### El negocio de la demo
+
+**Clínica Olea · Barcelona** (A6, 03/11/2026): la clínica de medicina estética
+inventada que se enseña en las llamadas de venta y en mazzmkt.com. Sin
+clientas ni citas, precios orientativos y textos sin promesas de resultados
+(publicidad sanitaria). Solo la usa la prueba con el navegador; el resto de
+tests siguen en Aurora.
+
+| | |
+|---|---|
+| Servicios | Primera visita médica (30 min, 60 €), toxina botulínica (30, desde 300 €), ácido hialurónico (45, desde 350 €), peeling químico (45, desde 120 €), mesoterapia facial (45, desde 150 €), láser facial (45, desde 180 €) |
+| Profesionales | Dra. Clara (todos) y Núria, enfermera (peeling y láser) |
+| Horario | L–J 10–20 · V 10–15 |
+| Ajustes | Los de Aurora: antelación 2 h, huecos cada 30 min, pregunta con quién, cancelación solo informa con plazo 24 h |
+| Bienvenida | *"Soy la asistente virtual de Clínica Olea, una inteligencia artificial…"* (A8: que diga claramente que es una IA) |
+| Widget | Clave `wk_demo_clinica_olea_0001`, color `#5c6b4f`, isotipo inventado (`demo/olea-isotipo.svg`), tope 20 US$. En local, solo `localhost`; en la nube, la demo publicada y mazzmkt.com |
 
 ---
 
