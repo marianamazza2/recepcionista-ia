@@ -266,21 +266,18 @@ publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
 - El SMS de prueba sale en los logs de la función (Vercel → Logs).
 - Probar el build en local: `PUBLIC_API_URL=https://ejemplo.vercel.app npm run build:vercel`.
 
-**La demo de ventas (Clínica Olea, A6).** Hoy en producción:
-`recepcionista-ia-jet.vercel.app` (la web) y `recepcionista-ia-api.vercel.app`
-(el widget). Al fusionar el PR de A6, la web de producción pasa a ser la de
-Clínica Olea. Para tener además una dirección propia y fija, sin esperar a
-fusionar (con el visto bueno de Mariana):
+**La demo de ventas (Clínica Olea, A6).** Publicada el 04/11/2026 en
+**https://recepcionista-ia-demo-bcn.vercel.app**: un dominio de producción
+más del proyecto (Settings → Domains), así que sigue a producción y es
+público. Un alias puesto a mano sobre un despliegue no sirve: la protección de
+Vercel le pide iniciar sesión. `recepcionista-ia-jet.vercel.app` enseña lo
+mismo. El widget sale de `recepcionista-ia-api.vercel.app`.
 
-```bash
-PUBLIC_API_URL=https://recepcionista-ia-api.vercel.app npm run build:vercel
-vercel deploy --prebuilt                      # devuelve la URL del despliegue
-vercel alias set <url-del-despliegue> demo-clinica-olea.vercel.app
-```
-
-En la nube, Clínica Olea ya admite `demo-clinica-olea.vercel.app`,
-`mazzmkt.com` y `www.mazzmkt.com` (y `localhost`). Si la dirección cambia, hay
-que cambiar `widget_dominios` y `privacidad_url` por SQL.
+En la nube, Clínica Olea admite `recepcionista-ia-demo-bcn.vercel.app`,
+`recepcionista-ia-jet.vercel.app`, `mazzmkt.com`, `www.mazzmkt.com` y
+`localhost`, y su `privacidad_url` es la de demo-bcn. Si cambia una dirección,
+hay que cambiar `widget_dominios` y `privacidad_url` por SQL. Nunca autorices un
+dominio que no sea nuestro (`demo-clinica-olea.vercel.app` es de otra persona).
 
 ### Pegar el widget en una web
 
