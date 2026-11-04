@@ -113,7 +113,7 @@ describe('la demo en el navegador', () => {
     await abrirWidget(pagina);
     expect(await widget(pagina, '.cabecera h2').textContent()).toBe('Clínica Olea');
     expect(await widget(pagina, '.aviso').textContent()).toBe(
-      'Soy la asistente virtual de Clínica Olea, una IA. Al escribir aceptas nuestra política de privacidad.',
+      'Soy la asistente virtual de Clínica Olea, al escribir aceptas nuestra política de privacidad.',
     );
     // La de la base: en la nube apunta a la demo publicada (PW-08).
     const [n] = await sql<{ url: string }[]>`select privacidad_url as url from public.businesses where id = ${OLEA.businessId}`;

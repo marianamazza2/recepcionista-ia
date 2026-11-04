@@ -21,7 +21,7 @@ ni ids, ni ajustes internos, ni tope. `logo` es la imagen entera como data URL
 
 ```json
 { "nombre": "…", "color": "#…", "logo": "data:image/…;base64,…|null", "bienvenida": "…|null",
-  "aviso": { "texto": "Soy la asistente virtual de {negocio}, una IA. Al escribir aceptas…", "enlace": "https://…|null" },
+  "aviso": { "texto": "Soy la asistente virtual de {negocio}, al escribir aceptas…", "enlace": "https://…|null" },
   "maxCaracteres": 1000 }
 ```
 
