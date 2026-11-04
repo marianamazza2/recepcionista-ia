@@ -472,7 +472,7 @@ tests siguen en Aurora.
 | Profesionales | Dra. Clara (todos) y Núria, enfermera (peeling y láser) |
 | Horario | L–J 10–20 · V 10–15 |
 | Ajustes | Los de Aurora: antelación 2 h, huecos cada 30 min, pregunta con quién, cancelación solo informa con plazo 24 h |
-| Bienvenida | *"Soy la asistente virtual de Clínica Olea, una inteligencia artificial…"* (A8: que diga claramente que es una IA) |
+| Bienvenida | *"¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?"* (texto de Mariana, 04/11/2026). Lo de que es una IA lo dice el aviso fijo de debajo (PW-02, A8) |
 | Widget | Clave `wk_demo_clinica_olea_0001`, color `#5c6b4f`, isotipo inventado (`demo/olea-isotipo.svg`), tope 20 US$. En local, solo `localhost`; en la nube, la demo publicada y mazzmkt.com |
 
 ---

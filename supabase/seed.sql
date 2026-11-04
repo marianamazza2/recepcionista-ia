@@ -232,7 +232,7 @@ insert into public.businesses (
   'activo',
   'mensual_400',
   'Cercano, sereno y profesional. Trata de tú. Frases cortas. Nunca prometas resultados ni digas cuánto dura el efecto de un tratamiento: eso lo explica la doctora en la visita.',
-  '¡Hola! Soy la asistente virtual de Clínica Olea, una inteligencia artificial. Puedo darte cita, cambiarla o cancelarla. ¿En qué te ayudo?',
+  '¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?',
   'Puedes cancelar o cambiar tu cita sin coste hasta 24 h antes. Con menos antelación, llámanos al 930 000 000.',
   'Carrer de Muntaner 300, entresuelo. 08021 Barcelona',
   '+34930000000',
