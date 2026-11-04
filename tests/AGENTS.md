@@ -8,7 +8,7 @@ gasta un céntimo.
 ```
 tests/
 ├── helpers/
-│   ├── fixtures.ts         AURORA (ids del seed), clientas de test, negocio de prueba 24 h
+│   ├── fixtures.ts         AURORA y OLEA (ids del seed), clientas de test, negocio de prueba 24 h
 │   └── modelo-simulado.ts  ModelClient con respuestas guionizadas: texto(), herramientas()…
 ├── e2e/widget.e2e.ts       la demo en Google Chrome (npm run test:e2e, vitest.e2e.config.ts)
 └── *.test.ts               uno por módulo o por regla (tabla en el README.md raíz)
@@ -19,7 +19,7 @@ tests/
 Aparte de `npm test` porque necesita **Google Chrome** instalado
 (`playwright-core` con `channel: 'chrome'`: no descarga navegadores). Levanta
 los servidores de `src/dev/server.ts` en puertos al azar, con el modelo
-simulado, y escribe en Aurora con una clienta `+34999…`. Al terminar borra sus
+simulado, y escribe en Clínica Olea (la demo) con una clienta `+34999…`. Al terminar borra sus
 conversaciones **y su consumo** (también las que no llegaron a guardar el
 token). Las esperas llevan margen (30 s): contra la nube cada mensaje tarda
 más. Correla si tocás el widget, la API o la demo.

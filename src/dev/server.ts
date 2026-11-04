@@ -3,7 +3,7 @@
 // =============================================================================
 // Dos orígenes, como en la realidad:
 //   · http://localhost:4311 — "nuestro" servidor: widget.js, /api/… y /cita/…
-//   · http://localhost:4310 — "la web del negocio": demo/ (Estética Aurora)
+//   · http://localhost:4310 — "la web del negocio": demo/ (Clínica Olea, A6)
 // Puertos poco habituales a propósito: el 3000 lo suelen ocupar otros
 // proyectos, y si otro programa escucha en el mismo puerto por IPv6, el
 // navegador (que prueba primero ::1 para "localhost") acaba en él.
@@ -185,7 +185,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     log: true,
     onError: (e) => console.error(`[error] ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`),
   });
-  console.log(`\nDemo de Estética Aurora: ${s.demoUrl}`);
+  console.log(`\nDemo de Clínica Olea: ${s.demoUrl}`);
   console.log(`Servidor del widget:     ${s.apiUrl}  (modelo ${settings.model}, esfuerzo ${settings.effort})`);
   console.log('Los SMS de confirmación salen aquí (proveedor de prueba). Ctrl+C para parar.\n');
   const parar = async () => {

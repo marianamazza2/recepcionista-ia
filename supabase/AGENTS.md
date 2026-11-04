@@ -9,7 +9,7 @@ negocio ve datos de otro**. El detalle de cada migración y test está en el
 supabase/
 ├── config.toml     config de la CLI (el seed se carga en db reset)
 ├── migrations/     YYYYMMDDHHMMSS_nombre_en_español.sql, en orden de dependencias
-├── seed.sql        Estética Aurora, el negocio de prueba
+├── seed.sql        Estética Aurora (el de los tests) y Clínica Olea (el de la demo)
 └── tests/          NN_nombre.sql + _helpers.sql (SQL de aserción, no pgTAP)
 ```
 
@@ -52,8 +52,14 @@ supabase/
 
 ## Seed
 
-- Solo **Estética Aurora**, con UUID fijos y legibles (`a0…` negocio, `b0…`
-  servicios, `c0…` profesionales, `d0…` clientas, `e0…` citas; D-25).
+- **Estética Aurora**, el negocio de los tests, con UUID fijos y legibles
+  (`a0…` negocio, `b0…` servicios, `c0…` profesionales, `d0…` clientas,
+  `e0…` citas; D-25).
+- **Clínica Olea** (A6), el de la demo de ventas (`a1…`, `b1…`, `c1…`):
+  medicina estética en Barcelona, sin clientas ni citas, precios orientativos
+  y textos sin promesas de resultados. Solo la usa la prueba con el navegador.
+  En la nube, sus `widget_dominios` y `privacidad_url` son los de la demo
+  publicada y mazzmkt.com (se ajustan por SQL tras cargar el seed).
 - Re-ejecutable: empieza con un `DELETE` del negocio que arrastra todo.
 - Asimétrico a propósito (Marta no hace láser, Lucía no hace corporal…): no
   lo "simplifiques".

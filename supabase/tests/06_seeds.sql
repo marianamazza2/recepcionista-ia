@@ -241,5 +241,35 @@ select test.ok(
   'las tablas de conversación existen (las escribe el agente desde la fase 2)'
 );
 
+-- --- Clínica Olea: el negocio de la demo (A6) --------------------------------
+\set olea '''a1000000-0000-4000-8000-000000000001'''
+
+select test.ok(
+  exists (
+    select 1 from public.businesses
+     where id = :olea and nombre = 'Clínica Olea' and slug = 'clinica-olea'
+       and timezone = 'Europe/Madrid' and estado = 'activo'
+       and widget_key = 'wk_demo_clinica_olea_0001'
+       and mensaje_bienvenida = '¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?'
+  ),
+  'existe Clínica Olea, la de la demo, con su bienvenida'
+);
+
+select test.ok(
+  (select count(*) from public.services where business_id = :olea and activo and precio_visible) = 6
+  and (select count(*) from public.staff where business_id = :olea and activo) = 2,
+  'Clínica Olea: 6 servicios con precio visible y 2 profesionales'
+);
+
+select test.ok(
+  not exists (
+    select 1 from public.services s
+     where s.business_id = :olea
+       and not exists (select 1 from public.staff_services ss where ss.service_id = s.id)
+  )
+  and (select count(distinct weekday) from public.business_hours where business_id = :olea) = 5,
+  'Clínica Olea: todos los servicios tienen quien los haga y abre de lunes a viernes'
+);
+
 select test.resumen();
 rollback;
