@@ -90,8 +90,8 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `POST negocios/:id/clave` | Clave nueva del widget; la anterior deja de valer (PI-09) | el negocio |
 | `POST negocios/:id/servicios` · `PUT …/servicios/:sid` | Alta y edición (`activo: false` = desactivar, PI-04) | el negocio |
 | `POST negocios/:id/profesionales` · `PUT …/profesionales/:pid` | Igual, con `servicioIds` | el negocio |
-| `PUT negocios/:id/horario` `{staffId|null, tramos}` | Sustituye el horario del local o el propio de una profesional | el negocio |
-| `POST negocios/:id/festivos` · `DELETE …/festivos/:fid` | Días enteros (`fechaDesde`, `fechaHasta?`) o unas horas (`horaDesde`, `horaHasta`), del local o de una profesional (PI-12) | el negocio |
+| `PUT negocios/:id/horario` `{staffId|null, tramos, diasLibres?, citas?}` | Sustituye el horario del local o el propio de una profesional | el negocio |
+| `POST negocios/:id/festivos` · `DELETE …/festivos/:fid` | Días enteros (`fechaDesde`, `fechaHasta?`) o unas horas (`horaDesde`, `horaHasta`), del local o de una profesional (PI-12); `citas?` como en horario (PI-21) | el negocio |
 | `POST negocios/:id/preguntas` · `PUT`/`DELETE …/preguntas/:qid` | Preguntas frecuentes (PI-08; 409 al pasar el límite) | el negocio |
 | `GET negocios/:id/conversaciones?filtro=todas|derivadas|pruebas` | Lista (PI-06) | lista |
 | `GET negocios/:id/conversaciones/:cid` | Una conversación: líneas (clienta, asistente, herramienta con entrada y resultado), derivaciones, coste | detalle |
@@ -111,3 +111,19 @@ letras o un número incompleto dan 400 y no se guarda ningún campo del bloque.
 y del mismo horario (local o profesional), y conserva todos los tramos
 anteriores. Dos tramos contiguos sí valen. PD-01 no cambia: el horario propio
 puede coincidir con el del local o salirse de él.
+
+### Citas afectadas (PI-21)
+
+`PUT negocios/:id/horario` y `POST negocios/:id/festivos` aceptan `citas`:
+`"preguntar"` (de serie), `"dejar"` o `"cancelar"`. Si el cambio deja fuera
+citas confirmadas futuras (un festivo o una ausencia que las pisa, o un
+horario nuevo en el que ya no caben; solo cuentan las que ESTE cambio deja
+fuera) y no se dijo qué hacer, responde **409** sin guardar nada:
+
+```json
+{ "error": "citas_afectadas", "mensaje": "Hay 2 citas afectadas. De todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?",
+  "citas": [{ "id": "…", "fecha": "2030-10-15", "hora": "10:00", "clienta": "Ana", "servicio": "Corte", "profesional": "Nora" }] }
+```
+
+Con `"dejar"` se guarda y las citas siguen; con `"cancelar"` se guarda y se
+cancelan una a una como desde la agenda, cada una con su SMS de cancelación.

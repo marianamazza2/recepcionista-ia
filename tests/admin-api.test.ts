@@ -352,6 +352,69 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(b.body.festivos).toHaveLength(1);
   });
 
+  it('PI-21: un festivo encima de citas pregunta antes; se dejan o se cancelan con su SMS', async () => {
+    const n = await alta('Festivo Con Citas Test');
+    const h = api();
+    const tel = '+34999000221';
+    const c1 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
+    const c2 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-22', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
+    expect([c1.status, c2.status]).toEqual([201, 201]);
+
+    // Sin decir qué hacer: 409 con la lista y no se guarda nada.
+    const p = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-21', motivo: 'Festivo local' });
+    expect(p.status).toBe(409);
+    expect(p.body.error).toBe('citas_afectadas');
+    expect(p.body.mensaje).toContain('¿Las dejamos programadas o las cancelo?');
+    expect(p.body.citas).toEqual([{ id: c1.body.id, fecha: '2030-10-21', hora: '10:00', clienta: 'Clienta Festivo', servicio: 'Corte', profesional: 'Nora' }]);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.festivos).toEqual([]);
+
+    // Dejarlas: se guarda y la cita sigue.
+    const dejar = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-21', motivo: 'Festivo local', citas: 'dejar' });
+    expect(dejar.status).toBe(200);
+    expect(dejar.body.festivos).toHaveLength(1);
+    let [e] = await sql`select estado from public.appointments where id = ${c1.body.id}`;
+    expect(e!.estado).toBe('confirmada');
+
+    // Cancelarlas (una ausencia de la profesional el 22): se guarda, se cancela y sale el SMS.
+    const antes = sms.enviados.length;
+    const cancelar = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: n.profesionalId, fechaDesde: '2030-10-22', motivo: 'Formación', citas: 'cancelar' });
+    expect(cancelar.status).toBe(200);
+    [e] = await sql`select estado from public.appointments where id = ${c2.body.id}`;
+    expect(e!.estado).toBe('cancelada');
+    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+
+    // Un valor que no es ninguna de las tres opciones se rechaza.
+    const mal = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-23', citas: 'borrar' });
+    expect(mal.status).toBe(400);
+  });
+
+  it('PI-21: un horario nuevo que deja fuera citas pregunta antes; solo cuenta las que este cambio deja fuera', async () => {
+    const n = await alta('Horario Con Citas Test');
+    const h = api();
+    const tel = '+34999000222';
+    const dentro = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-15', hora: '10:00', telefono: tel, nombre: 'Clienta Horario' });
+    const fuera = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-16', hora: '12:00', telefono: tel, nombre: 'Clienta Horario' });
+    const corto = [1, 2, 3, 4, 5].map((weekday) => ({ weekday, apertura: '10:00', cierre: '12:00' }));
+
+    const p = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: corto });
+    expect(p.status).toBe(409);
+    expect(p.body.citas.map((c: { id: string }) => c.id)).toEqual([fuera.body.id]);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.horario.filter((t: { staffId: string | null }) => t.staffId === null)[0]).toMatchObject({ apertura: '10:00', cierre: '14:00' });
+
+    // Un horario propio de Nora que también la deja fuera, cancelando: SMS a la clienta.
+    const antes = sms.enviados.length;
+    const r = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }], citas: 'cancelar' });
+    expect(r.status).toBe(200);
+    const estados = await sql`select id, estado from public.appointments where business_id = ${n.id} order by start_at`;
+    expect(estados.map((x) => x.estado)).toEqual(['confirmada', 'cancelada']);
+    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+
+    // Guardar otra vez el mismo horario ya no pregunta: no deja fuera ninguna cita nueva.
+    const otra = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }] });
+    expect(otra.status).toBe(200);
+    void dentro;
+  });
+
   it('horario: un tramo que cierra antes de abrir se rechaza y no cambia nada', async () => {
     const n = await alta('Horario Test');
     const r = await pedir(api(), 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: [{ weekday: 1, apertura: '10:00', cierre: '20:00' }, { weekday: 2, apertura: '14:00', cierre: '10:00' }] });
@@ -443,7 +506,8 @@ describe('citas a mano (PR-04, PI-14)', () => {
     const pronto = await cita(fila!.hoy, fila!.hora, '+34999000333');
     expect(pronto.status).toBe(201);
 
-    await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA });
+    // La cita de hoy queda fuera del horario normal: se deja (PI-21).
+    await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA, citas: 'dejar' });
     const fuera = await cita('2030-10-16', '13:30', '+34999000444');
     expect(fuera.status).toBe(409);
     expect(fuera.body.motivo).toBe('outside_hours');

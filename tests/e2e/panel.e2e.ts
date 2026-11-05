@@ -279,6 +279,49 @@ describe('el panel en el navegador', () => {
     expect(c!.origen).toBe('manual');
   });
 
+  it('PI-21: un festivo o una ausencia encima de citas sale en un cartel; no guardar, cancelar o dejar', async () => {
+    await panel.goto(`${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`);
+    const fest = seccion('festivos');
+    const cartel = fest.getByRole('alertdialog', { name: 'Citas afectadas' });
+    const estados = async () =>
+      (await sql<{ estado: string }[]>`select estado from public.appointments where business_id = ${negocioId} and start_at::date = '2030-10-15' order by start_at`).map((x) => x.estado);
+
+    // Festivo del local el 15: las dos citas de ese día. «No guardar» no guarda nada.
+    await fest.getByLabel('Desde el día').fill('2030-10-15');
+    await fest.getByRole('button', { name: 'Añadir' }).click();
+    await cartel.waitFor(ESPERA);
+    expect(await cartel.textContent()).toContain('Hay 2 citas afectadas');
+    expect(await cartel.textContent()).toContain('¿Las dejamos programadas o las cancelo?');
+    await fest.screenshot({ path: join(CAPTURAS, '6-citas-afectadas.png') });
+    await cartel.getByRole('button', { name: 'No guardar' }).click();
+    expect(await fest.textContent()).toContain('No hay próximos');
+
+    // Ausencia de Nora de 12:00 a 13:30: solo la cita de las 12:15. Cancelarla manda el SMS.
+    const smsAntes = sms.enviados.length;
+    await fest.getByLabel('Quién').selectOption({ label: 'Nora' });
+    await fest.getByLabel('Solo unas horas').check();
+    await fest.getByLabel('Día').fill('2030-10-15');
+    await fest.getByLabel('De', { exact: true }).fill('12:00');
+    await fest.getByLabel('A', { exact: true }).fill('13:30');
+    await fest.getByRole('button', { name: 'Añadir' }).click();
+    await cartel.waitFor(ESPERA);
+    expect(await cartel.textContent()).toContain('Hay 1 cita afectada');
+    await cartel.getByRole('button', { name: /Cancelarlas/ }).click();
+    await expect.poll(() => fest.getByRole('status').textContent(), ESPERA).toContain('cada clienta recibe un SMS');
+    expect(await estados()).toEqual(['confirmada', 'cancelada']);
+    expect(sms.enviados.slice(smsAntes).some((s) => /cancelad/i.test(s.texto))).toBe(true);
+
+    // Festivo del local el 15 otra vez: queda la de las 10:00. Se deja.
+    await fest.getByLabel('Quién').selectOption({ label: 'El local (festivo)' });
+    await fest.getByLabel('Solo unas horas').uncheck();
+    await fest.getByLabel('Desde el día').fill('2030-10-15');
+    await fest.getByRole('button', { name: 'Añadir' }).click();
+    await cartel.waitFor(ESPERA);
+    await cartel.getByRole('button', { name: 'Dejarlas programadas' }).click();
+    await expect.poll(() => fest.getByRole('status').textContent(), ESPERA).toContain('siguen programadas');
+    expect(await estados()).toEqual(['confirmada', 'cancelada']);
+  });
+
   it('el consumo lo cuenta', async () => {
     await panel.goto(`${servidores.panelUrl}/panel/#/consumo`);
     await expect.poll(() => panel.getByRole('row', { name: new RegExp(NOMBRE) }).isVisible(), ESPERA).toBe(true);

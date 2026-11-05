@@ -996,7 +996,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
 | PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
-| PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
+| PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1155,8 +1155,9 @@ Lo mismo cuando el cambio se pide por el chat del portal del cliente (PC-10).
 - El mismo aviso sale al **cambiar el horario** del local o de una
   profesional, si quedan citas fuera del horario nuevo.
 
-⚠️ *Por confirmar:* cuándo se construye. Propuesta: ya, en la Fase 4, antes
-del merge del PR #2. Es el panel.
+**Construida el 05/11/2026** en la Fase 4, antes del merge del PR #2 (Mariana
+lo pidió así). Lo comprueba la API en la misma transacción que el cambio: si
+hay citas afectadas y no se ha dicho qué hacer, no guarda nada.
 
 
 ---

@@ -9,11 +9,14 @@
 // confirmación al guardar). Cada bloque se guarda por separado; la API devuelve el negocio
 // entero ya actualizado (PI-05: el agente lo usa en el siguiente mensaje).
 // Aceptación (caso 27): un servicio activo que no hace nadie se marca en ámbar.
+// PI-21: si un festivo, una ausencia o un horario nuevo dejan fuera citas, la
+// API no guarda y devuelve la lista; aquí sale un cartel que pregunta si se
+// dejan programadas o se cancelan (con su SMS) y se vuelve a enviar.
 // =============================================================================
 
 import { useEffect, useState, type ReactNode } from 'react';
 
-import { api, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
+import { api, ErrorApi, type CitaAfectada, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
 import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, type EstadoDia } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
@@ -68,6 +71,59 @@ function Campo({ etiqueta, children, ayuda }: { etiqueta: string; children: Reac
 }
 
 const nada = (s: string) => (s.trim() === '' ? null : s);
+
+// -----------------------------------------------------------------------------
+// PI-21: citas afectadas por un festivo, una ausencia o un horario nuevo
+// -----------------------------------------------------------------------------
+
+type DecisionCitas = 'dejar' | 'cancelar';
+interface Pendiente {
+  citas: CitaAfectada[];
+  seguir: (d: DecisionCitas) => Promise<void>;
+}
+
+/** Envía; si la API contesta "citas_afectadas", guarda la pregunta y no enseña error. */
+function usePreguntarCitas() {
+  const [pendiente, setPendiente] = useState<Pendiente | null>(null);
+  const intentar = async (enviar: (d?: DecisionCitas) => Promise<void>) => {
+    setPendiente(null);
+    try {
+      await enviar();
+    } catch (e) {
+      if (e instanceof ErrorApi && e.status === 409 && e.datos.error === 'citas_afectadas') {
+        setPendiente({ citas: e.datos.citas as CitaAfectada[], seguir: (d) => enviar(d) });
+        throw new ErrorApi(409, ''); // sin mensaje: lo explica el cartel
+      }
+      throw e;
+    }
+  };
+  return { pendiente, setPendiente, intentar };
+}
+
+function CartelCitas({ pendiente, ocupado, decidir, cerrar }: { pendiente: Pendiente; ocupado: boolean; decidir: (d: DecisionCitas) => void; cerrar: () => void }) {
+  const n = pendiente.citas.length;
+  return (
+    <div role="alertdialog" aria-label="Citas afectadas" className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+      <p className="font-medium">Hay {n} cita{n > 1 ? 's' : ''} afectada{n > 1 ? 's' : ''}:</p>
+      <ul className="mt-1 list-disc pl-5">
+        {pendiente.citas.map((c) => (
+          <li key={c.id}>{fechaCorta(c.fecha)} · {c.hora} · {c.clienta} · {c.servicio} con {c.profesional}</li>
+        ))}
+      </ul>
+      <p className="mt-2">De todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="boton" disabled={ocupado} onClick={() => decidir('dejar')}>Dejarlas programadas</button>
+        <button type="button" className="boton-peligro" disabled={ocupado} onClick={() => decidir('cancelar')}>Cancelarlas (cada clienta recibe un SMS)</button>
+        <button type="button" className="boton-suave" disabled={ocupado} onClick={cerrar}>No guardar</button>
+      </div>
+    </div>
+  );
+}
+
+const OK_CITAS: Record<DecisionCitas, string> = {
+  dejar: 'Guardado. Las citas siguen programadas.',
+  cancelar: 'Guardado. Las citas se han cancelado y cada clienta recibe un SMS.',
+};
 
 // -----------------------------------------------------------------------------
 // Publicar (PI-03, PI-09, PI-18)
@@ -423,9 +479,16 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
   const quien = n.profesionales.find((p) => p.id === staffId)?.nombre ?? 'Esta profesional';
   const listaFuera = fuera.map((t) => `${nombreDia(t.weekday)} ${t.apertura}–${t.cierre}`).join(' · ');
 
+  const pc = usePreguntarCitas();
+  const enviar = async (citas?: DecisionCitas) =>
+    poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}), ...(citas ? { citas } : {}) }));
   const guardar = () => {
     if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${listaFuera}. ¿Guardar igual?`)) return;
-    void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}) })));
+    void a.hacer(() => pc.intentar(enviar));
+  };
+  const decidir = (d: DecisionCitas) => {
+    const p = pc.pendiente;
+    if (p) void a.hacer(async () => { await p.seguir(d); pc.setPendiente(null); }, OK_CITAS[d]);
   };
 
   return (
@@ -501,6 +564,7 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
         </p>
       ) : null}
       <button type="button" className="boton mt-3" disabled={a.ocupado} onClick={guardar}>Guardar horario</button>
+      {pc.pendiente ? <CartelCitas pendiente={pc.pendiente} ocupado={a.ocupado} decidir={decidir} cerrar={() => pc.setPendiente(null)} /> : null}
       <Aviso error={a.error} ok={a.ok} />
     </div>
   );
@@ -514,18 +578,24 @@ function Festivos({ negocio: n, poner }: Props) {
   const [f, setF] = useState({ staffId: '', fechaDesde: '', fechaHasta: '', porHoras: false, horaDesde: '', horaHasta: '', motivo: '' });
   const a = useAccion();
   const nombre = (id: string | null) => (id ? (n.profesionales.find((p) => p.id === id)?.nombre ?? 'Profesional') : 'Local');
-  const anadir = () =>
-    a.hacer(async () => {
-      poner(
-        await api('POST', `negocios/${n.id}/festivos`, {
-          staffId: f.staffId || null,
-          fechaDesde: f.fechaDesde,
-          ...(f.porHoras ? { horaDesde: f.horaDesde, horaHasta: f.horaHasta } : f.fechaHasta ? { fechaHasta: f.fechaHasta } : {}),
-          motivo: nada(f.motivo),
-        }),
-      );
-      setF({ ...f, fechaDesde: '', fechaHasta: '', horaDesde: '', horaHasta: '', motivo: '' });
-    }, 'Añadido.');
+  const pc = usePreguntarCitas();
+  const enviar = async (citas?: DecisionCitas) => {
+    poner(
+      await api('POST', `negocios/${n.id}/festivos`, {
+        staffId: f.staffId || null,
+        fechaDesde: f.fechaDesde,
+        ...(f.porHoras ? { horaDesde: f.horaDesde, horaHasta: f.horaHasta } : f.fechaHasta ? { fechaHasta: f.fechaHasta } : {}),
+        motivo: nada(f.motivo),
+        ...(citas ? { citas } : {}),
+      }),
+    );
+    setF({ ...f, fechaDesde: '', fechaHasta: '', horaDesde: '', horaHasta: '', motivo: '' });
+  };
+  const anadir = () => a.hacer(() => pc.intentar(enviar), 'Añadido.');
+  const decidir = (d: DecisionCitas) => {
+    const p = pc.pendiente;
+    if (p) void a.hacer(async () => { await p.seguir(d); pc.setPendiente(null); }, OK_CITAS[d]);
+  };
   return (
     <Bloque id="festivos" titulo="Festivos y ausencias" ayuda="Del local (cierra todo el mundo) o de una profesional; de días enteros o de unas horas. Se ven los próximos.">
       <ul className="divide-y divide-slate-100 text-sm">
@@ -563,6 +633,7 @@ function Festivos({ negocio: n, poner }: Props) {
         <Campo etiqueta="Motivo (opcional)"><input className="campo" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder="Festivo local, formación…" /></Campo>
         <div className="flex items-end"><button type="button" className="boton" disabled={a.ocupado || !f.fechaDesde} onClick={() => void anadir()}>Añadir</button></div>
       </div>
+      {pc.pendiente ? <CartelCitas pendiente={pc.pendiente} ocupado={a.ocupado} decidir={decidir} cerrar={() => pc.setPendiente(null)} /> : null}
       <Aviso error={a.error} ok={a.ok} />
     </Bloque>
   );

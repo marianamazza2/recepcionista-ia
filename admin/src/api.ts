@@ -122,6 +122,16 @@ export async function api<T>(metodo: 'GET' | 'POST' | 'PUT' | 'DELETE', ruta: st
 // -----------------------------------------------------------------------------
 
 export type Estado = 'activo' | 'pausado' | 'trial';
+
+/** PI-21: una cita que un festivo, una ausencia o un horario nuevo dejan fuera. */
+export interface CitaAfectada {
+  id: string;
+  fecha: string;
+  hora: string;
+  clienta: string;
+  servicio: string;
+  profesional: string;
+}
 export interface Falta {
   codigo: string;
   texto: string;

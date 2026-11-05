@@ -15,6 +15,9 @@
 //     db/negocios, db/visor, citas/manual, db/usage o al canal web.
 //   · Aceptación 12: el teléfono del local se normaliza antes de guardar;
 //     las letras se rechazan sin modificar los demás datos.
+//   · PI-21: horario y festivos aceptan "citas" ('preguntar' de serie, 'dejar',
+//     'cancelar'). Con citas afectadas y sin decidir → 409 citas_afectadas con
+//     la lista, sin guardar nada. 'cancelar' las cancela con su SMS (PW-10).
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
@@ -27,6 +30,7 @@ import {
   borrarPregunta,
   cambiarEstado,
   crearFestivo,
+  type QueHacerConCitas,
   crearNegocio,
   crearPregunta,
   crearProfesional,
@@ -263,7 +267,8 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
         if (choca !== undefined) {
           throw new ErrorPanel(400, `El ${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][choca]} no puede tener horas propias y "no trabaja" a la vez.`);
         }
-        await guardarHorario(deps.sql, params[0]!, staffId, tramos, diasLibres);
+        const cancelar = await guardarHorario(deps.sql, params[0]!, staffId, tramos, diasLibres, queHacerConCitas(e));
+        await cancelarAfectadas(params[0]!, cancelar);
         return detalle(params[0]!);
       },
     },
@@ -291,7 +296,8 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
           desde = inicioDelDia(fechaDesde, n.timezone);
           hasta = inicioDelDia(sumarDias(fechaHasta, 1), n.timezone);
         }
-        await crearFestivo(deps.sql, params[0]!, { staffId, desde, hasta, motivo: e.textoOpcional('motivo', 'el motivo', 200) });
+        const { cancelar } = await crearFestivo(deps.sql, params[0]!, { staffId, desde, hasta, motivo: e.textoOpcional('motivo', 'el motivo', 200) }, queHacerConCitas(e));
+        await cancelarAfectadas(params[0]!, cancelar);
         return detalle(params[0]!);
       },
     },
@@ -439,6 +445,16 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
 
   function citasDeps() {
     return { sql: deps.sql, sms: deps.sms, baseUrl: deps.baseUrl, onError };
+  }
+
+  /** PI-21: lo que se decidió con las citas afectadas (de serie, preguntar). */
+  function queHacerConCitas(e: Entrada): QueHacerConCitas {
+    return e.valor('citas') === undefined ? 'preguntar' : e.opcion('citas', 'qué hacer con las citas', ['preguntar', 'dejar', 'cancelar'] as const);
+  }
+
+  /** PI-21: se cancelan una a una, como desde la agenda: cada clienta recibe su SMS. */
+  async function cancelarAfectadas(businessId: string, ids: string[]): Promise<void> {
+    for (const citaId of ids) await cancelarCitaManual(citasDeps(), businessId, citaId);
   }
 
   return async (req, ctx) => {

@@ -15,6 +15,10 @@
 //     PI-01) y nada más.
 //   · PI-05: lo que se guarda aquí lo lee el agente en el siguiente mensaje
 //     (src/config/business.ts): no hay caché que invalidar.
+//   · PI-21: un festivo, una ausencia o un horario nuevo que deja fuera citas
+//     ya dadas no se guarda sin decir qué hacer con ellas ('preguntar' lanza
+//     CitasAfectadas con la lista y no cambia nada; 'dejar' las deja;
+//     'cancelar' devuelve sus ids, que la API cancela con su SMS).
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
@@ -120,6 +124,61 @@ export interface NegocioPanel extends DatosNegocio {
 }
 
 /** Error de "no existe en este negocio": el panel responde 404. */
+/** PI-21: una cita que un festivo, una ausencia o un horario nuevo dejan fuera. */
+export interface CitaAfectada {
+  id: string;
+  fecha: string; // 'YYYY-MM-DD' local
+  hora: string; // 'HH:MM' local
+  clienta: string;
+  servicio: string;
+  profesional: string;
+}
+
+/** PI-21: qué hacer con las citas afectadas. */
+export type QueHacerConCitas = 'preguntar' | 'dejar' | 'cancelar';
+
+export class CitasAfectadas extends Error {
+  constructor(readonly citas: CitaAfectada[]) {
+    super(`${citas.length} cita(s) afectada(s)`);
+    this.name = 'CitasAfectadas';
+  }
+}
+
+/** PI-21: decide con la lista de afectadas; devuelve los ids a cancelar. */
+function decidir(afectadas: CitaAfectada[], que: QueHacerConCitas): string[] {
+  if (afectadas.length === 0 || que === 'dejar') return [];
+  if (que === 'preguntar') throw new CitasAfectadas(afectadas);
+  return afectadas.map((c) => c.id);
+}
+
+/**
+ * PI-21: citas futuras (confirmadas) que no caben en el horario efectivo de su
+ * profesional (PD-01 + PI-19), de todo el negocio o de una profesional. Se mide
+ * la cita entera, sin rejilla ni margen: las citas a mano pueden ir fuera de la
+ * rejilla (PI-14).
+ */
+async function citasFueraDeHorario(tx: TransactionSql, id: string, staffId: string | null): Promise<CitaAfectada[]> {
+  return tx<CitaAfectada[]>`
+    select a.id,
+           to_char(a.start_at at time zone b.timezone, 'YYYY-MM-DD') as fecha,
+           to_char(a.start_at at time zone b.timezone, 'HH24:MI') as hora,
+           c.nombre as clienta, s.nombre as servicio, st.nombre as profesional
+      from public.appointments a
+      join public.businesses b on b.id = a.business_id
+      join public.customers c on c.id = a.customer_id
+      join public.services s on s.id = a.service_id
+      join public.staff st on st.id = a.staff_id
+     where a.business_id = ${id}::uuid
+       and a.estado = 'confirmada'
+       and a.start_at > now()
+       and (${staffId}::uuid is null or a.staff_id = ${staffId}::uuid)
+       and not exists (
+             select 1
+               from app.tramos_efectivos(a.business_id, a.staff_id, (a.start_at at time zone b.timezone)::date) t
+              where a.start_at >= t.desde and a.end_at <= t.hasta)
+     order by a.start_at, a.id`;
+}
+
 export class NoEncontrado extends Error {
   constructor(que: string) {
     super(`${que} no existe en este negocio`);
@@ -443,12 +502,21 @@ export async function guardarProfesional(sql: Sql, id: string, staffId: string, 
  * transacción: si un tramo no vale, no cambia nada. Un día no puede tener a
  * la vez horas propias y "no trabaja" (lo comprueba la API antes).
  */
-export async function guardarHorario(sql: Sql, id: string, staffId: string | null, tramos: TramoPanel[], diasLibres: number[] = []): Promise<void> {
-  await inTenant(sql, id, async (tx) => {
+export async function guardarHorario(
+  sql: Sql,
+  id: string,
+  staffId: string | null,
+  tramos: TramoPanel[],
+  diasLibres: number[] = [],
+  citas: QueHacerConCitas = 'dejar',
+): Promise<string[]> {
+  return inTenant(sql, id, async (tx) => {
     if (staffId !== null) {
       const [st] = await tx`select 1 from public.staff where business_id = ${id}::uuid and id = ${staffId}::uuid`;
       if (!st) throw new NoEncontrado('La profesional');
     }
+    // PI-21: solo cuentan las que este cambio deja fuera (no las que ya lo estaban).
+    const antes = new Set((await citasFueraDeHorario(tx, id, staffId)).map((c) => c.id));
     await tx`
       delete from public.business_hours
        where business_id = ${id}::uuid and staff_id is not distinct from ${staffId}::uuid`;
@@ -465,19 +533,37 @@ export async function guardarHorario(sql: Sql, id: string, staffId: string | nul
           values (${id}::uuid, ${staffId}::uuid, ${w})`;
       }
     }
+    const afectadas = (await citasFueraDeHorario(tx, id, staffId)).filter((c) => !antes.has(c.id));
+    return decidir(afectadas, citas); // 'preguntar' con afectadas lanza y deshace la transacción
   });
 }
 
-export async function crearFestivo(sql: Sql, id: string, f: FestivoPanel): Promise<string> {
-  const [r] = await inTenant(
-    sql,
-    id,
-    (tx) => tx<{ id: string }[]>`
+export async function crearFestivo(sql: Sql, id: string, f: FestivoPanel, citas: QueHacerConCitas = 'dejar'): Promise<{ id: string; cancelar: string[] }> {
+  return inTenant(sql, id, async (tx) => {
+    // PI-21: citas confirmadas que el festivo (del local) o la ausencia (de esa profesional) pisan.
+    const afectadas = await tx<CitaAfectada[]>`
+      select a.id,
+             to_char(a.start_at at time zone b.timezone, 'YYYY-MM-DD') as fecha,
+             to_char(a.start_at at time zone b.timezone, 'HH24:MI') as hora,
+             c.nombre as clienta, s.nombre as servicio, st.nombre as profesional
+        from public.appointments a
+        join public.businesses b on b.id = a.business_id
+        join public.customers c on c.id = a.customer_id
+        join public.services s on s.id = a.service_id
+        join public.staff st on st.id = a.staff_id
+       where a.business_id = ${id}::uuid
+         and a.estado = 'confirmada'
+         and a.end_at > now()
+         and (${f.staffId}::uuid is null or a.staff_id = ${f.staffId}::uuid)
+         and tstzrange(a.start_at, a.end_at) && tstzrange(least(${f.desde}::timestamptz, ${f.hasta}::timestamptz), greatest(${f.desde}::timestamptz, ${f.hasta}::timestamptz))
+       order by a.start_at, a.id`;
+    const cancelar = decidir(afectadas, citas);
+    const [r] = await tx<{ id: string }[]>`
       insert into public.time_off (business_id, staff_id, desde, hasta, motivo)
       values (${id}::uuid, ${f.staffId}::uuid, ${f.desde}, ${f.hasta}, ${f.motivo})
-      returning id`,
-  );
-  return r!.id;
+      returning id`;
+    return { id: r!.id, cancelar };
+  });
 }
 
 export async function borrarFestivo(sql: Sql, id: string, festivoId: string): Promise<void> {

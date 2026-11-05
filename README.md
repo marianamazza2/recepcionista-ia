@@ -593,3 +593,8 @@ más los cinco de Mariana. El informe con capturas está en Research Desk
 
 Lo que espera a PA-13: el agente no explica que un día está cerrado o que la
 profesional no trabaja ese día (lo garantiza el motor, pero no lo dice).
+
+**PI-21 (05/11/2026):** un festivo, una ausencia o un horario nuevo que deja
+fuera citas ya dadas no se guarda sin preguntar: el panel enseña las citas y
+deja elegir entre dejarlas programadas o cancelarlas (cada clienta recibe su
+SMS). Lo comprueba la API (`citas_afectadas`) dentro de la misma transacción.
