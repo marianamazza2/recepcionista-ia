@@ -138,11 +138,14 @@ describe('el panel en el navegador', () => {
     await filaNueva('servicios').getByLabel('Nombre').fill('Corte');
     await filaNueva('servicios').getByRole('button', { name: 'Añadir' }).click();
     await expect.poll(() => seccion('servicios').locator('.space-y-3 > div').count(), ESPERA).toBe(2);
+    // Caso 27: mientras nadie lo hace, el panel lo marca.
+    expect(await seccion('servicios').textContent()).toContain('Ninguna profesional activa lo hace');
 
     await filaNueva('profesionales').getByLabel('Nombre').fill('Nora');
     await filaNueva('profesionales').getByLabel('Corte').check();
     await filaNueva('profesionales').getByRole('button', { name: 'Añadir' }).click();
     await expect.poll(() => seccion('profesionales').locator('.space-y-3 > div').count(), ESPERA).toBe(2);
+    expect(await seccion('servicios').textContent()).not.toContain('Ninguna profesional activa lo hace');
 
     // Horario del local: un tramo el martes y "Copiar a…" los días laborables.
     const local = panel.getByRole('group', { name: 'Horario del local' });
@@ -279,6 +282,18 @@ describe('el panel en el navegador', () => {
   it('el consumo lo cuenta', async () => {
     await panel.goto(`${servidores.panelUrl}/panel/#/consumo`);
     await expect.poll(() => panel.getByRole('row', { name: new RegExp(NOMBRE) }).isVisible(), ESPERA).toBe(true);
+    // Aceptación: el campo Mes enseña el mes de la tabla, no un campo vacío.
+    expect(await panel.getByLabel('Mes').inputValue()).toMatch(/^\d{4}-\d{2}$/);
     await panel.screenshot({ path: join(CAPTURAS, '5-consumo.png'), fullPage: true });
+  });
+
+  it('si la sesión caduca mientras edita, vuelve a «Entrar» avisándolo y con su email (caso 74)', async () => {
+    await panel.goto(`${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`);
+    await seccion('datos').getByLabel('Dirección').waitFor(ESPERA);
+    auth.caducarTodo();
+    await seccion('datos').getByLabel('Dirección').fill('Calle Caducada 1');
+    await seccion('datos').getByRole('button', { name: 'Guardar' }).click();
+    await expect.poll(() => panel.getByRole('status').textContent(), ESPERA).toContain('Tu sesión ha caducado');
+    expect(await panel.getByLabel('Email').inputValue()).toBe(EMAIL);
   });
 });

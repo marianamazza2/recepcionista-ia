@@ -17,6 +17,9 @@
 // llegue la base de conocimiento (Fase 5). Su límite (20 o 4.000 caracteres)
 // lo pone la base (RA007).
 //
+// Aceptación Fase 4 (caso 27): un servicio que no hace ninguna profesional
+// activa no llega al agente: no se puede reservar, así que no se ofrece.
+//
 // Las listas salen siempre en el mismo orden: la misma configuración tiene que
 // producir exactamente el mismo system prompt, o la caché no funciona.
 // =============================================================================
@@ -178,7 +181,13 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
        where business_id = ${b.id}::uuid and tipo = 'faq'
        order by orden, created_at, id`;
 
-    const ordenServicios = servicios.map((s) => s.id);
+    // Aceptación Fase 4 (caso 27): un servicio activo que no hace ninguna
+    // profesional activa no se le da al agente. Si no, lo ofrecía como
+    // reservable y, al no encontrar huecos, acababa pasando la conversación.
+    const activas = new Set(profesionales.map((p) => p.id));
+    const conQuien = new Set(quienHaceQue.filter((q) => activas.has(q.staff_id)).map((q) => q.service_id));
+    const reservables = servicios.filter((s) => conQuien.has(s.id));
+    const ordenServicios = reservables.map((s) => s.id);
     const servicioActivo = new Set(ordenServicios);
 
     return {
@@ -197,7 +206,7 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
       asignacionProfesional: b.asignacion_profesional,
       antelacionMinHoras: b.antelacion_min_horas,
       intervaloHuecosMin: b.intervalo_huecos_min,
-      servicios: servicios.map((s) => ({
+      servicios: reservables.map((s) => ({
         id: s.id,
         nombre: s.nombre,
         descripcion: s.descripcion,

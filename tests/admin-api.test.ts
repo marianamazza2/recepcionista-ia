@@ -267,6 +267,25 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(c!.estado).toBe('confirmada');
   });
 
+  it('aceptación 27: un servicio que no hace ninguna profesional activa no llega al agente', async () => {
+    const n = await alta('Servicio Sin Nadie Test');
+    const h = api();
+    const r = await pedir(h, 'POST', `negocios/${n.id}/servicios`, { nombre: 'Masaje', descripcion: null, duracionMin: 60, bufferMin: 0, precio: 50, precioVisible: true, activo: true });
+    const masaje = r.body.servicios.find((s: { nombre: string }) => s.nombre === 'Masaje').id as string;
+    let config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte']);
+    expect(buildSystemPrompt(config)).not.toContain('Masaje');
+    // Si lo hace una profesional desactivada, tampoco.
+    const otra = await pedir(h, 'POST', `negocios/${n.id}/profesionales`, { nombre: 'Olga', activo: false, servicioIds: [masaje] });
+    expect(otra.status).toBe(200);
+    config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte']);
+    // En cuanto una profesional activa lo hace, se ofrece.
+    await pedir(h, 'PUT', `negocios/${n.id}/profesionales/${n.profesionalId}`, { nombre: 'Nora', activo: true, servicioIds: [n.servicioId, masaje] });
+    config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte', 'Masaje']);
+  });
+
   it('preguntas frecuentes: van al prompt en el siguiente mensaje y el límite lo pone la base (RA007)', async () => {
     const n = await alta('Preguntas Test');
     const h = api();

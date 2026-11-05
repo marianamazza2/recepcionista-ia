@@ -8,6 +8,7 @@
 // propio fuera del horario del local: tramos en ámbar, un aviso fijo debajo y
 // confirmación al guardar). Cada bloque se guarda por separado; la API devuelve el negocio
 // entero ya actualizado (PI-05: el agente lo usa en el siguiente mensaje).
+// Aceptación (caso 27): un servicio activo que no hace nadie se marca en ámbar.
 // =============================================================================
 
 import { useEffect, useState, type ReactNode } from 'react';
@@ -286,6 +287,9 @@ function FilaServicio({ negocio: n, poner, servicio: s }: Props & { servicio: Se
         ) : null}
       </div>
       {s && !s.activo ? <p className="mt-2 text-xs text-slate-500">Desactivado: el agente no lo ofrece.</p> : null}
+      {s && s.activo && !n.profesionales.some((p) => p.activo && p.servicioIds.includes(s.id)) ? (
+        <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">Ninguna profesional activa lo hace: el agente no lo ofrece hasta que se lo asignes a alguien (en Profesionales).</p>
+      ) : null}
       <Aviso error={a.error} ok={a.ok} />
     </div>
   );

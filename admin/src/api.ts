@@ -4,7 +4,8 @@
 // El panel solo habla con nuestra API (/api/admin/…), en el mismo origen. La
 // sesión de Supabase Auth (token de acceso y de renovación) se guarda en
 // sessionStorage: se pierde al cerrar la pestaña. Si una petición da 401, se
-// intenta renovar una vez; si no, vuelta a "Entrar".
+// intenta renovar una vez; si no, vuelta a "Entrar", con un aviso de que la
+// sesión caducó y el email ya puesto (aceptación Fase 4, caso 74).
 // =============================================================================
 
 export interface Sesion {
@@ -36,6 +37,12 @@ function guardar(s: Sesion | null): void {
 }
 
 let sesion: Sesion | null = sesionGuardada();
+/** Email de la sesión que caducó, para avisarlo en "Entrar" (caso 74). */
+let caducada: string | null = null;
+
+export function sesionCaducada(): string | null {
+  return caducada;
+}
 const oyentes = new Set<(s: Sesion | null) => void>();
 
 export function alCambiarSesion(f: (s: Sesion | null) => void): () => void {
@@ -69,10 +76,12 @@ async function leer<T>(r: Response): Promise<T> {
 
 export async function entrar(email: string, password: string): Promise<void> {
   const s = await leer<Sesion>(await crudo('POST', 'sesion', { email, password }));
+  caducada = null;
   guardar({ accessToken: s.accessToken, refreshToken: s.refreshToken, email: s.email });
 }
 
 export function salir(): void {
+  caducada = null;
   guardar(null);
 }
 
@@ -101,6 +110,7 @@ export async function api<T>(metodo: 'GET' | 'POST' | 'PUT' | 'DELETE', ruta: st
   let r = await crudo(metodo, ruta, body, sesion?.accessToken);
   if (r.status === 401 && (await renovar())) r = await crudo(metodo, ruta, body, sesion?.accessToken);
   if (r.status === 401) {
+    caducada = sesion?.email ?? null;
     guardar(null);
     throw new ErrorApi(401, 'Tu sesión ha caducado. Vuelve a entrar.');
   }

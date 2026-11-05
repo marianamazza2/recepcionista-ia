@@ -88,6 +88,9 @@ No se declara una herramienta que todavía no hace nada (por eso
   equipo lo que no esté. Es el único cambio del núcleo en la Fase 4; las
   carga `config/business.ts` en el orden del negocio y su límite lo pone la
   base (RA007), no el prompt.
+- **Servicios que no hace nadie (aceptación Fase 4, caso 27):** un servicio
+  activo que no hace ninguna profesional activa no llega al agente: lo
+  filtra `config/business.ts`, no el prompt. El panel lo marca en ámbar.
 - `tests/prompt.test.ts` comprueba determinismo, que no haya precios ocultos ni
   datos de un negocio concreto. Si añadís un modo, añadí su caso.
 - Los escenarios del eval comprueban lo grave, no el estilo (D-56).

@@ -578,3 +578,18 @@ cierra la Fase 4: la migración y la verificación en la nube están pendientes.
 
 Aceptación local del logo (02/11/2026): también se decodifican las imágenes
 pequeñas; un archivo renombrado se rechaza y conserva el logo anterior (caso 15).
+
+### Plan de aceptación ejecutado en local · 05/11/2026
+
+76 de los 79 casos del plan (el bloque P, en la nube, va después del merge),
+más los cinco de Mariana. El informe con capturas está en Research Desk
+(«Informe de pruebas · Fase 4»). Arreglos nuevos, cada uno con su test:
+
+- **Caso 27:** un servicio que no hace ninguna profesional activa ya no llega
+  al agente (antes lo ofrecía y acababa derivando); el panel lo marca en ámbar.
+- **Caso 74:** si la sesión caduca mientras se edita, "Entrar" lo avisa y trae
+  el email puesto.
+- **Consumo:** el campo "Mes" enseña el mes de la tabla en vez de verse vacío.
+
+Lo que espera a PA-13: el agente no explica que un día está cerrado o que la
+profesional no trabaja ese día (lo garantiza el motor, pero no lo dice).
