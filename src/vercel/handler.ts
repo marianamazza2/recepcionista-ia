@@ -10,6 +10,8 @@
 //   DATABASE_URL       Supabase por el pooler en modo transacción (6543)
 //   ANTHROPIC_API_KEY  la clave de la API (nunca se muestra)
 //   PUBLIC_API_URL     la URL pública de esta función, para el enlace del SMS
+//   SUPABASE_PROJECT_REF, SUPABASE_ANON_KEY  las cuentas del panel (Fase 4,
+//                      PI-01). Sin ellas, /api/admin responde 503.
 //   AGENT_*            opcionales, como en local
 //
 // SMS: el proveedor de prueba (PW-07). El SMS sale en los logs de la función
@@ -23,6 +25,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { SmsDePrueba } from '../adapters/sms/prueba.js';
+import { authPanelDesdeEnv } from '../api/admin/auth.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
 import { anthropicModelClient, settingsFromEnv } from '../core/agent.js';
@@ -47,6 +50,7 @@ function crearApi(): ReturnType<typeof createApi> {
     settings,
     sms: new SmsDePrueba(),
     baseUrl: publicUrl(),
+    auth: authPanelDesdeEnv(),
     onError: (e) => console.error(`[error] ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`),
   });
 }

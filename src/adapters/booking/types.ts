@@ -46,6 +46,12 @@ export interface CreateBookingParams {
   origin?: BookingOrigin;
   /** Clave de idempotencia del canal o id en un sistema externo. */
   externalId?: string;
+  /**
+   * PR-04, PI-14: cita a mano desde el panel. Se salta la rejilla y la
+   * antelación mínima; nunca el horario, los festivos ni los solapes. El
+   * núcleo del agente no lo usa nunca.
+   */
+  manual?: boolean;
 }
 
 export interface Booking {

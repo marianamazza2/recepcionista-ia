@@ -1,7 +1,7 @@
 // =============================================================================
 // Escenarios con el modelo real (Fase 2 · 2.7)
 // =============================================================================
-//   npm run agent:eval                 # los 12 escenarios
+//   npm run agent:eval                 # los 13 escenarios
 //   npm run agent:eval -- --solo 3     # solo el escenario 3
 //   npm run agent:eval -- --ver        # además, la conversación entera
 //
@@ -186,7 +186,7 @@ function frasesAfirmativas(texto: string): string[] {
 const corto = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 160);
 
 // -----------------------------------------------------------------------------
-// Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12) y el 12 (PR-08)
+// Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12), el 12 (PR-08) y el 13 (PI-08, Fase 4)
 // -----------------------------------------------------------------------------
 
 const ESCENARIOS: Escenario[] = [
@@ -403,7 +403,7 @@ const ESCENARIOS: Escenario[] = [
         e,
         null,
         [
-          '[eval] Hola, ¿tenéis parking cerca del local?',
+          '[eval] Hola, ¿puedo ir con mi bebé al local mientras me hacen el tratamiento?',
           `Vale, gracias. Entonces dame cita para una limpieza facial el ${comoLoDiria(martes)} a las 16:00, me da igual quién. Soy Nora Prueba y mi teléfono es ${telefono()}.`,
           'Sí, resérvala.',
           'Sí, confirmo.',
@@ -456,6 +456,15 @@ const ESCENARIOS: Escenario[] = [
         detalle: `al principio dice que ya tiene cita: ${diceQueNo}; citas: ${citas.map((x) => `${x.fecha} ${x.hora} ${x.profesional}`).join(' | ')}`,
         charla,
       };
+    },
+  },
+  {
+    titulo: 'Pregunta algo que solo está en una pregunta frecuente ("¿tenéis bonos regalo?") → responde con ella y no deriva (PI-08)',
+    async correr(e) {
+      const charla = await conversar(e, null, ['[eval] Hola, ¿tenéis bonos regalo? Es para el cumple de mi madre.']);
+      const responde = /recepci[oó]n/i.test(charla.texto) && /un año|1 año/i.test(charla.texto);
+      const deriva = (await escalaciones(e, charla.conversationId)) > 0;
+      return { ok: responde && !deriva, detalle: `responde con la pregunta frecuente: ${responde}; deriva: ${deriva}`, charla };
     },
   },
 ];

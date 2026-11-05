@@ -24,7 +24,8 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `supabase/` | Migraciones, seed y tests SQL | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 | `tests/` | Tests TypeScript (Vitest) contra una base real | [`tests/AGENTS.md`](tests/AGENTS.md) |
 | `widget/` | El chat embebible que va en la web del negocio | [`widget/AGENTS.md`](widget/AGENTS.md) · [`README`](widget/README.md) |
-| `demo/` | La web inventada de Clínica Olea (medicina estética, Barcelona) con el widget pegado: la que se enseña en ventas (la sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales, sin promesas de resultados (publicidad sanitaria) |
+| `admin/` | El panel interno de Mariana (React + Vite + Tailwind): alta de negocios, visor, agenda, consumo | [`admin/AGENTS.md`](admin/AGENTS.md) · [`README`](admin/README.md) |
+| `demo/` | La web inventada de Clínica Olea (medicina estética, Barcelona) con el widget pegado: la que se enseña en ventas; y `prueba.html?key=…` para cualquier negocio (las sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales, sin promesas de resultados (publicidad sanitaria) |
 | `scripts/` | Runner de tests SQL y acceso a la nube | [`scripts/README.md`](scripts/README.md) |
 | `.claude/skills/` | Procedimientos de todos los días (verificar, migrar, consultar, Research Desk) | [§7b](#7b-skills-del-proyecto) |
 
@@ -51,13 +52,18 @@ Consecuencias que se aplican siempre:
   `no_overlap_cliente`); que una clienta solo toque sus citas (PA-08) lo
   impide la herramienta. El prompt explica; el código y la base garantizan.
 
+El panel valida el formato del teléfono del local con la normalización común
+(`src/core/phone.ts`). Los tramos de horario del mismo día y del mismo local o
+profesional no se pueden solapar: lo impiden exclusiones de Postgres; el
+horario propio sigue siendo independiente del local (PD-01).
+
 ## 2. Dónde vive cada decisión
 
 | Tipo | Dónde | Se sube |
 |---|---|---|
 | Alcance, arquitectura y plan de fases | `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro) | Sí |
 | Qué hay que hacer en una fase | `_specs/fase-N-*.md` | Sí |
-| **Reglas de negocio** (PD-, PR-, PA-, PW-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
+| **Reglas de negocio** (PD-, PR-, PA-, PW-, PI-, PC-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
 | Decisiones técnicas ya tomadas (D-NN) y trampas (T-NN) | `docs/DECISIONES.md` | **No** (`docs/` está en `.gitignore`) |
 | Decisiones esperando a Mariana | `docs/DECISIONES-PENDIENTES.md` | No |
 | Por qué una tabla o función es así | El comentario de cabecera de su migración | Sí |
@@ -84,12 +90,47 @@ El proyecto se construye en fases cerradas (maestro §11). Cada fase:
    el spec pone en "Depende de".
 3. Se cierra solo cuando se cumplen todos los puntos de su "Definition of
    Done", **en local y en el proyecto Supabase de la nube** (PD-06).
-4. Termina con su sección en `docs/DECISIONES.md`, el `README.md` al día y un
-   commit (`Phase N: …`).
+4. Termina con su sección en `docs/DECISIONES.md`, el `README.md` al día y
+   sus commits (`Phase N: …`).
+5. Va en **una sola rama y un solo PR por fase**: el spec y la implementación
+   juntos. El spec se escribe en la rama de la fase y abre su PR; la sesión
+   que construye la fase sigue en esa misma rama y actualiza ese PR (no abre
+   otro). **Mariana revisa y mergea**; Claude Code nunca mergea ni hace push a
+   `main`.
 
 No se adelanta trabajo de fases futuras: lo que está "fuera del alcance" de la
 fase en curso no se hace (por ejemplo, no se declara una herramienta que
 todavía no hace nada).
+
+### 3b. Mariana pone las reglas; Claude Code prueba todo
+
+Decidido por Mariana el 01/11/2026: **ella no prueba a mano**. En cada fase:
+
+1. Con el spec, Claude Code escribe un **plan de pruebas de aceptación**: todo
+   lo que va a intentar para romper lo construido (permisos, datos raros,
+   casos límite, clientas difíciles, la nube…). Va como nota en Research Desk
+   ("Plan de pruebas · Fase N"), con un hueco "Tus pruebas" al final.
+2. **Mariana lo revisa**: tacha lo que sobra y añade sus casos con sus
+   palabras.
+3. Claude Code lo **ejecuta**: tests automáticos, recorridos en el navegador
+   con Playwright y capturas (con cuentas y negocios de prueba, nunca los de
+   Mariana), conversaciones con el modelo real haciendo de clienta (avisando
+   del coste) y comprobación en la base. Todo en local; en la nube, solo con
+   su visto bueno.
+4. Cada fallo se arregla **con un test automático** que lo cubra. Lo que no
+   es un fallo sino una decisión de producto se le pregunta (⚠️ por confirmar,
+   §2), con una propuesta.
+5. Claude Code publica el **informe** ("Informe de pruebas · Fase N" en
+   Research Desk): cada prueba en OK / FALLA, con capturas. **Mariana lo
+   revisa** y mergea el PR.
+
+Lo único que queda para Mariana, además de decidir y revisar: lo que solo
+puede hacer ella. Contraseñas y claves secretas (las escribe ella, en su
+Terminal, en `.env` o en la web del servicio), cuentas, contratos y pagos con
+proveedores, iniciar sesión una vez en sus herramientas (`gh auth login`),
+mergear, y dar el visto bueno a lo que toca la nube, publica o cuesta dinero.
+Si un paso de la Hoja de ruta le pide probar algo a mano, ese paso está mal:
+se reescribe para que lo haga Claude Code.
 
 ## 4. Comandos
 
@@ -100,16 +141,19 @@ cp .env.example .env        # y completar DATABASE_URL (nunca subir .env)
 npm run typecheck           # tsc --noEmit, modo estricto
 npm test                    # tests TypeScript (Vitest), contra DATABASE_URL
 npm run test:sql            # tests SQL de supabase/tests/
-npm run test:e2e            # la demo en Google Chrome con el modelo simulado (necesita Chrome)
+npm run test:e2e            # la demo y el panel en Google Chrome con el modelo simulado (necesita Chrome)
 npm run chat -- --negocio estetica-aurora     # conversar por la Terminal (usa la API real)
 npm run agent:eval          # escenarios con el modelo real (cuesta céntimos)
-npm run dev                 # demo del widget: web en :4310, servidor del widget en :4311 (API real)
+npm run dev                 # demo del widget (:4310 web, :4311 servidor) y panel (:4312/panel/), con la API real
 npm run consumo -- --negocio estetica-aurora  # consumo del mes y % del tope
+npm run panel:cuenta -- --email …              # crear una cuenta del panel (pide la contraseña en la Terminal)
 npm run build:widget        # genera widget/dist/widget.js
+npm run build:panel         # compila el panel en admin/dist (lo hacen solos npm run dev y build:vercel)
 npm run build:vercel        # arma .vercel/output para publicar (necesita PUBLIC_API_URL; lo corre Vercel)
 ```
 
-`npm run typecheck` comprueba también el widget (`tsc -p widget`).
+`npm run typecheck` comprueba también el widget (`tsc -p widget`) y el panel
+(`tsc -p admin`).
 
 Contra la nube: `./scripts/con-supabase.sh npm test` (ver
 [`scripts/README.md`](scripts/README.md)); con
@@ -117,8 +161,9 @@ Contra la nube: `./scripts/con-supabase.sh npm test` (ver
 el que usa Vercel.
 
 La demo está publicada en Vercel (PW-08): cada `git push` a `main` la
-actualiza. Por eso **no se hace push sin que Mariana lo pida**, y lo que se
-sube tiene que pasar los tests antes.
+actualiza. Por eso **a `main` no se hace push nunca**: los cambios llegan por
+el PR de la fase (§3), que mergea Mariana, y lo que se sube tiene que pasar
+los tests antes.
 
 **En esta máquina no hay Docker** (decisión de Mariana, D-24): no uses
 `supabase start` ni `supabase db reset`. Las migraciones se aplican con
@@ -132,6 +177,8 @@ Postgres sin avisar.**
       `npm run test:e2e` si tocaste el widget, la API o la demo).
 - [ ] Si tocaste el agente (prompt, herramientas, loop): `npm run agent:eval`
       sigue todo OK. Cuesta dinero: avisá antes de correrlo varias veces.
+- [ ] Si es el cierre de una fase: el plan de pruebas de aceptación revisado
+      por Mariana está ejecutado y su informe publicado (§3b).
 - [ ] Si tocaste la base: también contra Supabase en la nube
       (`./scripts/con-supabase.sh …`) antes de cerrar una fase.
 - [ ] Tests nuevos para lo nuevo (SQL para la base, TypeScript para el resto).
@@ -149,6 +196,10 @@ Postgres sin avisar.**
   de sesión.
 - Tokens que dan acceso (sesión del widget, enlace del SMS): en la base **solo
   su hash** (SHA-256).
+- El panel (Fase 4) ve todos los negocios: toda ruta `/api/admin/…` exige
+  cuenta (token de Supabase Auth verificado + `panel.personas`, PI-01). La
+  `SUPABASE_SERVICE_ROLE_KEY` solo la usa `npm run panel:cuenta` desde `.env`:
+  nunca en Vercel, en el navegador ni en el chat.
 - Nada de desplegar (Vercel), contratar servicios ni conectar proveedores
   reales (SMS) sin el visto bueno explícito de Mariana.
 - Datos de salud: el RGPD está abierto (PD-11). No se añaden datos sensibles a
@@ -166,8 +217,10 @@ Postgres sin avisar.**
   `// ====` (o `-- ====`) que dice qué es, en qué fase/tarea nació y qué
   reglas implementa. Al cambiar el archivo, se actualiza la cabecera.
 - **Comentarios que explican el porqué**, con su código de decisión, no el qué.
-- **Commits** en inglés, cortos (`Phase 2: agent core`), con el detalle en el
-  cuerpo.
+- **Commits y PR en inglés**, aunque el resto esté en español: commits cortos
+  (`Phase 2: agent core`) con el detalle en el cuerpo, y el título y la
+  descripción de cada PR también en inglés (los códigos como `PI-03` y los
+  nombres de archivo se dejan tal cual).
 
 ## 7b. Skills del proyecto
 
@@ -196,7 +249,7 @@ excepción:
 1. **Arquitectura:** capas, carpetas, dependencias entre módulos, interfaces
    (`BookingAdapter`, `SmsProvider`, `runAgentTurn`), stack, cómo se guarda o
    se protege un dato.
-2. **Reglas de negocio:** una regla PD/PR/PA/PW nueva o cambiada, sobre todo
+2. **Reglas de negocio:** una regla PD/PR/PA/PW/PI nueva o cambiada, sobre todo
    si cambia dónde se aplica (código, base o prompt) o qué hay que testear.
 3. **Forma de trabajo:** comandos, flujo de fases, cómo se testea o se
    verifica, convenciones de código, qué se puede hacer sin preguntar.

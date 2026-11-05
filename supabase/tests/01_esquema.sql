@@ -125,7 +125,7 @@ select test.ok(
 select test.ok(
   to_regprocedure('public.available_slots(uuid, uuid, timestamptz, timestamptz, uuid)') is not null
   and to_regprocedure('public.ultima_profesional(uuid, uuid)') is not null
-  and to_regprocedure('app.slot_es_valido(uuid, uuid, uuid, timestamptz)') is not null,
+  and to_regprocedure('app.slot_es_valido(uuid, uuid, uuid, timestamptz, boolean)') is not null,
   'existen available_slots, ultima_profesional y app.slot_es_valido'
 );
 

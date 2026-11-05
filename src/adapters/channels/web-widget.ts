@@ -19,6 +19,10 @@
 //   7. Consumo en usage_events, SMS de confirmación de las citas nuevas y
 //      movidas (PW-07, PW-09) y SMS de las canceladas (PW-10).
 //
+// PI-13: "Probar el chat" desde el panel usa este mismo camino con
+// `prueba: true` (la conversación queda marcada y su sesión no vale en el
+// widget). No se salta ni los límites ni el tope.
+//
 // Nunca lanza por un fallo del agente o de la base durante el turno: responde
 // con un texto fijo con el teléfono del local y el error va al log.
 //
@@ -139,7 +143,7 @@ export function externalIdWeb(conversationId: string, clientMessageId: string): 
 export async function procesarMensajeWeb(
   deps: WebChatDeps,
   negocio: WidgetBusiness,
-  p: { sessionToken?: string | undefined; clientMessageId: string; texto: string; ip: string | null },
+  p: { sessionToken?: string | undefined; clientMessageId: string; texto: string; ip: string | null; prueba?: boolean },
 ): Promise<ResultadoChat> {
   const limites = { ...LIMITES_WIDGET, ...deps.limites };
   const onError = deps.onError ?? (() => {});
@@ -156,7 +160,7 @@ export async function procesarMensajeWeb(
 
   // --- 2. Sesión ---------------------------------------------------------------
   let conv: WebConversation | null = p.sessionToken
-    ? await conversationBySession(deps.sql, negocio.id, sha256(p.sessionToken), limites.sesionHoras)
+    ? await conversationBySession(deps.sql, negocio.id, sha256(p.sessionToken), limites.sesionHoras, p.prueba ?? false)
     : null;
   let sessionToken = p.sessionToken ?? null;
   let nuevaConversacion = false;
@@ -166,7 +170,7 @@ export async function procesarMensajeWeb(
       return { ...sinCambiar('limite_conversaciones'), sessionToken: null, nuevaConversacion: p.sessionToken !== undefined };
     }
     const t = nuevoToken();
-    conv = await createWebConversation(deps.sql, negocio.id, t.hash, ipHash);
+    conv = await createWebConversation(deps.sql, negocio.id, t.hash, ipHash, p.prueba ?? false);
     sessionToken = t.token;
     nuevaConversacion = true;
   }

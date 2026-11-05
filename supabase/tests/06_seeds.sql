@@ -227,12 +227,19 @@ select test.ok(
 -- --- Las tablas de fases futuras están creadas y vacías ----------------------
 -- Desde la Fase 2 el agente escribe conversaciones y mensajes cada vez que
 -- alguien conversa (npm run chat), así que esas tablas ya no tienen por qué
--- estar vacías: solo se comprueba que existen. Las de conocimiento siguen
--- vacías hasta la Fase 5.
+-- estar vacías: solo se comprueba que existen. De conocimiento, desde la
+-- Fase 4 hay preguntas frecuentes (PI-08); los documentos y los trozos
+-- indexados siguen vacíos hasta la Fase 5.
 select test.ok(
-  (select count(*) from public.knowledge_docs)   = 0
+  (select count(*) from public.knowledge_docs where tipo <> 'faq') = 0
   and (select count(*) from public.knowledge_chunks) = 0,
-  'las tablas de conocimiento existen y están vacías (fase 5)'
+  'de conocimiento solo hay preguntas frecuentes: documentos y trozos llegan en la fase 5'
+);
+select test.ok(
+  (select array_agg(titulo order by orden) from public.knowledge_docs
+    where business_id = 'a0000000-0000-4000-8000-000000000001' and tipo = 'faq')
+  = array['¿Hay aparcamiento cerca?', '¿Cómo se puede pagar?', '¿Tenéis bonos regalo?'],
+  'PI-08: Aurora tiene sus 3 preguntas frecuentes, en orden'
 );
 select test.ok(
   to_regclass('public.conversations') is not null

@@ -1,0 +1,119 @@
+// =============================================================================
+// Cuentas de horarios del panel (Fase 4 · 4.3)
+// =============================================================================
+// Funciones puras (sin React ni red), para poder testearlas desde tests/:
+//
+//   · fueraDelLocal (PI-18): los tramos de un horario propio que caen, total o
+//     parcialmente, fuera del horario del local ese día (o en un día que el
+//     local cierra). Se PERMITE guardarlos (PD-01: el horario propio manda ese
+//     día), pero el panel avisa y pide confirmación antes. No es una regla de
+//     la base: es un aviso para no equivocarse al cargarlo.
+//   · avisosHorario (PI-18): por cada profesional activa, sus tramos guardados
+//     fuera del horario del local, para el panel "Publicar" de arriba.
+//   · copiarDia: los tramos de un día, copiados a otros días (sustituyen los
+//     que tuvieran). Mejora de la interfaz, sin regla de negocio.
+//   · estadoDia, ponerEstado y copiarLibres (PI-19): cada día de una
+//     profesional es "como el local", "no trabaja" u "horas propias". Copiar
+//     un día copia también su estado.
+//
+// Horas 'HH:MM' locales del negocio; '24:00' es la medianoche del cierre.
+// weekday: 0 = domingo … 6 = sábado (D-10).
+// =============================================================================
+
+export interface TramoDia {
+  weekday: number;
+  apertura: string;
+  cierre: string;
+}
+
+function minutos(h: string): number {
+  return Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+}
+
+/** ¿Queda algún trozo de [desde, hasta) sin cubrir por los tramos del local? */
+function quedaFuera(desde: number, hasta: number, local: { desde: number; hasta: number }[]): boolean {
+  let cursor = desde;
+  for (const t of [...local].sort((a, b) => a.desde - b.desde)) {
+    if (t.hasta <= cursor) continue;
+    if (t.desde > cursor) return true; // hueco sin cubrir
+    cursor = t.hasta;
+    if (cursor >= hasta) return false;
+  }
+  return cursor < hasta;
+}
+
+/** PI-18: los tramos propios que no caben enteros dentro del horario del local de su día. */
+export function fueraDelLocal<T extends TramoDia>(propios: T[], local: TramoDia[]): T[] {
+  return propios.filter((p) => {
+    const delDia = local.filter((l) => l.weekday === p.weekday).map((l) => ({ desde: minutos(l.apertura), hasta: minutos(l.cierre) }));
+    return quedaFuera(minutos(p.apertura), minutos(p.cierre), delDia);
+  });
+}
+
+/** PI-18: las profesionales activas con tramos guardados fuera del horario del local. */
+export function avisosHorario<T extends TramoDia & { staffId: string | null }>(
+  horario: T[],
+  profesionales: { id: string; nombre: string; activo: boolean }[],
+): { nombre: string; tramos: T[] }[] {
+  const local = horario.filter((t) => t.staffId === null);
+  return profesionales
+    .filter((p) => p.activo)
+    .map((p) => ({ nombre: p.nombre, tramos: fueraDelLocal(horario.filter((t) => t.staffId === p.id), local) }))
+    .filter((a) => a.tramos.length > 0);
+}
+
+/** Copia los tramos del día `origen` a los días `destinos`, sustituyendo los que tuvieran. */
+export function copiarDia<T extends TramoDia>(tramos: T[], origen: number, destinos: number[]): T[] {
+  const aCopiar = tramos.filter((t) => t.weekday === origen);
+  const otros = destinos.filter((d) => d !== origen);
+  return [
+    ...tramos.filter((t) => !otros.includes(t.weekday)),
+    ...otros.flatMap((d) => aCopiar.map((t) => ({ ...t, weekday: d }))),
+  ];
+}
+
+/** Días laborables (lunes a viernes) y toda la semana, para "Copiar a…". */
+export const LABORABLES = [1, 2, 3, 4, 5];
+export const TODA_LA_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+// -----------------------------------------------------------------------------
+// PI-19: los tres estados de un día de una profesional
+// -----------------------------------------------------------------------------
+
+export type EstadoDia = 'local' | 'libre' | 'propias';
+
+/** "No trabaja" gana a las horas propias, como en el motor. */
+export function estadoDia(tramos: TramoDia[], libres: number[], weekday: number): EstadoDia {
+  if (libres.includes(weekday)) return 'libre';
+  return tramos.some((t) => t.weekday === weekday) ? 'propias' : 'local';
+}
+
+/**
+ * Cambia el estado de un día. "Horas propias" empieza con el horario del local
+ * de ese día (o 10:00–14:00 si el local cierra), para editarlo.
+ */
+export function ponerEstado<T extends TramoDia>(
+  tramos: T[],
+  libres: number[],
+  weekday: number,
+  estado: EstadoDia,
+  nuevo: (t: TramoDia) => T,
+  local: TramoDia[],
+): { tramos: T[]; libres: number[] } {
+  const sinDia = tramos.filter((t) => t.weekday !== weekday);
+  const sinLibre = libres.filter((w) => w !== weekday);
+  if (estado === 'local') return { tramos: sinDia, libres: sinLibre };
+  if (estado === 'libre') return { tramos: sinDia, libres: [...sinLibre, weekday].sort() };
+  if (tramos.some((t) => t.weekday === weekday)) return { tramos, libres: sinLibre };
+  const delLocal = local.filter((t) => t.weekday === weekday);
+  const base = delLocal.length > 0 ? delLocal : [{ weekday, apertura: '10:00', cierre: '14:00' }];
+  return { tramos: [...sinDia, ...base.map((t) => nuevo({ weekday, apertura: t.apertura, cierre: t.cierre }))], libres: sinLibre };
+}
+
+/** "Copiar a…" también copia si ese día no trabaja: los destinos quedan igual que el origen. */
+export function copiarLibres(libres: number[], origen: number, destinos: number[]): number[] {
+  const otros = destinos.filter((d) => d !== origen);
+  const quedan = libres.filter((w) => !otros.includes(w));
+  return (libres.includes(origen) ? [...quedan, ...otros] : quedan).sort();
+}
+

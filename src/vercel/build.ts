@@ -5,6 +5,7 @@
 //
 //   static/index.html, privacidad.html   la web de la demo, apuntando a PUBLIC_API_URL
 //   static/widget.js                     el widget minificado
+//   static/panel/                        el panel interno (Fase 4, PI-02), compilado con Vite
 //   functions/api.func/                  src/vercel/handler.ts en un solo archivo
 //   config.json                          rutas: /api/… y /cita/… → la función
 //
@@ -13,6 +14,10 @@
 // demo y el widget por PUBLIC_API_URL. Así el navegador manda la cabecera
 // Origin y la comprobación de dominio (PW-06) funciona igual que con un
 // negocio real. Desde el dominio del servidor, la demo se ve sin widget.
+//
+// El panel va en el mismo proyecto (PI-02) bajo /panel/ y habla con /api/admin
+// del mismo dominio. Con PANEL_HOST (el dominio propio del panel, p. ej.
+// recepcionista-ia-panel.vercel.app), la raíz de ese dominio lleva a /panel/.
 //
 // Región fra1 (Frankfurt): la misma que la base de Supabase.
 // =============================================================================
@@ -23,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 import { build } from 'esbuild';
 
+import { construirPanel } from '../dev/panel-build.js';
 import { construirWidget } from '../dev/widget-build.js';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
@@ -30,7 +36,11 @@ const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 /** maxDuration: un turno puede tardar ~3 × 60 s (D-48) y un mensaje espera hasta 200 s al anterior (LIMITES_WIDGET). 300 s es el máximo del plan Hobby. */
 export const DURACION_MAXIMA_S = 300;
 
-export async function construirVercel(o: { apiUrl: string; outDir?: string }): Promise<string> {
+/** CSP del panel: solo lo suyo; el logo llega como data URL (PI-10) y React pone estilos en línea. */
+export const CSP_PANEL =
+  "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+
+export async function construirVercel(o: { apiUrl: string; outDir?: string; panelHost?: string }): Promise<string> {
   const apiUrl = new URL(o.apiUrl).origin; // valida y quita la barra final
   const out = o.outDir ?? join(RAIZ, '.vercel/output');
   rmSync(out, { recursive: true, force: true });
@@ -43,6 +53,7 @@ export async function construirVercel(o: { apiUrl: string; outDir?: string }): P
   writeFileSync(join(estaticos, 'index.html'), index.replaceAll('http://localhost:4311', apiUrl));
   copyFileSync(join(RAIZ, 'demo/privacidad.html'), join(estaticos, 'privacidad.html'));
   writeFileSync(join(estaticos, 'widget.js'), await construirWidget({ minify: true }));
+  await construirPanel({ outDir: join(estaticos, 'panel') });
 
   // --- La función ----------------------------------------------------------------
   const func = join(out, 'functions/api.func');
@@ -84,6 +95,13 @@ export async function construirVercel(o: { apiUrl: string; outDir?: string }): P
         routes: [
           // widget.js se carga desde cualquier web (lo que protege es PW-06 en la API).
           { src: '^/widget\\.js$', headers: { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=300' }, continue: true },
+          ...(o.panelHost ? [{ src: '^/$', has: [{ type: 'host', value: o.panelHost }], status: 302, headers: { location: '/panel/' } }] : []),
+          { src: '^/panel$', status: 308, headers: { location: '/panel/' } },
+          {
+            src: '^/panel/.*$',
+            headers: { 'content-security-policy': CSP_PANEL, 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' },
+            continue: true,
+          },
           { handle: 'filesystem' },
           { src: '^/(api|cita)/.*$', dest: '/api' },
         ],
@@ -102,6 +120,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.error('Falta PUBLIC_API_URL (la URL pública del servidor del widget, p. ej. https://recepcionista-api.vercel.app)');
     process.exit(2);
   }
-  const out = await construirVercel({ apiUrl });
+  const panelHost = process.env.PANEL_HOST?.trim() || undefined;
+  const out = await construirVercel({ apiUrl, ...(panelHost ? { panelHost } : {}) });
   console.log(`Publicación de Vercel lista en ${out} (widget en ${new URL(apiUrl).origin})`);
 }

@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Web de prueba GENÉRICA (Fase 4 · 4.3): carga el widget de cualquier negocio
+  con su clave, para probar uno recién dado de alta desde el panel. Abrir:
+
+    http://localhost:4310/prueba.html?key=wk_…
+
+  El negocio tiene que estar activo (PI-16) y tener `localhost` en sus
+  dominios (PW-06). Negocio
+  ficticio, sin marcas reales. La sirve `npm run dev` (no se publica en Vercel).
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Web de prueba</title>
+<style>
+  body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #2b2b2b; background: #f6f6f4; }
+  main { max-width: 640px; margin: 0 auto; padding: 64px 24px; }
+  h1 { font-weight: 600; margin: 0 0 12px; }
+  p { color: #5b5b5b; }
+  code { background: #ececea; padding: 2px 6px; border-radius: 4px; }
+  .mal { color: #9b1c1c; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Web de prueba</h1>
+  <p>Una página cualquiera, como la web de un negocio, con el chat pegado abajo a la derecha.</p>
+  <p id="estado"></p>
+</main>
+<script>
+  // La clave sale de la dirección (?key=wk_…) y se valida antes de usarla.
+  (function () {
+    var key = new URLSearchParams(location.search).get('key') || '';
+    var estado = document.getElementById('estado');
+    if (!/^wk_[A-Za-z0-9_]{16,64}$/.test(key)) {
+      estado.className = 'mal';
+      estado.textContent = 'Falta la clave del widget: abre esta página con ?key=wk_… (la tienes en el panel, en "Publicar").';
+      return;
+    }
+    estado.textContent = 'Clave: ' + key + '. Si el chat no aparece, revisa que el negocio esté activo y tenga "localhost" en sus dominios.';
+    var s = document.createElement('script');
+    s.src = 'http://localhost:4311/widget.js';
+    s.async = true;
+    s.setAttribute('data-key', key);
+    document.body.appendChild(s);
+  })();
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 
 | # | Tema | Regla del motor (fija) | Ajuste por negocio (de serie) | Decidido |
 |---|---|---|---|---|
-| PD-01 | Horarios | El horario propio de una profesional **reemplaza** al del local ese día. Sin horario propio, hereda el del local | Horario del local y de cada profesional | 16/10/2026 |
+| PD-01 | Horarios | El horario propio de una profesional **reemplaza** al del local ese día. Sin horario propio, hereda el del local. Un día marcado "no trabaja" no tiene huecos (PI-19) | Horario del local y de cada profesional, y sus días libres | 16/10/2026 (ampliada 30/10/2026) |
 | PD-02 | Margen entre citas | El margen **se respeta siempre** | Minutos de margen por servicio (0 = sin margen) | 16/10/2026 |
 | PD-03 | Elección de profesional | Si la clienta no tiene preferencia: primer hueco libre o la que menos citas tenga | Cómo se elige (de serie: **el agente pregunta**) | 16/10/2026 |
 | PD-04 | Fuera de horario | Dice que no abre y **ofrece los huecos más cercanos**. Si insiste, ofrece pasar con una persona | — | 16/10/2026 |
@@ -37,6 +37,8 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
+
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026. PI-20, ⚠️ por confirmar.
 
 ---
 
@@ -61,6 +63,12 @@ esté trabajando, porque no hace ese servicio.
 
 **Ajuste por negocio:** el horario del local y, si los hay, los horarios propios
 de cada profesional.
+
+**Ampliada el 30/10/2026 (PI-19):** cada día, cada profesional trabaja **como
+el local** (lo de arriba, de serie), **no trabaja** (ese día no tiene ningún
+hueco aunque el local abra) o con **horas propias** (mandan las suyas). Antes
+no había forma de decir que una profesional no trabaja un día que el local
+abre.
 
 ## PD-02 · Margen entre citas
 
@@ -464,6 +472,56 @@ intentos o algo falla.
 
 ---
 
+## Después de la Fase 4 · noviembre de 2026
+
+| # | Tema | Decisión / qué hace ahora | Estado |
+|---|---|---|---|
+| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, el tratamiento necesita una visita antes…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código | ✅ decidida 05/11/2026 (el valor de serie y cuándo se construye, ⚠️ por confirmar) |
+
+### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
+
+**El problema:** en la demo de Clínica Olea, cuando la clienta pedía algo que
+no se podía dar (un día que el local cierra, o la toxina sin haber hecho antes
+la primera visita), el agente a veces **cambiaba de tratamiento o de hora sin
+decirlo**. La clienta cree que reservó una cosa y tiene otra.
+
+**Regla:** si el agente no puede dar lo que le piden, **explica el motivo** en
+palabras de la clienta y ofrece lo más cercano que sí se puede. Nunca cambia
+el tratamiento, la profesional ni la hora sin decirlo y sin que ella diga que
+sí (PA-01).
+
+> — Quiero toxina el sábado.
+> — Los sábados la clínica no abre. Además, la toxina necesita antes una
+>   primera visita con la doctora. ¿Te busco una primera visita el lunes o el
+>   martes?
+
+**Lo garantiza el código, no solo el prompt** (regla de oro): el motor y las
+herramientas devuelven el **motivo** cuando algo no se puede (local cerrado,
+profesional que no trabaja ese día, servicio que necesita otro antes), y la
+herramienta de reservar **no reserva un servicio distinto del que se
+confirmó**.
+
+**Ajuste por negocio (por servicio):** si necesita otro servicio antes (por
+ejemplo, la primera visita antes de la toxina) y qué hace el agente si la
+clienta dice que ya lo hizo:
+
+- **Reservar directamente.** Es lo que quiere Clínica Olea: si la clienta ya
+  hizo la primera visita, se le reserva la toxina.
+- **Pasarlo al equipo** (PA-12), sin reservar.
+
+⚠️ **Por confirmar con Mariana:**
+
+- *Valor de serie.* Propuesta: **reservar directamente** (como Olea).
+- *Si ya consta en el sistema.* Propuesta: si la clienta ya tiene una cita
+  pasada y atendida de ese servicio previo (por su teléfono), se reserva sin
+  preguntar.
+- *Cuándo se construye.* Propuesta: justo después de cerrar la Fase 4,
+  mientras Mariana escribe el guion del alta por chat (no depende de él). El
+  ajuste se carga en el panel interno; en el portal (Fase 9) entra como
+  pregunta de la sección "Servicios".
+
+---
+
 ## El widget web (Fase 3) · ✅ DECIDIDAS
 
 Aparecieron al escribir el spec de la Fase 3 (`fase-3-widget-web.md`), el
@@ -745,3 +803,423 @@ logo (mejor cuadrado, PNG, SVG o JPG, hasta ~150 KB).
 y `www.esteticaaurora.es` son dos entradas: el cuestionario de alta pide los
 dos.
 
+
+---
+
+## El panel interno (Fase 4) · ✅ DECIDIDAS
+
+Aparecieron al escribir el spec de la Fase 4 (`fase-4-panel-interno.md`), el
+28/10/2026. **Mariana las confirmó todas ese mismo día**, tal como se
+proponían. El panel es **su** herramienta (dar de alta negocios y
+ver qué pasa), no la del cliente: eso es la Fase 9.
+
+| # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PI-01 | Quién entra | Solo quien tenga cuenta (hoy, Mariana). Email y contraseña, **sin registro público**: las cuentas se crean a mano | — | ✅ decidida 28/10/2026 |
+| PI-02 | Dónde vive | En el mismo proyecto de Vercel, con su propia dirección, y en local con `npm run dev` | — | ✅ decidida 28/10/2026 |
+| PI-03 | Un negocio nuevo | Empieza **en prueba** y **sin dominios** (el widget no aparece). Lista de "lo que falta"; solo se activa con lo mínimo completo | — | ✅ decidida 28/10/2026 |
+| PI-04 | Borrar o desactivar | Servicios y profesionales **se desactivan**; un negocio **se pausa**. Festivos, horarios y preguntas sí se borran | — | ✅ decidida 28/10/2026 |
+| PI-05 | Cuándo se aplican los cambios | Al guardar: el agente, en el siguiente mensaje; el widget, en unos minutos | — | ✅ decidida 28/10/2026 |
+| PI-06 | Qué se ve de una conversación | Todo: mensajes, herramientas y lo que devolvieron, coste y derivación | — | ✅ decidida 28/10/2026 |
+| PI-07 | Derivaciones | Lista de pendientes; se marcan como resueltas a mano. Sin avisos por email todavía | — | ✅ decidida 28/10/2026 |
+| PI-08 | Preguntas frecuentes | Pregunta y respuesta cortas, en el prompt hasta la Fase 5. Hasta ~20 o ~4.000 caracteres por negocio | Sí (sus preguntas) | ✅ decidida 28/10/2026 |
+| PI-09 | La clave del widget | La genera la base; el panel da el `<script>` para copiar. "Cambiar la clave", con confirmación | — | ✅ decidida 28/10/2026 |
+| PI-10 | Subir el logo | PNG, JPG, SVG o WebP; si pesa más de 150 KB, el panel lo reduce solo | — | ✅ decidida 28/10/2026 |
+| PI-11 | Consumo | Tabla del mes por negocio con % del tope y aviso del 80 % | — | ✅ decidida 28/10/2026 |
+| PI-12 | Festivos y ausencias | Del local o de una profesional, día entero o por horas, con motivo | Sí (sus festivos) | ✅ decidida 28/10/2026 |
+| PI-13 | Probar el chat | Desde el panel, aunque el negocio no esté activo. Cuesta lo mismo; se marca como prueba y el consumo la separa | — | ✅ decidida 28/10/2026 |
+| PI-14 | Citas a mano (PR-04) | Desde la agenda del panel, a cualquier hora y sin antelación mínima; nunca fuera de horario, en festivo ni pisando otra cita | — | ✅ decidida 28/10/2026 |
+
+### PI-01 · Quién entra · ✅ decidida el 28/10/2026
+
+El panel ve **todos los negocios y sus conversaciones**, con nombres, teléfonos
+y a veces datos de salud: tiene que estar cerrado. Propuesta: cuenta con email y
+contraseña, **sin registro público** (nadie puede crearse una cuenta desde la
+web). La cuenta de Mariana se crea con un comando; si algún día entra alguien
+más, se crea igual. Una sola clase de permiso (todo o nada) hasta que haya
+equipo.
+
+*Alternativa:* enlace mágico por email (sin contraseña). Depende de que llegue
+el email; con una sola persona, la contraseña es más simple.
+
+### PI-02 · Dónde vive · ✅ decidida el 28/10/2026
+
+En el mismo proyecto de Vercel que la demo, con una **tercera dirección** solo
+para el panel (por ejemplo `recepcionista-ia-panel.vercel.app`). Así no hay
+otro proyecto que mantener y cada `git push` a `main` lo actualiza junto con el
+resto. En local, `npm run dev` lo abre en otro puerto. Publicarlo se hace solo
+con el visto bueno de Mariana.
+
+### PI-03 · Un negocio nuevo · ✅ decidida el 28/10/2026
+
+Al crear un negocio, empieza **en prueba** y **sin dominios**: el widget no
+aparece en ninguna web aunque alguien tenga el código (y, por PI-16, aunque
+ya tenga dominios: solo aparece al activarlo). El panel muestra "lo que
+falta" para poder atender: al menos un servicio, una profesional que lo haga,
+horario, teléfono del local y un dominio. **Activar** solo se puede con eso
+completo. Ejemplo: "Falta: horario del local · un dominio para el chat".
+
+### PI-04 · Borrar o desactivar · ✅ decidida el 28/10/2026
+
+Un servicio o una profesional con citas (pasadas o futuras) no se puede borrar
+sin perder historia: se **desactiva**. El agente deja de ofrecerlo y las citas
+siguen ahí. Si tiene citas futuras, el panel lo avisa antes ("Lucía tiene 3
+citas la semana que viene"). Un negocio no se borra: se **pausa** (el widget
+deja de responder y el agente no atiende). Festivos, horarios y preguntas
+frecuentes sí se borran, porque no tienen historia.
+
+### PI-05 · Cuándo se aplican los cambios · ✅ decidida el 28/10/2026
+
+Al pulsar **Guardar**. El agente lee el negocio en cada mensaje, así que usa lo
+nuevo **en el siguiente mensaje**. El widget guarda su aspecto (color, logo,
+bienvenida) unos minutos en el navegador: un cambio de color puede tardar hasta
+5 minutos en verse. El primer mensaje tras un cambio cuesta unos céntimos más
+(el agente "relee" las reglas).
+
+### PI-06 · Qué se ve de una conversación · ✅ decidida el 28/10/2026
+
+Todo lo que hace falta para responder "¿qué le dijo el agente a…?": los
+mensajes como en el chat, cada herramienta que usó (por ejemplo, "buscar
+huecos el martes por la tarde") con lo que le devolvió, el coste y si se derivó.
+Lo mismo que hoy da la skill `consultar-base`, pero en pantalla. Solo lo ve
+quien entra al panel (PI-01). Registrar quién miró qué queda para PD-11.
+
+### PI-07 · Derivaciones · ✅ decidida el 28/10/2026
+
+Cuando el agente pasa una conversación a una persona, el panel la muestra en una
+lista de **pendientes** del negocio, con el motivo y el enlace a la
+conversación. Se marca **resuelta** a mano. Avisar al negocio por email o SMS
+queda para más adelante.
+
+### PI-08 · Preguntas frecuentes · ✅ decidida el 28/10/2026
+
+Hasta que llegue la base de conocimiento (Fase 5), el negocio puede tener
+**preguntas frecuentes cortas** (pregunta y respuesta) que van **dentro del
+prompt** del agente: por ejemplo, "¿Hay aparcamiento? → Sí, el parking de la
+Plaza Mayor a 2 minutos". El agente las usa tal cual; si la respuesta no está,
+deriva (PA-10, PA-12). Como van en cada mensaje, se limitan a unas **20** o
+**4.000 caracteres** por negocio. Lo largo (tratamientos, cuidados) va en la
+Fase 5.
+
+### PI-09 · La clave del widget · ✅ decidida el 28/10/2026
+
+La base la genera sola al crear el negocio. El panel muestra el código listo
+para copiar y mandárselo al negocio:
+
+```html
+<script src="https://…/widget.js" data-key="wk_…" async></script>
+```
+
+"Cambiar la clave" existe para cuando se filtre o se quiera cortar el acceso:
+pide confirmación, y la anterior **deja de funcionar al momento** (el negocio
+tiene que pegar el código nuevo).
+
+### PI-10 · Subir el logo · ✅ decidida el 28/10/2026
+
+Se sube un archivo PNG, JPG, SVG o WebP. Si pesa más de 150 KB, el panel lo
+**reduce solo** a 256 × 256 antes de guardarlo (en el círculo se ve a 36
+píxeles). Vista previa en el círculo del chat, con el color del negocio.
+
+### PI-11 · Consumo · ✅ decidida el 28/10/2026
+
+Una tabla con el mes de cada negocio: mensajes, conversaciones, citas, coste
+de la IA y **% del tope** (PW-04), con el aviso del 80 % en ámbar. Es lo mismo
+que `npm run consumo`, para todos los negocios a la vez y sin Terminal.
+
+### PI-12 · Festivos y ausencias · ✅ decidida el 28/10/2026
+
+Del **local** (cierra todo el mundo) o de **una profesional** (vacaciones,
+formación), de un día entero o de unas horas, con un motivo opcional. Se ven
+los próximos; los pasados se ocultan. Ejemplo de Aurora: "Festivo local · 21/10"
+y "Marta · formación · 16/09 de 16:00 a 20:00".
+
+### PI-13 · Probar el chat · ✅ decidida el 28/10/2026
+
+Antes de activar un negocio, se conversa con su agente **desde el panel**, con
+sus servicios y horarios, aunque todavía no tenga web. Usa la IA de verdad, así
+que **cuesta lo mismo** que una conversación real. Se guarda marcada como
+**prueba**: aparece en el visor con esa marca y el informe de consumo la separa
+de las de clientas. Si reserva, la cita es real: se puede cancelar desde el
+propio chat o desde el enlace.
+
+### PI-14 · Citas a mano (PR-04) · ✅ decidida el 28/10/2026
+
+PR-04 dejó dicho que "recepción podrá saltarse la rejilla y la antelación
+mínima al cargar una cita a mano" cuando existiera el panel. Propuesta para la
+Fase 4: el panel tiene una **agenda** por negocio y día, y desde ahí se carga
+una cita eligiendo servicio, profesional, día y **cualquier hora** (por
+ejemplo, 10:15), y la clienta por su teléfono (si no existe, se crea).
+
+- **Se salta:** la rejilla (PR-01) y la antelación mínima (PD-05). Ejemplo: una
+  clienta que está en el local y quiere entrar en 20 minutos.
+- **No se salta:** el horario del local o de la profesional, los festivos y
+  ausencias, y que dos citas se pisen (de la clienta o de la profesional). Eso
+  lo sigue impidiendo la base.
+- Llega el **mismo SMS de confirmación** que si reservara el agente (PA-09).
+- En esta fase la usa Mariana desde su panel; la recepción de cada negocio, con
+  el panel del cliente (Fase 9).
+
+---
+
+## Al construir el panel (Fase 4) · ✅ DECIDIDAS
+
+Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
+29/10/2026**: PI-15 y PI-17 tal como se proponían; PI-16 con la alternativa
+(el widget solo funciona con el negocio activo).
+
+| # | Tema | Propuesta | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PI-15 | ¿Las pruebas del panel cuentan para el tope? | Sí: es gasto real de la IA (descuenta del tope del negocio). El informe las enseña aparte | — | ✅ decidida 29/10/2026 |
+| PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
+| PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
+| PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
+| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
+| PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
+
+### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
+
+PI-13 dice que "Probar el chat" cuesta lo mismo y que el informe separa las
+pruebas. Falta decidir si ese coste cuenta para el tope mensual del negocio
+(PW-04).
+
+*Propuesta:* **sí cuentan**. El tope protege el gasto de la IA por negocio, y
+el gasto de una prueba es tan real como el de una clienta. El informe enseña
+aparte las de clientas y las pruebas, y el % del tope usa la suma de las
+dos (lo mismo que mira el tope). Ejemplo: con un tope de 50 US$, si las
+pruebas de Mariana ya gastaron 1 US$, al negocio le quedan 49 US$ para sus
+clientas.
+
+*Alternativa:* que no cuenten. Entonces una prueba no podría quedarse sin
+respuesta por el tope, pero el gasto de las pruebas no tendría límite.
+
+**Decisión (Mariana, 29/10/2026):** sí cuentan, como se propone: lo que se
+gasta probando descuenta del tope del negocio.
+
+### PI-16 · El widget de un negocio en prueba · ✅ decidida el 29/10/2026
+
+PI-03 dice que un negocio nuevo empieza en prueba y sin dominios, "y el
+widget no aparece hasta que lo actives". Lo que lo impide de verdad es que no
+tiene dominios: en cuanto se le pone uno, el widget aparece en esa web
+aunque el negocio siga en prueba (como ya pasaba en la Fase 3). Así se puede
+probar en `localhost` o en la web del negocio antes de activarlo.
+
+*Propuesta:* dejarlo así. Activar es "ya atiende de verdad" (y exige lo
+mínimo: servicio, profesional, horario, teléfono y dominio); pausar sí apaga
+el widget al momento.
+
+*Alternativa:* que el widget solo funcione con el negocio activo. Entonces
+para probarlo en la web de prueba habría que activarlo antes.
+
+**Decisión (Mariana, 29/10/2026): la alternativa.** El widget **solo
+aparece con el negocio activo**. Se puede cargar todo desde el principio,
+su dominio incluido, y el negocio puede pegar el código cuando quiera: no
+sale en su web hasta que se pulsa **Activar**, y desaparece al pausarlo.
+Antes de activar se prueba con "Probar el chat" del panel (PI-13), que sí
+funciona en prueba. Es lo que ya decía PI-03 ("el widget no aparece en
+ninguna web hasta que lo actives").
+
+### PI-17 · Un negocio pausado en el panel · ✅ decidida el 29/10/2026
+
+Pausar (PI-04) hace que el widget no responda y el agente no atienda. En el
+panel, un negocio pausado **no** deja probar el chat ni cargar o cancelar
+citas a mano: el panel lo dice ("actívalo para…"). La ficha, las
+conversaciones, la agenda y el consumo se siguen viendo y editando.
+
+*Propuesta:* dejarlo así: pausado es "no atiende", también desde el panel.
+
+*Alternativa:* permitir citas a mano en un negocio pausado (por ejemplo, si
+se pausa solo el chat pero la recepción sigue dando citas). Pide separar
+"pausar el chat" de "pausar el negocio".
+
+**Decisión (Mariana, 29/10/2026):** como se propone. Si algún día hace
+falta, se separan "pausar el chat" y "pausar el negocio".
+
+### PI-18 · Horario propio fuera del horario del local · ✅ decidida el 29/10/2026
+
+Apareció al probar el panel: Mariana cargó un horario propio de una
+profesional el **sábado de 15:00 a 20:00**, con el local cerrando el sábado
+a las 14:00, y el panel lo guardó sin decir nada.
+
+**Decisión (Mariana, 29/10/2026):** **se permite.** Por PD-01, el horario
+propio de una profesional manda ese día, así que el agente ofrece esas horas
+(una profesional puede atender cuando el local está cerrado, por ejemplo una
+tarde de sábado con cita). Pero **el panel avisa antes de guardar** cuando
+algún tramo propio cae, total o parcialmente, fuera del horario del local ese
+día (o en un día que el local cierra), y guarda solo si se confirma:
+
+> "Rodrigo trabajaría fuera del horario del local: sábado 15:00–20:00.
+> ¿Guardar igual?"
+
+Además, el aviso **se ve siempre en la ficha**, no solo al guardar: el tramo
+queda en ámbar y debajo del horario sale *"Fuera del horario del local: sábado
+15:00–20:00…"*, también con lo ya guardado (Mariana no lo veía con el horario
+de Rodrigo, que había guardado antes de que existiera el aviso).
+
+Y **arriba de la ficha**, en "Publicar", junto a lo que falta para activar
+(PI-03), sale como **"Para revisar (no impide activarlo)"**: *"Rodrigo Gómez
+trabaja fuera del horario del local: sábado 15:00–20:00"*, con un enlace a
+Horarios. Lo que falta para activar va en rojo y bloquea "Activar"; lo de
+revisar va en ámbar y no lo bloquea.
+
+Es un aviso del panel para no equivocarse al cargarlo, **no una restricción
+de la base**.
+
+### PI-19 · Días que una profesional no trabaja (amplía PD-01) · ✅ decidida el 30/10/2026
+
+Apareció al probar el panel: en "Probar el chat" de una clínica inventada,
+Mariana pidió una limpieza con Rodrigo y el agente le ofreció el **viernes**.
+Rodrigo tiene horario propio solo el jueves (10–14) y el sábado (15–20); por
+PD-01, un día sin horario propio hereda el del local, así que el viernes
+"trabajaba" de 10 a 19. No había forma de decir que no trabaja.
+
+**Decisión (Mariana, 30/10/2026):** cada día de cada profesional tiene **tres
+estados**:
+
+- **Como el local** (de serie, lo de siempre): trabaja en el horario del
+  local ese día.
+- **No trabaja**: ese día no tiene ningún hueco, aunque el local abra.
+- **Horas propias**: si se cargan horas de entrada y salida ese día, es su
+  horario propio y manda ese (PD-01).
+
+**Lo aplica el motor**, no el prompt: un día "no trabaja" la profesional no
+aparece en los huecos ni se le puede reservar, **tampoco con una cita a mano**
+(PI-14: la cita a mano se salta la rejilla y la antelación, nunca el
+horario). El agente lo sabe (lo ve junto a su horario propio) y, si piden a
+esa profesional ese día, dice que no está ese día y ofrece alternativas.
+
+En el panel, cada día del horario de una profesional tiene un selector
+"Como el local / No trabaja / Horas propias"; añadir un tramo pasa el día a
+"Horas propias", y "Copiar a…" copia también el estado del día. El aviso de
+PI-18 sigue igual.
+
+### PI-20 · ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? · ⚠️ por confirmar
+
+Apareció al construir PI-19. Para activar un negocio hace falta "una
+profesional activa que haga algún servicio" (PI-03). Con PI-19 se puede
+marcar que una profesional **no trabaja ningún día**: técnicamente sigue
+"activa" y hace servicios, pero nunca tendrá huecos.
+
+*Propuesta:* que **no cuente**. Si todas las profesionales que hacen
+servicios están marcadas "no trabaja" todos los días, el panel diría "Falta:
+una profesional activa que haga algún servicio" y no dejaría activar. Lo
+normal para alguien que no va a trabajar más es desactivarla (PI-04).
+
+*Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
+profesional activa.
+
+
+---
+
+## El portal del cliente y el alta por chat (Fase 9) · decidido el 05/11/2026
+
+Mariana lo decidió el 05/11/2026. **La Fase 9 se adelanta**: va justo después
+de la Fase 4 (y de PA-13), antes de la 5. Conserva su número para no romper
+las referencias. **El chat no se programa hasta que Mariana escriba su
+guion** (nota "Guion del alta por chat" en Research Desk); con el guion se
+escribe el spec de la fase, ella lo aprueba y entonces se construye.
+
+| # | Tema | Decisión | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PC-01 | Dos altas distintas | La **administrativa y legal** (datos fiscales, contacto, contrato con anexo RGPD, plan) la hace Mariana en su panel de clientes MAZZMKT, otro proyecto. La **del agente** la hace el cliente, por chat | — | ✅ decidida 05/11/2026 |
+| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 (la caducidad, ⚠️ por confirmar) |
+| PC-03 | El alta por chat | En vez de formularios, un chat que pregunta **una cosa cada vez**, por secciones (0 bienvenida … 9 cierre). Antes de guardar cada sección enseña un **resumen visual** para confirmar | — | ✅ decidida 05/11/2026 (el guion, pendiente de Mariana) |
+| PC-04 | El portal que se va rellenando | Mientras chatea, el cliente ve su portal completarse. Después, el portal es suyo: lo ve todo y lo cambia **a mano o pidiéndoselo al chat** | — | ✅ decidida 05/11/2026 |
+| PC-05 | La vista de Mariana | Desde el panel interno ve el portal de cada cliente **tal como lo ve él** y lo puede editar. Los datos están en un solo sitio; las tres formas de cambiarlos muestran lo mismo | — | ✅ decidida 05/11/2026 |
+| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario (por ejemplo, un festivo) | Sí | ✅ decidida 05/11/2026 (el detalle, ⚠️ por confirmar) |
+| PC-07 | Leer la web del negocio | El chat **no** lee la web de la clínica para proponer servicios. Más adelante | — | ✅ decidida 05/11/2026 |
+| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie | — | ⚠️ por confirmar |
+| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ⚠️ por confirmar |
+
+### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
+
+- **Alta legal y administrativa:** la hace Mariana en su **panel de clientes
+  MAZZMKT** (un proyecto aparte, todavía sin construir): datos fiscales,
+  persona de contacto, contrato con el anexo de encargada del tratamiento
+  (RGPD, PD-11), plan contratado y qué servicio le vende. No es parte de este
+  proyecto.
+- **Alta del agente:** la hace **el cliente**: tratamientos, equipo, horarios,
+  festivos, reglas, preguntas frecuentes y el chat en su web. Es lo que cambia
+  en la Recepcionista.
+
+Fuera de este proyecto también: la facturación (propuesta en el guion: usar un
+programa que cumpla Verifactu, no programar uno propio).
+
+### PC-02 · Enlace de invitación · ✅ decidida el 05/11/2026
+
+Cuando Mariana elige el servicio Recepcionista IA para un cliente, se genera
+un enlace de invitación ligado a **ese negocio** y al **email de su contacto**:
+
+- **Solo sirve para ese negocio.** Aunque alguien escriba en el chat "soy
+  Estética Aurora", la cuenta de Clínica Olea no puede ver ni tocar otro
+  negocio: lo decide el código (como el `business_id` de todo lo demás).
+- **Se usa una sola vez y caduca.** Mariana puede anularlo o generar uno nuevo.
+- **Hay que confirmar el email.** Un enlace reenviado no sirve sin acceso a
+  ese correo.
+- **Mientras no exista el panel de clientes MAZZMKT**, el enlace se genera
+  desde el panel interno de la Recepcionista, para que el portal no espere a
+  ese otro proyecto.
+
+⚠️ *Por confirmar:* cuánto dura el enlace. Propuesta: **7 días**.
+
+### PC-03 · El alta por chat · ✅ decidida el 05/11/2026
+
+El cliente abre el enlace y le recibe un chat que pregunta **una cosa cada
+vez**, como una conversación, siguiendo las secciones del panel:
+
+0. Bienvenida · 1. El negocio · 2. Servicios (con PA-13: si necesitan otro
+antes) · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
+5. Festivos y ausencias · 6. Reservas y cancelación · 7. Preguntas frecuentes ·
+8. El chat en su web · 9. Cierre.
+
+Antes de guardar cada sección enseña un **resumen visual** ("así queda tu
+semana, ¿está todo bien?"), porque un error en un horario cuesta citas.
+
+**Lo que falta: el guion.** Para cada sección, Mariana decide qué pregunta el
+chat y cómo lo dice (cálido, con conectores, como una persona), qué hace si la
+respuesta no está clara ("abrimos por las mañanas") y qué enseña para
+confirmar. Sin guion no se programa.
+
+### PC-04 · El portal que se va rellenando · ✅ decidida el 05/11/2026
+
+Mientras el cliente chatea, ve su portal a la vez y cómo se completa con cada
+respuesta. Al terminar, el portal es suyo: ve toda la configuración de su
+recepcionista y la cambia **a mano** o **pidiéndoselo al chat** ("Núria no
+viene el jueves").
+
+### PC-05 · La vista de Mariana · ✅ decidida el 05/11/2026
+
+Mariana ve el portal de cada cliente **tal como lo ve él**, desde su panel
+interno, y lo puede editar. Si un cliente dice "lo cargué bien y no
+funciona", abre su ficha y ve exactamente lo que ve su agente.
+
+Los datos están en **un solo sitio**. Hay tres formas de cambiarlos (el portal
+a mano, el chat del cliente y el panel de Mariana) y todas muestran lo mismo.
+Las reglas que hoy aplica el panel (PI-03 lo que falta para activar, PI-18 el
+aviso de horario, las de la base) valen igual en las tres.
+
+### PC-06 · Turnos sueltos · ✅ decidida el 05/11/2026
+
+Además del horario de cada día de la semana (PD-01, PI-19), una profesional
+puede tener un **turno suelto**: trabaja un día concreto en el que
+normalmente no trabajaría. Ejemplo: Núria trabaja el festivo del 8 de
+diciembre de 10:00 a 14:00.
+
+⚠️ *Por confirmar:* si un turno suelto **abre** la agenda en un festivo del
+local (propuesta: sí, solo para esa profesional y esas horas) y si se puede
+cargar también desde el panel interno (propuesta: sí, en la sección de
+festivos y ausencias).
+
+### PC-07 · Leer la web del negocio · ✅ decidida el 05/11/2026
+
+El chat no lee la web de la clínica para proponer los servicios. Se deja para
+más adelante.
+
+### PC-08 · Zona horaria · ⚠️ por confirmar
+
+*Propuesta:* no se pregunta; todos los negocios, Europe/Madrid de serie. Si
+algún día hay un cliente en Canarias, se cambia desde el panel interno.
+
+### PC-09 · El tope mensual de la IA · ⚠️ por confirmar
+
+*Propuesta:* el cliente no ve ni cambia su tope (PW-04): lo pone Mariana en
+el panel interno según el plan contratado.

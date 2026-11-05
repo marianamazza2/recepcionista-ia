@@ -9,6 +9,14 @@
 // AQUÍ, al cargar. Ni el system prompt ni las herramientas lo reciben, así que
 // no puede llegar al modelo por ningún camino.
 //
+// Fase 4 (PI-19): los días que cada profesional no trabaja, para que el
+// agente lo sepa como sabe su horario propio (lo aplica el motor, D-26).
+//
+// Fase 4 (PI-08): también las preguntas frecuentes del negocio
+// (knowledge_docs con tipo = 'faq'), que van dentro del prompt hasta que
+// llegue la base de conocimiento (Fase 5). Su límite (20 o 4.000 caracteres)
+// lo pone la base (RA007).
+//
 // Las listas salen siempre en el mismo orden: la misma configuración tiene que
 // producir exactamente el mismo system prompt, o la caché no funciona.
 // =============================================================================
@@ -35,6 +43,8 @@ export interface ProfesionalConfig {
   nombre: string;
   /** Ids de los servicios que hace, en el orden de `servicios`. */
   servicioIds: string[];
+  /** PI-19: días de la semana (0 = domingo) que no trabaja aunque el local abra, de menor a mayor. */
+  diasLibres: number[];
 }
 
 /** Un tramo de horario en hora LOCAL del negocio. weekday: 0 = domingo … 6 = sábado (D-10). */
@@ -74,6 +84,14 @@ export interface BusinessConfig {
   horario: TramoHorario[];
   /** Horarios propios de profesionales (PD-01: reemplazan al del local ese día). */
   horariosPropios: HorarioPropio[];
+  /** PI-08: en el orden que eligió el negocio. */
+  preguntasFrecuentes: PreguntaFrecuente[];
+}
+
+/** PI-08: una pregunta frecuente, tal como la escribió el negocio. */
+export interface PreguntaFrecuente {
+  pregunta: string;
+  respuesta: string;
 }
 
 export type BusinessRef = { slug: string } | { id: string };
@@ -147,6 +165,19 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
        where business_id = ${b.id}::uuid
        order by staff_id nulls first, weekday, hora_apertura`;
 
+    // PI-19: los días que cada profesional no trabaja.
+    const libres = await tx<{ staff_id: string; weekday: number }[]>`
+      select staff_id, weekday
+        from public.staff_dias_libres
+       where business_id = ${b.id}::uuid
+       order by staff_id, weekday`;
+
+    const faq = await tx<{ pregunta: string; respuesta: string }[]>`
+      select titulo as pregunta, contenido_raw as respuesta
+        from public.knowledge_docs
+       where business_id = ${b.id}::uuid and tipo = 'faq'
+       order by orden, created_at, id`;
+
     const ordenServicios = servicios.map((s) => s.id);
     const servicioActivo = new Set(ordenServicios);
 
@@ -181,6 +212,7 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
         servicioIds: ordenServicios.filter((sid) =>
           quienHaceQue.some((q) => q.staff_id === p.id && q.service_id === sid && servicioActivo.has(sid)),
         ),
+        diasLibres: libres.filter((l) => l.staff_id === p.id).map((l) => l.weekday),
       })),
       horario: tramos
         .filter((t) => t.staff_id === null)
@@ -188,6 +220,7 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
       horariosPropios: tramos
         .filter((t): t is typeof t & { staff_id: string } => t.staff_id !== null)
         .map((t) => ({ staffId: t.staff_id, weekday: t.weekday, apertura: t.apertura, cierre: t.cierre })),
+      preguntasFrecuentes: faq.map((f) => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
     };
   });
 }
