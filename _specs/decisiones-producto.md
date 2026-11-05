@@ -478,6 +478,7 @@ intentos o algo falla.
 |---|---|---|---|
 | PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
 | PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
+| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea | ⚠️ por confirmar (hoja «Así habla tu recepcionista») |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -555,6 +556,34 @@ equipo («¿La cita es para otra persona?»), y entonces aplica PA-11: la cita e
 del teléfono que se da.
 
 Es lo que el agente ya hacía en la prueba del 03/11; queda como regla.
+
+### PA-15 · Cómo se expresa · ⚠️ por confirmar
+
+Salió de la pregunta 2 del informe de pruebas (05/11/2026): al pasar algo al
+equipo, a veces responde solo «Queda anotado para el equipo». Mariana quiere
+que suene **cercano, como una persona y no como un robot hablando cortado**.
+Hoy el prompt le pide «frases cortas, como en un chat», y de ahí sale parte de
+lo cortado.
+
+*Propuesta* (en revisión en la hoja «Así habla tu recepcionista», con 11
+situaciones de hoy frente a la propuesta):
+
+1. Frases completas, con conectores. Nada de respuestas de una línea.
+2. Primero el porqué y después la alternativa (PA-13).
+3. Cuando no sabe algo, lo dice con naturalidad, dice qué hará y sigue
+   ofreciendo ayuda (PA-12).
+4. Termina con una pregunta concreta («¿te busco cita?»).
+5. El teléfono, escrito como se dice: 910 000 789.
+6. Como mucho un emoji, en el saludo.
+7. De tú, español de España.
+
+Es una regla del motor, igual para todos los negocios. El «tono de voz» de
+cada negocio sigue siendo su ajuste. Una vez aprobada, una comprobación
+automática revisará el tono en cada pasada de los escenarios del agente.
+
+⚠️ *También por decidir:* el agente dice «(sí, soy una IA)» en casi todos los
+primeros mensajes. Propuesta: solo si se lo preguntan. Enlaza con el aviso de
+IA del Reglamento europeo, pendiente desde el 04/11 (PW-02).
 
 ---
 
