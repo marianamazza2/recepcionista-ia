@@ -477,6 +477,7 @@ intentos o algo falla.
 | # | Tema | Decisión / qué hace ahora | Estado |
 |---|---|---|---|
 | PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
+| PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -541,6 +542,19 @@ que piden, el agente dice por qué.
 
 ⚠️ *Por confirmar:* cuándo se construye PA-13. Propuesta: justo al cerrar la
 Fase 4, antes del portal (no depende del guion).
+
+### PA-14 · «Para Rodrigo» · ✅ decidida el 05/11/2026
+
+Salió de la prueba 82 de Mariana: «Querer agendar una cita para Rodrigo el
+miércoles 11». Rodrigo es un profesional del negocio.
+
+**Regla:** si la clienta dice «para» un nombre que es de alguien del equipo,
+el agente entiende que quiere que la atienda esa persona (como «con
+Rodrigo»), sin preguntarlo. **Solo pregunta** si el nombre no es de nadie del
+equipo («¿La cita es para otra persona?»), y entonces aplica PA-11: la cita es
+del teléfono que se da.
+
+Es lo que el agente ya hacía en la prueba del 03/11; queda como regla.
 
 ---
 
@@ -997,6 +1011,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
 | PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
 | PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
+| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1158,6 +1173,27 @@ Lo mismo cuando el cambio se pide por el chat del portal del cliente (PC-10).
 **Construida el 05/11/2026** en la Fase 4, antes del merge del PR #2 (Mariana
 lo pidió así). Lo comprueba la API en la misma transacción que el cambio: si
 hay citas afectadas y no se ha dicho qué hacer, no guarda nada.
+
+### PI-22 · La misma sección editada en dos sitios a la vez · ✅ decidida el 05/11/2026
+
+Salió del informe de pruebas (caso 73). Hoy, si el mismo negocio está abierto
+en dos pestañas y en las dos se cambia **la misma sección** (por ejemplo, los
+datos del negocio), gana la última que se guarda y lo de la primera se pierde
+sin avisar.
+
+**Decisión (Mariana, 05/11/2026):** gana **la primera que se guardó**. Si
+alguien intenta guardar encima de datos que han cambiado desde que abrió la
+sección, **no se guarda** y el panel avisa. Secciones distintas se siguen
+guardando las dos.
+
+> Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas. No
+> se ha guardado: recarga para ver lo último.
+
+Valdrá igual en el portal del cliente (Fase 9), donde editarán varias
+personas.
+
+⚠️ *Por confirmar:* el texto del aviso (propuesta, arriba) y cuándo se
+construye (propuesta: ya, en la Fase 4, antes del merge, como PI-21).
 
 
 ---
