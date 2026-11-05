@@ -3,7 +3,7 @@
 // =============================================================================
 // Tres orígenes, como en la realidad:
 //   · http://localhost:4311 — "nuestro" servidor: widget.js, /api/… y /cita/…
-//   · http://localhost:4310 — "la web del negocio": demo/ (Estética Aurora) y
+//   · http://localhost:4310 — "la web del negocio": demo/ (Clínica Olea, A6) y
 //     prueba.html?key=wk_… (cualquier negocio, Fase 4)
 //   · http://localhost:4312 — el panel interno (PI-02): admin/ compilado en
 //     /panel/ y la misma API en /api/…, del mismo origen (sin CORS). Se
@@ -248,7 +248,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     log: true,
     onError: (e) => console.error(`[error] ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`),
   });
-  console.log(`\nDemo de Estética Aurora: ${s.demoUrl}`);
+  console.log(`\nDemo de Clínica Olea: ${s.demoUrl}`);
   console.log(`Servidor del widget:     ${s.apiUrl}  (modelo ${settings.model}, esfuerzo ${settings.effort})`);
   console.log(`Panel interno:           ${s.panelUrl}/panel/${auth ? '' : '  (⚠️ sin cuentas: faltan SUPABASE_PROJECT_REF y SUPABASE_ANON_KEY en .env)'}`);
   console.log('Los SMS de confirmación salen aquí (proveedor de prueba). Ctrl+C para parar.\n');

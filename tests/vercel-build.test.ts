@@ -17,7 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { construirVercel, DURACION_MAXIMA_S } from '../src/vercel/build.js';
 
 const API = 'https://api-demo.example';
-const CLAVE_AURORA = 'wk_demo_estetica_aurora_0001';
+const CLAVE_DEMO = 'wk_demo_clinica_olea_0001'; // Clínica Olea, la de demo/index.html (A6)
 let out: string;
 let servidor: Server;
 let url: string;
@@ -41,7 +41,7 @@ afterAll(async () => {
 describe('lo que se publica', () => {
   it('la demo carga el widget desde PUBLIC_API_URL, y están widget.js y la privacidad', () => {
     const index = readFileSync(join(out, 'static/index.html'), 'utf8');
-    expect(index).toContain(`<script src="${API}/widget.js" data-key="${CLAVE_AURORA}" async></script>`);
+    expect(index).toContain(`<script src="${API}/widget.js" data-key="${CLAVE_DEMO}" async></script>`);
     expect(index).not.toContain('localhost:4311');
     expect(readFileSync(join(out, 'static/widget.js'), 'utf8').length).toBeGreaterThan(1000);
     expect(readFileSync(join(out, 'static/privacidad.html'), 'utf8')).toContain('Política de privacidad');
@@ -79,12 +79,12 @@ describe('lo que se publica', () => {
 
 describe('la función empaquetada', () => {
   it('da la configuración del widget al dominio del negocio, y a otro no (PW-06)', async () => {
-    const ok = await fetch(`${url}/api/widget/config?key=${CLAVE_AURORA}`, { headers: { origin: 'http://localhost:4310' } });
+    const ok = await fetch(`${url}/api/widget/config?key=${CLAVE_DEMO}`, { headers: { origin: 'http://localhost:4310' } });
     expect(ok.status).toBe(200);
     expect(ok.headers.get('access-control-allow-origin')).toBe('http://localhost:4310');
-    expect(((await ok.json()) as { nombre: string }).nombre).toBe('Estética Aurora');
+    expect(((await ok.json()) as { nombre: string }).nombre).toBe('Clínica Olea');
 
-    const ajeno = await fetch(`${url}/api/widget/config?key=${CLAVE_AURORA}`, { headers: { origin: 'https://otra-web.example' } });
+    const ajeno = await fetch(`${url}/api/widget/config?key=${CLAVE_DEMO}`, { headers: { origin: 'https://otra-web.example' } });
     expect(ajeno.status).toBe(403);
   });
 

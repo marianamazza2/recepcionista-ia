@@ -1,14 +1,14 @@
 // Prueba de punta a punta con el navegador (Fase 3 · 3.7) — npm run test:e2e
 //
 // Levanta los dos servidores de la demo (src/dev/server.ts) con el modelo
-// SIMULADO (sin coste) y abre la web de Estética Aurora en Google Chrome sin
+// SIMULADO (sin coste) y abre la web de la demo (Clínica Olea, A6) en Google Chrome sin
 // ventana (playwright-core con el Chrome instalado: no descarga navegadores).
 // Comprueba lo que haría Mariana a mano: escribir, reservar, ver el SMS de
 // prueba, abrir su enlace y cancelar; recargar y seguir la conversación;
 // abrir otro navegador y no verla; y que en un dominio no permitido el widget
 // no aparece.
 //
-// Escribe en Aurora con una clienta de test (+34999…) en 2030, y lo borra al
+// Escribe en Clínica Olea con una clienta de test (+34999…) en 2030, y lo borra al
 // terminar (D-37).
 
 import { randomUUID } from 'node:crypto';
@@ -22,23 +22,23 @@ import { localToUtc } from '../../src/core/time.js';
 import { createSql } from '../../src/db/client.js';
 import { sha256 } from '../../src/db/widget.js';
 import { iniciarServidores } from '../../src/dev/server.js';
-import { AURORA, deleteTestCustomers, telefonoDeTest } from '../helpers/fixtures.js';
+import { deleteTestCustomers, OLEA, telefonoDeTest } from '../helpers/fixtures.js';
 import { herramientas, ModeloSimulado, texto } from '../helpers/modelo-simulado.js';
 
 const sql = createSql(undefined, { max: 6 });
 const AHORA = localToUtc('2030-10-14', '10:00', 'Europe/Madrid');
-const CLAVE_ALMACEN = 'recepcionista:wk_demo_estetica_aurora_0001:sesion';
+const CLAVE_ALMACEN = `recepcionista:${OLEA.widgetKey}:sesion`;
 const telefono = telefonoDeTest();
 
 const modelo = new ModeloSimulado([
-  texto('¡Hola! Para el martes 15 a las 10:00 tengo a Marta. ¿Te la reservo? Dime tu nombre y tu teléfono.'),
+  texto('¡Hola! Para el martes 15 a las 10:00 tengo a la Dra. Clara. ¿Te la reservo? Dime tu nombre y tu teléfono.'),
   herramientas({ name: 'identificar_cliente', input: { telefono, nombre: 'Clienta E2E' } }),
-  herramientas({ name: 'crear_reserva', input: { servicio: 'Limpieza facial profunda', fecha: '2030-10-15', hora: '10:00', profesional: 'Marta' } }),
-  texto('¡Hecho! Tienes cita el martes 15 de octubre a las 10:00 con Marta.'),
+  herramientas({ name: 'crear_reserva', input: { servicio: 'Primera visita médica', fecha: '2030-10-15', hora: '10:00', profesional: 'Dra. Clara' } }),
+  texto('¡Hecho! Tienes cita el martes 15 de octubre a las 10:00 con la Dra. Clara.'),
 ]);
 const sms = new SmsDePrueba({ silencioso: true });
 const tokens: string[] = [];
-const PRIMER_MENSAJE = 'Quiero una limpieza facial el martes 15 a las 10';
+const PRIMER_MENSAJE = 'Quiero una primera visita el martes 15 a las 10';
 let inicio: Date;
 
 let servidores: Awaited<ReturnType<typeof iniciarServidores>>;
@@ -52,7 +52,7 @@ const ESPERA = { timeout: 30_000 };
 beforeAll(async () => {
   const [r] = await sql<{ inicio: Date }[]>`select now() as inicio`;
   inicio = r!.inicio;
-  await deleteTestCustomers(sql, AURORA.businessId);
+  await deleteTestCustomers(sql, OLEA.businessId);
   servidores = await iniciarServidores({
     sql,
     model: modelo,
@@ -74,7 +74,7 @@ afterAll(async () => {
   await servidores?.cerrar();
   if (tokens.length) {
     // Primero su consumo: al borrar la conversación quedaría suelto y contaría
-    // en el informe de Aurora.
+    // en el informe de la clínica.
     await sql`
       delete from public.usage_events u using public.conversations c
        where c.id = u.conversation_id and c.session_token_hash = any(${tokens.map(sha256)})`;
@@ -83,10 +83,10 @@ afterAll(async () => {
   // Y las que se empezaron sin llegar a guardar el token (si un paso falló).
   const sueltas = sql`
     select conversation_id from public.messages
-     where business_id = ${AURORA.businessId} and contenido = ${PRIMER_MENSAJE} and created_at >= ${inicio}`;
+     where business_id = ${OLEA.businessId} and contenido = ${PRIMER_MENSAJE} and created_at >= ${inicio}`;
   await sql`delete from public.usage_events where conversation_id in (${sueltas})`;
   await sql`delete from public.conversations where id in (${sueltas})`;
-  await deleteTestCustomers(sql, AURORA.businessId);
+  await deleteTestCustomers(sql, OLEA.businessId);
   await sql.end();
 });
 
@@ -111,19 +111,19 @@ describe('la demo en el navegador', () => {
     const ctx = await navegador.newContext();
     pagina = await ctx.newPage();
     await abrirWidget(pagina);
-    expect(await widget(pagina, '.cabecera h2').textContent()).toBe('Estética Aurora');
+    expect(await widget(pagina, '.cabecera h2').textContent()).toBe('Clínica Olea');
     expect(await widget(pagina, '.aviso').textContent()).toBe(
-      'Soy la asistente virtual de Estética Aurora, al escribir aceptas nuestra política de privacidad.',
+      'Soy la asistente virtual de Clínica Olea, al escribir aceptas nuestra política de privacidad.',
     );
     // La de la base: en la nube apunta a la demo publicada (PW-08).
-    const [n] = await sql<{ url: string }[]>`select privacidad_url as url from public.businesses where id = ${AURORA.businessId}`;
+    const [n] = await sql<{ url: string }[]>`select privacidad_url as url from public.businesses where id = ${OLEA.businessId}`;
     expect(await widget(pagina, '.aviso a').getAttribute('href')).toBe(n!.url);
     expect(await widget(pagina, '.aviso a').getAttribute('target')).toBe('_blank');
-    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Estética Aurora');
+    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Clínica Olea');
     // PW-17: el círculo de la cabecera con su logo (o, si no tiene, la inicial).
-    const [l] = await sql<{ logo: string | null }[]>`select widget_logo as logo from public.businesses where id = ${AURORA.businessId}`;
+    const [l] = await sql<{ logo: string | null }[]>`select widget_logo as logo from public.businesses where id = ${OLEA.businessId}`;
     if (l!.logo) expect(await widget(pagina, '.cabecera .logo img').getAttribute('src')).toBe(l!.logo);
-    else expect(await widget(pagina, '.cabecera .logo').textContent()).toBe('E');
+    else expect(await widget(pagina, '.cabecera .logo').textContent()).toBe('C');
   });
 
   it('se escribe, responde y acaba con una cita real en la base y su SMS de prueba', async () => {
@@ -131,7 +131,7 @@ describe('la demo en el navegador', () => {
     await entrada.fill(PRIMER_MENSAJE);
     await entrada.press('Enter');
     await expect.poll(() => widget(pagina, '.m.asistente').count(), ESPERA).toBe(2);
-    expect(await widget(pagina, '.m.asistente').nth(1).textContent()).toContain('tengo a Marta');
+    expect(await widget(pagina, '.m.asistente').nth(1).textContent()).toContain('tengo a la Dra. Clara');
     await guardarToken(pagina);
 
     await entrada.fill(`Sí. Clienta E2E, ${telefono}`);
@@ -141,11 +141,11 @@ describe('la demo en el navegador', () => {
 
     const citas = await sql<{ id: string; estado: string }[]>`
       select a.id, a.estado from public.appointments a join public.customers c on c.id = a.customer_id
-       where a.business_id = ${AURORA.businessId} and c.telefono = ${telefono}`;
+       where a.business_id = ${OLEA.businessId} and c.telefono = ${telefono}`;
     expect(citas).toHaveLength(1);
     expect(citas[0]!.estado).toBe('confirmada');
     expect(sms.enviados).toHaveLength(1);
-    expect(sms.enviados[0]!.texto).toContain('Estética Aurora: cita confirmada el martes 15 de octubre a las 10:00 con Marta.');
+    expect(sms.enviados[0]!.texto).toContain('Clínica Olea: cita confirmada el martes 15 de octubre a las 10:00 con Dra. Clara.');
   });
 
   it('al recargar la página la conversación sigue', async () => {
@@ -166,18 +166,18 @@ describe('la demo en el navegador', () => {
     expect(enlace.startsWith(`${servidores.apiUrl}/cita/`)).toBe(true);
     const p = await (await navegador.newContext()).newPage();
     await p.goto(enlace);
-    expect(await p.locator('h1').textContent()).toBe('Tu cita en Estética Aurora');
+    expect(await p.locator('h1').textContent()).toBe('Tu cita en Clínica Olea');
     await p.getByRole('button', { name: 'Cancelar la cita' }).click();
     await p.getByRole('button', { name: 'Sí, cancelar la cita' }).click();
     expect(await p.locator('h1').textContent()).toBe('Tu cita está cancelada');
     const [c] = await sql<{ estado: string }[]>`
       select a.estado from public.appointments a join public.customers c on c.id = a.customer_id
-       where a.business_id = ${AURORA.businessId} and c.telefono = ${telefono}`;
+       where a.business_id = ${OLEA.businessId} and c.telefono = ${telefono}`;
     expect(c!.estado).toBe('cancelada');
   });
 
   it('en un dominio que no es del negocio el widget no aparece (PW-06)', async () => {
-    // 127.0.0.1 no está en los dominios de Aurora (sí "localhost").
+    // 127.0.0.1 no está en los dominios de la clínica (sí "localhost").
     const p = await (await navegador.newContext()).newPage();
     // Sin cabeceras CORS, Chrome bloquea la respuesta (403): para la página es
     // una petición fallida y el widget no se monta.
@@ -200,6 +200,6 @@ describe('la demo en el navegador', () => {
       'Tu conversación anterior ha terminado. Empezamos una nueva.',
     );
     expect(await widget(pagina, '.m.clienta').count()).toBe(0);
-    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Estética Aurora');
+    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Clínica Olea');
   });
 });
