@@ -996,6 +996,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
 | PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
+| PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1147,14 +1148,15 @@ citas afectadas y pregunta:
 
 Lo mismo cuando el cambio se pide por el chat del portal del cliente (PC-10).
 
-⚠️ *Por confirmar:*
+**También decidido (Mariana, 05/11/2026):**
 
-- *Si se cancelan, ¿le llega a cada clienta el SMS de cancelación?*
-  Propuesta: **sí**, el mismo que al cancelar desde la agenda.
-- *¿También al cambiar el horario del local o de una profesional* (citas que
-  quedan fuera del horario nuevo)? Propuesta: **sí**, el mismo aviso.
-- *Cuándo se construye.* Propuesta: ya, en la Fase 4, antes del merge del
-  PR #2. Es el panel.
+- Si se cancelan, a cada clienta le llega el **SMS de cancelación**, el mismo
+  que al cancelar desde la agenda.
+- El mismo aviso sale al **cambiar el horario** del local o de una
+  profesional, si quedan citas fuera del horario nuevo.
+
+⚠️ *Por confirmar:* cuándo se construye. Propuesta: ya, en la Fase 4, antes
+del merge del PR #2. Es el panel.
 
 
 ---
