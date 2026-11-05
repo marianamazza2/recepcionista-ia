@@ -33,6 +33,12 @@ en [`README.md`](README.md).
    Textos para la clienta: español de España, de tú.
 10. `cache-control: no-store` por defecto (lo pone `json`). Solo la config
     pública del widget se cachea.
+11. **El aviso de IA lo pone el código** (`avisoPrivacidad` en `widget.ts`,
+    PW-02, 05/11/2026): *«Chat atendido por inteligencia artificial. Al
+    escribir aceptas nuestra política de privacidad.»*, igual para todos los
+    negocios y sin ajuste para quitarlo (Reglamento europeo de IA, art. 50).
+    La bienvenida de cada negocio lo repite («asistente virtual IA», PA-04),
+    pero esa sí la escribe el negocio: lo que garantiza el aviso es esta línea.
 
 ## El panel (`admin/`, Fase 4)
 

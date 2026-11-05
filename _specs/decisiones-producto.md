@@ -344,9 +344,11 @@ cuestionario de alta): no hay un texto único en el código. La forma que
 prefiere Mariana (04/11/2026), y la que se propone a cada negocio nuevo, es
 **corta y sin lista de lo que sabe hacer**:
 
-> ¡Hola! Soy la asistente virtual de {negocio}. ¿En qué puedo ayudarte?
+> ¡Hola! Soy la asistente virtual IA de {negocio}. ¿En qué puedo ayudarte?
 
 El widget le añade el saludo de la hora (PW-02): *"¡Hola, buenas tardes! …"*.
+Desde el 05/11/2026 dice **«asistente virtual IA»** (ver *Aviso de IA*, en
+PW-02).
 
 ### PA-05 · Cuándo deriva a una persona
 
@@ -478,7 +480,7 @@ intentos o algo falla.
 |---|---|---|---|
 | PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
 | PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
-| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026 (el aviso de IA, ⚠️ por confirmar; sin construir) |
+| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026 (sin construir; el aviso de IA, decidido el 05/11 y construido, en PW-02) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -622,19 +624,17 @@ cambió dos.
 > como esperabas. Le paso tu mensaje al equipo para que lo revisen, y si
 > prefieres puedes llamarnos al 910 000 789.
 
-> **El saludo.** ¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué
-> puedo ayudarte?
+> **El saludo** (con el aviso de IA del 05/11). ¡Hola, buenas tardes! Soy
+> la asistente virtual IA de Clínica Olea. ¿En qué puedo ayudarte?
 
 **Cómo se comprueba:** una comprobación automática revisará el tono en cada
 pasada de los escenarios del agente (`agent:eval`), con estas reglas y
 ejemplos. A Mariana le llega una línea («tono: 10 de 11 bien») y, si algo
 falla, la respuesta concreta.
 
-⚠️ *Por confirmar:* hoy el agente dice «(sí, soy una IA)» en casi todos los
-primeros mensajes. El saludo aprobado no lo lleva, así que antes de quitarlo
-hay que decidir **dónde va el aviso de IA** del Reglamento europeo (pendiente
-desde el 04/11, PW-02): en la política de privacidad del negocio, en la
-bienvenida o en otro sitio. Mientras no se decida, el agente sigue diciéndolo.
+**El aviso de IA** quedó decidido el 05/11/2026 (ver PW-02): lo dicen la
+línea fija del chat y el saludo («asistente virtual IA»), así que el agente
+ya no añade «(sí, soy una IA)» en cada primera respuesta.
 
 *Sin construir todavía:* se hará junto con PA-13.
 
@@ -649,7 +649,7 @@ antes de lanzar la fase.
 | # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
 | PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ✅ decidida 28/10/2026 |
-| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora | URL de su política de privacidad | ✅ decidida 28/10/2026, reconfirmada el 04/11/2026 |
+| PW-02 | Aviso de privacidad e IA | Línea fija antes del primer mensaje: "Chat atendido por inteligencia artificial. Al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora y dice "asistente virtual IA" | URL de su política de privacidad | ✅ decidida 28/10/2026; texto con la IA, 05/11/2026 |
 | PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **2 h**, la retoma; después, conversación nueva | — | ✅ decidida 28/10/2026 |
 | PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ✅ decidida 28/10/2026 |
 | PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ✅ decidida 28/10/2026 |
@@ -668,7 +668,7 @@ publicidad gratuita.
 **Decisión (Mariana, 28/10/2026):** solo la marca del negocio. El "Funciona
 con …" se decide cuando exista el nombre del producto.
 
-### PW-02 · Aviso de privacidad · ✅ decidida el 28/10/2026
+### PW-02 · Aviso de privacidad e IA · ✅ decidida el 28/10/2026 (texto nuevo el 05/11/2026)
 
 Antes de que la clienta escriba, una línea fija: *"Asistente virtual. Al
 escribir aceptas la política de privacidad de {negocio}"*, con enlace a la
@@ -692,10 +692,24 @@ una IA. Al escribir…"*). **Mariana lo quitó el 04/11/2026:** no le gusta cóm
 suena. El aviso vuelve al texto del 28/10/2026. Hoy, lo de que es una IA no se
 dice de forma explícita en el widget: el agente lo dice si se lo preguntan
 (está en su prompt) y la política de privacidad del negocio lo explica.
-⚠️ **Por decidir con Mariana** (04/11/2026) cómo se cumple el aviso de IA del
-Reglamento europeo de IA y lo que pide A8 sin esa frase: por ejemplo decirlo
-en la bienvenida de cada negocio, en la política de privacidad del negocio, o
-con otra redacción del aviso que le guste.
+
+**Aviso de IA · ✅ decidido el 05/11/2026 (Mariana), construido.** El
+Reglamento europeo de IA (art. 50, en vigor desde el 2 de agosto de 2026)
+pide que la persona sepa que habla con una IA, de forma clara y como muy
+tarde en el primer contacto. Para evitar problemas legales, Mariana lo pone
+en los dos sitios:
+
+- **Línea fija** antes de escribir (sustituye al texto del 28/10):
+  *«Chat atendido por inteligencia artificial. Al escribir aceptas nuestra
+  política de privacidad.»* La pone el código, igual para todos los negocios:
+  ningún negocio la puede quitar.
+- **Saludo**, según la hora: *«¡Hola, buenas tardes! Soy la asistente virtual
+  IA de Clínica Olea. ¿En qué puedo ayudarte?»* Es la bienvenida que se
+  propone a cada negocio (PA-04).
+- **El agente** no repite «(sí, soy una IA)» en cada primera respuesta. Si la
+  bienvenida no lo presenta como asistente virtual IA, lo hace él en su
+  primera respuesta. Y si le preguntan si es una persona, contesta la verdad,
+  sin rodeos.
 
 ### PW-03 · Cuánto dura la conversación en el navegador · ✅ decidida el 28/10/2026
 

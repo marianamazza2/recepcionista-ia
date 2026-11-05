@@ -528,7 +528,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Horario propio | Lucía los jueves solo 16–21 (PD-01) |
 | Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
-| Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
+| Bienvenida | *"Soy la asistente virtual IA de Estética Aurora…"* (PA-04; aviso de IA, PW-02) |
 | Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, isotipo inventado (`demo/aurora-isotipo.svg`), tope 100 US$ |
 | Preguntas frecuentes | Aparcamiento, formas de pago y bonos regalo (PI-08) |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
@@ -550,7 +550,7 @@ tests siguen en Aurora.
 | Profesionales | Dra. Clara (todos) y Núria, enfermera (peeling y láser) |
 | Horario | L–J 10–20 · V 10–15 |
 | Ajustes | Los de Aurora: antelación 2 h, huecos cada 30 min, pregunta con quién, cancelación solo informa con plazo 24 h |
-| Bienvenida | *"¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?"* (texto de Mariana, 04/11/2026: la forma corta que se propone a cada negocio nuevo) |
+| Bienvenida | *"¡Hola! Soy la asistente virtual IA de Clínica Olea. ¿En qué puedo ayudarte?"* (texto de Mariana, 04/11/2026, con "IA" desde el 05/11/2026 por el aviso de IA, PW-02: la forma que se propone a cada negocio nuevo) |
 | Widget | Clave `wk_demo_clinica_olea_0001`, color `#5c6b4f`, isotipo inventado (`demo/olea-isotipo.svg`), tope 20 US$. En local, solo `localhost`; en la nube, la demo publicada y mazzmkt.com |
 
 ---

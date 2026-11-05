@@ -28,6 +28,10 @@ describe('buildSystemPrompt', () => {
   it('con Aurora contiene sus datos, servicios, quién hace qué y precios visibles', () => {
     const p = buildSystemPrompt(aurora);
     expect(p).toContain('Eres la asistente virtual de Estética Aurora');
+    // PW-02/PA-04 (05/11/2026): la bienvenida ya dice "asistente virtual IA";
+    // el agente no lo repite, pero si le preguntan si es una persona, dice la verdad.
+    expect(p).toContain('no te vuelvas a presentar ni repitas que eres una IA');
+    expect(p).toContain('Si te preguntan si eres una persona, di la verdad sin rodeos');
     expect(p).toContain('Calle Mayor 14');
     expect(p).toContain('+34910000000');
     expect(p).toContain('- Limpieza facial profunda: 60 min, 55 €. Lo hacen: Lucía y Marta.');
@@ -38,6 +42,8 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('- Lucía, los jueves: de 16:00 a 21:00');
     expect(p).toContain(aurora.politicaCancelacion!);
     expect(p).toContain(aurora.mensajeBienvenida!);
+    // Sin bienvenida, se presenta ella como asistente virtual IA (PW-02).
+    expect(buildSystemPrompt({ ...aurora, mensajeBienvenida: null })).toContain('preséntate como la asistente virtual IA de Estética Aurora');
     expect(p).toContain('cada 30 minutos');
     expect(p).toContain('2 horas de antelación');
   });

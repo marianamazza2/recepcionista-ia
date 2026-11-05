@@ -257,7 +257,7 @@ select test.ok(
      where id = :olea and nombre = 'Clínica Olea' and slug = 'clinica-olea'
        and timezone = 'Europe/Madrid' and estado = 'activo'
        and widget_key = 'wk_demo_clinica_olea_0001'
-       and mensaje_bienvenida = '¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?'
+       and mensaje_bienvenida = '¡Hola! Soy la asistente virtual IA de Clínica Olea. ¿En qué puedo ayudarte?'
   ),
   'existe Clínica Olea, la de la demo, con su bienvenida'
 );

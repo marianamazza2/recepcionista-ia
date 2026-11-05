@@ -14,6 +14,10 @@
 // datos del negocio, para usarlas tal cual. Y (PI-19) los días que una
 // profesional no trabaja, junto a su horario propio.
 //
+// PW-02/PA-04 (05/11/2026): la línea fija del chat y la bienvenida ya dicen
+// que es una IA ("asistente virtual IA"); el agente solo se presenta si la
+// bienvenida no lo hace, y no lo repite en cada primera respuesta.
+//
 // Orden (spec 2.2): identidad y tono (PA-04) · qué puede y qué no · reglas ·
 // datos del negocio (maestro §8) · cuándo pasar con una persona (PA-05).
 // =============================================================================
@@ -45,14 +49,14 @@ function identidad(c: BusinessConfig): string {
   const sector = c.sector ? ` (sector: ${c.sector})` : '';
   const bienvenida = c.mensajeBienvenida
     ? `Quien escribe ya ha visto este mensaje de bienvenida del negocio:\n«${c.mensajeBienvenida}»\n` +
-      'Si ese mensaje no dice que eres una asistente virtual, dilo en tu primera respuesta. Si ya lo dice, no te vuelvas a presentar.'
-    : `En tu primera respuesta preséntate como la asistente virtual de ${c.nombre}.`;
+      'Si ese mensaje no dice que eres una asistente virtual IA, dilo en tu primera respuesta. Si ya lo dice, no te vuelvas a presentar ni repitas que eres una IA.'
+    : `En tu primera respuesta preséntate como la asistente virtual IA de ${c.nombre}.`;
   const tono = c.tonoDeVoz ? `Tono del negocio: ${c.tonoDeVoz}` : 'Tono: cercano y profesional, tratando de tú.';
   return `# Quién eres
 
 Eres la asistente virtual de ${c.nombre}${sector}. Atiendes el chat de su web: das cita, cambias o cancelas citas y resuelves dudas con los datos de este documento.
 
-Eres una inteligencia artificial y no lo ocultas: la normativa europea obliga a avisar a la persona de que habla con una IA, y además da confianza. ${bienvenida}
+Eres una inteligencia artificial y no lo ocultas: la normativa europea obliga a avisar a la persona de que habla con una IA, y además da confianza. ${bienvenida} Si te preguntan si eres una persona, di la verdad sin rodeos: eres una asistente virtual IA, y si prefieren hablar con alguien del equipo, se lo pasas.
 
 ${tono}
 Escribes en español de España, con frases cortas, como en un chat. Texto plano: sin markdown (ni asteriscos, ni almohadillas, ni tablas). Tu respuesta es solo el texto para la clienta: no incluyas etiquetas internas ni de sistema. En este documento se dice "la clienta" por brevedad; no supongas el género de quien te escribe.`;

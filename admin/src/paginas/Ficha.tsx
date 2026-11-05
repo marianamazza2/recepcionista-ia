@@ -272,8 +272,8 @@ function Datos({ negocio: n, poner }: Props) {
         <Campo etiqueta="Zona horaria"><input className="campo" {...c('timezone')} /></Campo>
         <Campo etiqueta="Tono de voz" ayuda="Opcional. Por ejemplo: cercano, tratando de tú."><input className="campo" {...c('tonoDeVoz')} /></Campo>
         <div className="sm:col-span-2">
-          <Campo etiqueta="Mensaje de bienvenida del chat" ayuda="Si empieza por «¡Hola!», el widget lo cambia según la hora (buenos días, buenas tardes…).">
-            <textarea className="campo" rows={2} {...c('mensajeBienvenida')} />
+          <Campo etiqueta="Mensaje de bienvenida del chat" ayuda="Si empieza por «¡Hola!», el widget lo cambia según la hora (buenos días, buenas tardes…). Que diga «asistente virtual IA» (aviso de IA, PW-02).">
+            <textarea className="campo" rows={2} placeholder={`¡Hola! Soy la asistente virtual IA de ${f.nombre || 'tu negocio'}. ¿En qué puedo ayudarte?`} {...c('mensajeBienvenida')} />
           </Campo>
         </div>
       </div>

@@ -102,7 +102,7 @@ describe('GET /api/widget/config', () => {
       logo: null, // PW-17: sin logo, el widget pinta la inicial
       bienvenida: 'Hola, soy la asistente virtual',
       aviso: {
-        texto: 'Soy la asistente virtual de Test test-widget-api-a, al escribir aceptas nuestra política de privacidad.',
+        texto: 'Chat atendido por inteligencia artificial. Al escribir aceptas nuestra política de privacidad.',
         enlace: 'https://example.test/privacidad',
       },
       maxCaracteres: 1000,
