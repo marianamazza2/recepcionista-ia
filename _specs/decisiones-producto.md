@@ -463,6 +463,56 @@ intentos o algo falla.
 
 ---
 
+## Después de la Fase 4 · noviembre de 2026
+
+| # | Tema | Decisión / qué hace ahora | Estado |
+|---|---|---|---|
+| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, el tratamiento necesita una visita antes…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código | ✅ decidida 05/11/2026 (el valor de serie y cuándo se construye, ⚠️ por confirmar) |
+
+### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
+
+**El problema:** en la demo de Clínica Olea, cuando la clienta pedía algo que
+no se podía dar (un día que el local cierra, o la toxina sin haber hecho antes
+la primera visita), el agente a veces **cambiaba de tratamiento o de hora sin
+decirlo**. La clienta cree que reservó una cosa y tiene otra.
+
+**Regla:** si el agente no puede dar lo que le piden, **explica el motivo** en
+palabras de la clienta y ofrece lo más cercano que sí se puede. Nunca cambia
+el tratamiento, la profesional ni la hora sin decirlo y sin que ella diga que
+sí (PA-01).
+
+> — Quiero toxina el sábado.
+> — Los sábados la clínica no abre. Además, la toxina necesita antes una
+>   primera visita con la doctora. ¿Te busco una primera visita el lunes o el
+>   martes?
+
+**Lo garantiza el código, no solo el prompt** (regla de oro): el motor y las
+herramientas devuelven el **motivo** cuando algo no se puede (local cerrado,
+profesional que no trabaja ese día, servicio que necesita otro antes), y la
+herramienta de reservar **no reserva un servicio distinto del que se
+confirmó**.
+
+**Ajuste por negocio (por servicio):** si necesita otro servicio antes (por
+ejemplo, la primera visita antes de la toxina) y qué hace el agente si la
+clienta dice que ya lo hizo:
+
+- **Reservar directamente.** Es lo que quiere Clínica Olea: si la clienta ya
+  hizo la primera visita, se le reserva la toxina.
+- **Pasarlo al equipo** (PA-12), sin reservar.
+
+⚠️ **Por confirmar con Mariana:**
+
+- *Valor de serie.* Propuesta: **reservar directamente** (como Olea).
+- *Si ya consta en el sistema.* Propuesta: si la clienta ya tiene una cita
+  pasada y atendida de ese servicio previo (por su teléfono), se reserva sin
+  preguntar.
+- *Cuándo se construye.* Propuesta: justo después de cerrar la Fase 4,
+  mientras Mariana escribe el guion del alta por chat (no depende de él). El
+  ajuste se carga en el panel interno; en el portal (Fase 9) entra como
+  pregunta de la sección "Servicios".
+
+---
+
 ## El widget web (Fase 3) · ✅ DECIDIDAS
 
 Aparecieron al escribir el spec de la Fase 3 (`fase-3-widget-web.md`), el
@@ -1037,3 +1087,119 @@ normal para alguien que no va a trabajar más es desactivarla (PI-04).
 *Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
 profesional activa.
 
+
+---
+
+## El portal del cliente y el alta por chat (Fase 9) · decidido el 05/11/2026
+
+Mariana lo decidió el 05/11/2026. **La Fase 9 se adelanta**: va justo después
+de la Fase 4 (y de PA-13), antes de la 5. Conserva su número para no romper
+las referencias. **El chat no se programa hasta que Mariana escriba su
+guion** (nota "Guion del alta por chat" en Research Desk); con el guion se
+escribe el spec de la fase, ella lo aprueba y entonces se construye.
+
+| # | Tema | Decisión | ¿Ajuste por negocio? | Estado |
+|---|---|---|---|---|
+| PC-01 | Dos altas distintas | La **administrativa y legal** (datos fiscales, contacto, contrato con anexo RGPD, plan) la hace Mariana en su panel de clientes MAZZMKT, otro proyecto. La **del agente** la hace el cliente, por chat | — | ✅ decidida 05/11/2026 |
+| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 (la caducidad, ⚠️ por confirmar) |
+| PC-03 | El alta por chat | En vez de formularios, un chat que pregunta **una cosa cada vez**, por secciones (0 bienvenida … 9 cierre). Antes de guardar cada sección enseña un **resumen visual** para confirmar | — | ✅ decidida 05/11/2026 (el guion, pendiente de Mariana) |
+| PC-04 | El portal que se va rellenando | Mientras chatea, el cliente ve su portal completarse. Después, el portal es suyo: lo ve todo y lo cambia **a mano o pidiéndoselo al chat** | — | ✅ decidida 05/11/2026 |
+| PC-05 | La vista de Mariana | Desde el panel interno ve el portal de cada cliente **tal como lo ve él** y lo puede editar. Los datos están en un solo sitio; las tres formas de cambiarlos muestran lo mismo | — | ✅ decidida 05/11/2026 |
+| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario (por ejemplo, un festivo) | Sí | ✅ decidida 05/11/2026 (el detalle, ⚠️ por confirmar) |
+| PC-07 | Leer la web del negocio | El chat **no** lee la web de la clínica para proponer servicios. Más adelante | — | ✅ decidida 05/11/2026 |
+| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie | — | ⚠️ por confirmar |
+| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ⚠️ por confirmar |
+
+### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
+
+- **Alta legal y administrativa:** la hace Mariana en su **panel de clientes
+  MAZZMKT** (un proyecto aparte, todavía sin construir): datos fiscales,
+  persona de contacto, contrato con el anexo de encargada del tratamiento
+  (RGPD, PD-11), plan contratado y qué servicio le vende. No es parte de este
+  proyecto.
+- **Alta del agente:** la hace **el cliente**: tratamientos, equipo, horarios,
+  festivos, reglas, preguntas frecuentes y el chat en su web. Es lo que cambia
+  en la Recepcionista.
+
+Fuera de este proyecto también: la facturación (propuesta en el guion: usar un
+programa que cumpla Verifactu, no programar uno propio).
+
+### PC-02 · Enlace de invitación · ✅ decidida el 05/11/2026
+
+Cuando Mariana elige el servicio Recepcionista IA para un cliente, se genera
+un enlace de invitación ligado a **ese negocio** y al **email de su contacto**:
+
+- **Solo sirve para ese negocio.** Aunque alguien escriba en el chat "soy
+  Estética Aurora", la cuenta de Clínica Olea no puede ver ni tocar otro
+  negocio: lo decide el código (como el `business_id` de todo lo demás).
+- **Se usa una sola vez y caduca.** Mariana puede anularlo o generar uno nuevo.
+- **Hay que confirmar el email.** Un enlace reenviado no sirve sin acceso a
+  ese correo.
+- **Mientras no exista el panel de clientes MAZZMKT**, el enlace se genera
+  desde el panel interno de la Recepcionista, para que el portal no espere a
+  ese otro proyecto.
+
+⚠️ *Por confirmar:* cuánto dura el enlace. Propuesta: **7 días**.
+
+### PC-03 · El alta por chat · ✅ decidida el 05/11/2026
+
+El cliente abre el enlace y le recibe un chat que pregunta **una cosa cada
+vez**, como una conversación, siguiendo las secciones del panel:
+
+0. Bienvenida · 1. El negocio · 2. Servicios (con PA-13: si necesitan otro
+antes) · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
+5. Festivos y ausencias · 6. Reservas y cancelación · 7. Preguntas frecuentes ·
+8. El chat en su web · 9. Cierre.
+
+Antes de guardar cada sección enseña un **resumen visual** ("así queda tu
+semana, ¿está todo bien?"), porque un error en un horario cuesta citas.
+
+**Lo que falta: el guion.** Para cada sección, Mariana decide qué pregunta el
+chat y cómo lo dice (cálido, con conectores, como una persona), qué hace si la
+respuesta no está clara ("abrimos por las mañanas") y qué enseña para
+confirmar. Sin guion no se programa.
+
+### PC-04 · El portal que se va rellenando · ✅ decidida el 05/11/2026
+
+Mientras el cliente chatea, ve su portal a la vez y cómo se completa con cada
+respuesta. Al terminar, el portal es suyo: ve toda la configuración de su
+recepcionista y la cambia **a mano** o **pidiéndoselo al chat** ("Núria no
+viene el jueves").
+
+### PC-05 · La vista de Mariana · ✅ decidida el 05/11/2026
+
+Mariana ve el portal de cada cliente **tal como lo ve él**, desde su panel
+interno, y lo puede editar. Si un cliente dice "lo cargué bien y no
+funciona", abre su ficha y ve exactamente lo que ve su agente.
+
+Los datos están en **un solo sitio**. Hay tres formas de cambiarlos (el portal
+a mano, el chat del cliente y el panel de Mariana) y todas muestran lo mismo.
+Las reglas que hoy aplica el panel (PI-03 lo que falta para activar, PI-18 el
+aviso de horario, las de la base) valen igual en las tres.
+
+### PC-06 · Turnos sueltos · ✅ decidida el 05/11/2026
+
+Además del horario de cada día de la semana (PD-01, PI-19), una profesional
+puede tener un **turno suelto**: trabaja un día concreto en el que
+normalmente no trabajaría. Ejemplo: Núria trabaja el festivo del 8 de
+diciembre de 10:00 a 14:00.
+
+⚠️ *Por confirmar:* si un turno suelto **abre** la agenda en un festivo del
+local (propuesta: sí, solo para esa profesional y esas horas) y si se puede
+cargar también desde el panel interno (propuesta: sí, en la sección de
+festivos y ausencias).
+
+### PC-07 · Leer la web del negocio · ✅ decidida el 05/11/2026
+
+El chat no lee la web de la clínica para proponer los servicios. Se deja para
+más adelante.
+
+### PC-08 · Zona horaria · ⚠️ por confirmar
+
+*Propuesta:* no se pregunta; todos los negocios, Europe/Madrid de serie. Si
+algún día hay un cliente en Canarias, se cambia desde el panel interno.
+
+### PC-09 · El tope mensual de la IA · ⚠️ por confirmar
+
+*Propuesta:* el cliente no ve ni cambia su tope (PW-04): lo pone Mariana en
+el panel interno según el plan contratado.

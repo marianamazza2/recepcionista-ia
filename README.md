@@ -103,6 +103,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261028100000_widget_logo` | Fase 3: `businesses.widget_logo`, el logo del círculo de la cabecera del widget como data URL (PW-17) |
 | `20261030120000_dias_libres` | Fase 4: `staff_dias_libres`, los días que una profesional no trabaja aunque el local abra (PI-19); `app.tramos_efectivos` no le da horario esos días |
 | `20261028120000_panel_interno` | Fase 4: `panel.personas` (quién entra al panel, PI-01), preguntas frecuentes en `knowledge_docs` con su límite (PI-08, `RA007`), `conversations.prueba` (PI-13), `escalations.resuelta_at` (PI-07), `negocio_lo_que_falta()` y no activar sin lo mínimo (PI-03, `RA008`), y el modo manual de `slot_es_valido`/`book_appointment` (PR-04, PI-14) |
+| `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local; nube pendiente |
 
 ### Las dos garantías que ya están puestas
 
@@ -441,7 +442,7 @@ Primera vez: `npm install` y copiar `.env.example` a `.env` con tu
 ```bash
 npm run test:sql                    # tests SQL (11 archivos)
 ./scripts/run-sql-tests.sh 07       # solo uno
-npm test                            # tests TypeScript (179), el de concurrencia incluido
+npm test                            # tests TypeScript (181), el de concurrencia incluido
 npm run test:e2e                    # la demo y el panel en Google Chrome, con el modelo simulado
 npm run typecheck                   # comprobación de tipos (también la del widget y la del panel)
 
@@ -469,6 +470,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `09_widget.sql` | Fase 3: valores de serie y restricciones del widget, el token de sesión solo como hash, consumo enlazado a su conversación, enlaces y SMS (sin cruzar negocios) y su RLS; el formato y el tamaño del logo (PW-17) |
 | `11_dias_libres.sql` | PI-19: la tabla de días libres (duplicados, día válido, otro negocio, RLS) y el motor: ese día no hay tramos ni huecos, no se reserva tampoco a mano, la asignación automática va a otra profesional, "no trabaja" gana a las horas propias, y `available_slots` y `slot_es_valido` coinciden minuto a minuto |
 | `10_panel.sql` | Fase 4: `panel.personas` fuera de `public`, con RLS y sin política; preguntas frecuentes y su límite (RA007); conversación de prueba; derivación resuelta; lo que falta y no activar sin ello (RA008); citas a mano: sin rejilla ni antelación, pero nunca fuera de horario, en festivo, en una ausencia por horas, pisando otra cita o el margen |
+| `12_horarios_sin_solape.sql` | Solapes de tramos del local y de una profesional, INSERT y UPDATE; tramos contiguos, medianoche y aislamiento entre horarios, días y negocios |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -488,7 +490,7 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/cita-sms.test.ts` | El SMS de prueba al reservar (texto, enlace, sin token en la base), SMS fallido sin perder la cita, el SMS de cancelación por el chat (PW-10), la página del enlace (ver, cancelar en dos pasos, PR-07 en sus dos modos, enlace inventado o caducado) |
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
-| `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
+| `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario (también solapes sin perder datos), normalización del teléfono del local, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
 | `tests/panel-horario.test.ts` | Las cuentas de horarios del panel: qué tramos propios caen fuera del horario del local (PI-18) y "Copiar a…" entre días |
 | `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
 | `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
@@ -529,6 +531,19 @@ elegir profesional según el servicio en vez de al azar.
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
 | Publicar el panel en Vercel | cuando Mariana lo confirme (PI-02) |
+| PA-13: el agente explica lo que no puede dar, garantizado por el código | después de la 4 (⚠️ cuándo, por confirmar) |
+| Portal del cliente y alta por chat, con enlace de invitación (PC-01 a PC-09) | 9, adelantada: va después de la 4; espera el guion de Mariana |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
+
+### Verificación local de aceptación · 02/11/2026
+
+Los casos 12 y 31 detectaron dos validaciones ausentes: teléfono del local con
+letras y tramos de horario solapados. Se corrigen en la API (teléfono) y en
+Postgres (horario), con regresiones TypeScript y SQL. El informe de aceptación
+con los cinco escenarios de Mariana se mantiene en Research Desk. Esto no
+cierra la Fase 4: la migración y la verificación en la nube están pendientes.
+
+Aceptación local del logo (02/11/2026): también se decodifican las imágenes
+pequeñas; un archivo renombrado se rechaza y conserva el logo anterior (caso 15).

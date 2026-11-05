@@ -78,7 +78,8 @@ Estos negocios viven en WhatsApp: casi nadie entra a su web a reservar. Con solo
 
 - ❌ **WhatsApp como canal.** Movido al backlog. Exige verificación de Meta + empresa dada de alta; fuera del camino crítico del MVP. Se enchufa como segundo canal cuando el producto esté validado y lo legal resuelto. Es lo que desbloquea el sector peluquerías/barberías.
 - ❌ **Voz telefónica.** Es otro producto. Se evalúa cuando haya 5 clientes de texto pagando y contentos.
-- ❌ **Panel self-service para el cliente.** En v1 la config la cargás vos.
+- ~~❌ **Panel self-service para el cliente.** En v1 la config la cargás vos.~~ **Cambiado el 05/11/2026:** el portal del cliente con el alta por chat se adelanta (Fase 9, que va después de la 4; PC-01 a PC-09 en `decisiones-producto.md`).
+- ❌ **Leer la web del negocio para proponer servicios en el alta.** Más adelante (PC-07).
 - ❌ **Cobros / pagos dentro del chat.** Stripe entra más adelante si un cliente lo exige.
 - ❌ **Integraciones con CRMs externos.** Solo el backend propio en v1. Google Calendar más adelante.
 - ❌ **Multi-idioma.** Español (España) únicamente. La arquitectura no lo impide, pero no se trabaja ahora.
@@ -379,6 +380,8 @@ Separación que evita prompts gigantes y caros:
 
 Orden pensado para que **cada fase se pueda probar sola** y para llegar lo antes posible a algo demostrable.
 
+**Orden actual (05/11/2026):** 0 → 1 → 2 → 3 → 4 → PA-13 → **9** → 5 → 6 → 7 → 8. Los números son nombres, no el orden: la Fase 9 se adelantó y conserva su número.
+
 ### Fase 0 — Cimientos
 Repo, Supabase, migraciones del esquema completo, RLS, la restricción anti-solapamiento, seeds de un negocio ficticio de prueba.
 *Terminada cuando:* podés insertar citas por SQL y la base **rechaza** una superpuesta.
@@ -414,8 +417,11 @@ Segundo canal. Requiere, en paralelo y **antes**: empresa dada de alta (para fac
 *Desbloquea:* peluquerías, barberías, uñas, gimnasios de barrio — todo el sector "WhatsApp-first" que quedó en backlog.
 *Terminada cuando:* un negocio recibe reservas por su WhatsApp atendidas por el agente.
 
-### Fase 9 — Panel del cliente (self-service)
-Solo cuando el trabajo manual de onboarding se vuelva un cuello de botella real.
+### Fase 9 — Portal del cliente y alta por chat  ⏩ ADELANTADA (05/11/2026)
+**Va justo después de la Fase 4** (y de PA-13), antes de la 5. Conserva el número para no romper las referencias.
+Hay dos altas (PC-01): la **administrativa y legal** la hace Mariana en su panel de clientes MAZZMKT (otro proyecto); la **del agente** la hace el cliente. Mariana genera un **enlace de invitación** ligado al negocio y al email del contacto, de un solo uso, que caduca y exige confirmar ese email (PC-02); mientras no exista el panel de clientes, se genera desde el panel interno. El cliente se da de alta **hablando con un chat** que pregunta una cosa cada vez, por secciones, y enseña un resumen visual antes de guardar cada una (PC-03). A la vez ve su **portal** completarse; después lo cambia a mano o pidiéndoselo al chat (PC-04). Mariana ve y edita el portal de cada cliente desde el panel interno, con los datos en un solo sitio (PC-05). Incluye los turnos sueltos (PC-06).
+*Depende de:* el **guion del alta por chat**, que escribe Mariana (nota en Research Desk). Sin guion no se escribe el spec ni se programa.
+*Terminada cuando:* un negocio nuevo entra con su enlace, se da de alta entero por el chat, su portal muestra lo mismo que el panel interno, cambia algo por el chat o a mano y el agente lo aplica; y una cuenta no puede ver ni tocar otro negocio aunque lo pida en el chat.
 
 ---
 

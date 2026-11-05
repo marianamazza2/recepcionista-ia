@@ -52,13 +52,18 @@ Consecuencias que se aplican siempre:
   `no_overlap_cliente`); que una clienta solo toque sus citas (PA-08) lo
   impide la herramienta. El prompt explica; el código y la base garantizan.
 
+El panel valida el formato del teléfono del local con la normalización común
+(`src/core/phone.ts`). Los tramos de horario del mismo día y del mismo local o
+profesional no se pueden solapar: lo impiden exclusiones de Postgres; el
+horario propio sigue siendo independiente del local (PD-01).
+
 ## 2. Dónde vive cada decisión
 
 | Tipo | Dónde | Se sube |
 |---|---|---|
 | Alcance, arquitectura y plan de fases | `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro) | Sí |
 | Qué hay que hacer en una fase | `_specs/fase-N-*.md` | Sí |
-| **Reglas de negocio** (PD-, PR-, PA-, PW-, PI-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
+| **Reglas de negocio** (PD-, PR-, PA-, PW-, PI-, PC-) | `_specs/decisiones-producto.md` — **fuente de verdad** | Sí |
 | Decisiones técnicas ya tomadas (D-NN) y trampas (T-NN) | `docs/DECISIONES.md` | **No** (`docs/` está en `.gitignore`) |
 | Decisiones esperando a Mariana | `docs/DECISIONES-PENDIENTES.md` | No |
 | Por qué una tabla o función es así | El comentario de cabecera de su migración | Sí |

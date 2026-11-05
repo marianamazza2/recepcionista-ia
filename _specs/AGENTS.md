@@ -18,6 +18,7 @@ adapta a estos documentos, no al revés.
 | `PA-` | Cómo conversa el agente | PA-08 solo sus citas |
 | `PW-` | El widget web (Fase 3) | PW-06 dominios permitidos |
 | `PI-` | El panel interno (Fase 4) | PI-03 un negocio nuevo empieza en prueba |
+| `PC-` | El portal del cliente y el alta por chat (Fase 9) | PC-02 el enlace de invitación |
 | `D-` / `T-` / `DT-` | Decisiones técnicas, trampas y deuda técnica | viven en `docs/DECISIONES.md` (local) |
 
 Cada regla distingue **regla del motor** (igual para todos) y **ajuste por
