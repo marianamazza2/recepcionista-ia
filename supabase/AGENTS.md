@@ -61,6 +61,16 @@ supabase/
     del negocio (D-09) y se cruzan con `AT TIME ZONE b.timezone`, nunca con
     offsets a mano (T-01).
 
+## Tramos de horario (PD-01)
+
+`business_hours_local_sin_solape` y `business_hours_staff_sin_solape` impiden
+solapes por negocio y día, separando el local (`staff_id IS NULL`) de cada
+profesional. Usan rangos `[)` de segundos locales: dos tramos pegados y el
+cierre `24:00` valen. El horario propio puede coincidir con el del local o
+salirse de él (PD-01/PI-18); la restricción solo compara tramos del mismo
+horario. El test SQL 12 cubre INSERT y UPDATE, y el test de API verifica que
+un rechazo deshace toda la sustitución del horario.
+
 ## Seed
 
 - Solo **Estética Aurora**, con UUID fijos y legibles (`a0…` negocio, `b0…`

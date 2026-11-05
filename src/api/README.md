@@ -101,3 +101,13 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `POST negocios/:id/citas/:aid/cancelar` | Cancelar desde la agenda, con SMS (PW-10) | `{cancelada}` |
 | `POST negocios/:id/probar` `{sessionToken?, clientMessageId?, texto}` | Probar el chat (PI-13): como `POST /api/chat`, marcado como prueba | como `/api/chat` |
 | `GET consumo?mes=AAAA-MM` | El mes de todos los negocios, con las pruebas aparte (PI-11) | lista de informes |
+
+### Validaciones de la ficha (aceptación Fase 4)
+
+`PUT negocios/:id/datos` normaliza `telefonoHumano` al formato internacional
+(como los teléfonos de las clientas). Vacío o `null` lo deja sin teléfono;
+letras o un número incompleto dan 400 y no se guarda ningún campo del bloque.
+`PUT negocios/:id/horario` rechaza con 409 los tramos solapados del mismo día
+y del mismo horario (local o profesional), y conserva todos los tramos
+anteriores. Dos tramos contiguos sí valen. PD-01 no cambia: el horario propio
+puede coincidir con el del local o salirse de él.

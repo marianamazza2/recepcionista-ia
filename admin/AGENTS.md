@@ -25,7 +25,9 @@ Qué hace y cómo se usa: [`README.md`](README.md).
 5. **Lo que se ve de una conversación se pinta como texto** (React escapa):
    nunca `dangerouslySetInnerHTML`. Lo escribe gente de fuera.
 6. **El logo se reduce en el navegador** (`src/logo.ts`, PI-10): el servidor
-   no tiene librerías de imagen. El límite final lo pone la base (D-75).
+   no tiene librerías de imagen. Antes de aceptar cualquier tamaño, se intenta
+   decodificar la imagen: un archivo renombrado se rechaza y conserva el logo
+   anterior (aceptación 15). El límite final lo pone la base (D-75).
 7. **Textos para Mariana en español de España, de tú** (como verá el cliente
    la Fase 9). Usable en portátil; en el móvil, que no se rompa.
 8. **Sin router ni librería de estado**: rutas por hash (`#/negocios/…`,

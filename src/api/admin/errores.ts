@@ -5,7 +5,8 @@
 // de las preguntas, lo que falta para activar…) y en el motor de reservas.
 // Aquí solo se traducen a una frase para el panel. Nunca sale el error
 // interno: lo que no se reconoce va a onError y el panel recibe un mensaje
-// genérico.
+// genérico. Aceptación 31: los solapes de tramos del local y de cada
+// profesional tienen una explicación común (exclusiones en Postgres).
 // =============================================================================
 
 import { BookingError } from '../../adapters/booking/errors.js';
@@ -55,6 +56,8 @@ const POR_RESTRICCION: Record<string, string> = {
   staff_nombre_check: 'La profesional necesita un nombre.',
   business_hours_tramo_valido: 'En cada tramo, el cierre tiene que ser después de la apertura.',
   business_hours_tramo_unico: 'Hay un tramo repetido.',
+  business_hours_local_sin_solape: 'Hay tramos que se solapan el mismo día. Revisa las horas de apertura y cierre.',
+  business_hours_staff_sin_solape: 'Hay tramos que se solapan el mismo día. Revisa las horas de apertura y cierre.',
   time_off_rango_valido: 'El final tiene que ser después del inicio.',
   knowledge_docs_faq_corta: 'Cada pregunta frecuente es corta: pregunta de hasta 200 caracteres y respuesta de hasta 1.000.',
   knowledge_docs_titulo_check: 'La pregunta no puede estar vacía.',

@@ -2,11 +2,14 @@
 // Lectura y validación del cuerpo de las peticiones del panel (Fase 4 · 4.2)
 // =============================================================================
 // La forma de la petición se valida aquí (tipos, longitudes, formatos simples)
-// con un mensaje en palabras para el panel. Lo que es regla de negocio
+// con un mensaje en palabras para el panel. Aceptación 12: el teléfono del
+// local reutiliza la normalización existente; vacío sigue siendo opcional.
+// Lo que es regla de negocio
 // (horarios, solapes, límites de las preguntas, lo que falta para activar…)
 // lo comprueba la base, no esto.
 // =============================================================================
 
+import { normalizarTelefono } from '../../core/phone.js';
 import { isFecha, isHora } from '../../core/time.js';
 import { ErrorPanel } from './errores.js';
 
@@ -35,6 +38,14 @@ export class Entrada {
     const t = v.trim();
     if (t.length > max) this.mal(`${mayuscula(etiqueta)}: como mucho ${max} caracteres.`);
     return t === '' ? null : t;
+  }
+
+  telefonoOpcional(k: string, etiqueta: string): string | null {
+    const t = this.textoOpcional(k, etiqueta, 30);
+    if (t === null) return null;
+    const telefono = normalizarTelefono(t);
+    if (!telefono) this.mal(`El ${etiqueta} no es válido. Escríbelo con prefijo (+34…) o con sus 9 cifras.`);
+    return telefono;
   }
 
   entero(k: string, etiqueta: string, min: number, max: number): number {

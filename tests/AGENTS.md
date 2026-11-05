@@ -33,7 +33,10 @@ compila `admin/` antes de empezar y guarda capturas en
 Sin Supabase Auth: `helpers/auth-falsa.ts` hace de proveedor de cuentas
 (`createApi({ auth })`). La persona del panel se añade a `panel.personas` con
 `guardarPersonaPanel` y se borra al terminar, igual que los negocios que se
-dan de alta por la API. `tests/admin-api.test.ts` sube el tiempo por test a
+dan de alta por la API. `tests/admin-api.test.ts` cubre también los casos 12 y 31 del plan de
+aceptación: normalización/rechazo del teléfono del local y solapes de horario
+sin perder datos. Requiere la migración `20261102120000_horarios_sin_solape`.
+`tests/admin-api.test.ts` sube el tiempo por test a
 120 s: cada uno da de alta un negocio entero, y contra la nube tarda.
 
 ## Reglas
@@ -84,3 +87,6 @@ aplica) en el mismo cambio. Ver §8 del [`AGENTS.md` raíz](../AGENTS.md#8-mante
   `README.md` raíz.
 - Un fixture que crea filas en una tabla nueva → que `deleteTestCustomers` (o
   el borrado del negocio de prueba) también las limpie.
+
+El E2E del panel también comprueba que un archivo pequeño renombrado como PNG
+se rechaza sin sustituir el logo existente (aceptación 15, PI-10).

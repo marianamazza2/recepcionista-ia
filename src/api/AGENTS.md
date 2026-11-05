@@ -53,7 +53,10 @@ en [`README.md`](README.md).
     solo se traducen (restricción → frase). Lo que no se reconoce va a
     `onError` y el panel recibe un 500 genérico.
 15. Cuerpo hasta 512 KB (el logo viaja en el JSON), la forma se valida con
-    `admin/entrada.ts`.
+    `admin/entrada.ts`. El teléfono opcional del local reutiliza
+    `core/phone.ts`: se normaliza al formato internacional o se rechaza antes
+    de guardar cualquier campo. Los solapes de horario llegan como 409 desde
+    las exclusiones de Postgres y conservan el horario anterior.
 
 ## Tests
 

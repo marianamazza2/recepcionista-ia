@@ -1,3 +1,4 @@
+// =============================================================================
 // El panel interno por su API (Fase 4 · 4.2–4.8), con el modelo simulado y un
 // proveedor de cuentas falso: sin coste de API ni Supabase Auth.
 //
@@ -205,6 +206,49 @@ describe('alta de un negocio (PI-03) y el agente', () => {
 });
 
 describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
+
+  it('aceptación 12: normaliza el teléfono del local y rechaza letras sin cambiar los datos', async () => {
+    const n = await alta('Teléfono Local Test');
+    const h = api();
+    const antes = (await pedir(h, 'GET', `negocios/${n.id}`)).body;
+    for (const telefonoHumano of ['+34 910-000-123', '910 000 123', '0034910000123']) {
+      const r = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...antes, telefonoHumano });
+      expect(r.status).toBe(200);
+      expect(r.body.telefonoHumano).toBe('+34910000123');
+    }
+    for (const telefonoHumano of ['abc', '+34 123', '910000123 ext 2']) {
+      const r = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...antes, nombre: 'No debe guardarse', telefonoHumano });
+      expect(r.status).toBe(400);
+      expect(r.body.mensaje).toContain('teléfono del local');
+      const guardado = (await pedir(h, 'GET', `negocios/${n.id}`)).body;
+      expect(guardado.nombre).toBe(antes.nombre);
+      expect(guardado.telefonoHumano).toBe('+34910000123');
+    }
+    const vacio = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...antes, telefonoHumano: '  ' });
+    expect(vacio.status).toBe(200);
+    expect(vacio.body.telefonoHumano).toBeNull();
+    expect(vacio.body.loQueFalta.map((f: { codigo: string }) => f.codigo)).toContain('telefono');
+  });
+
+  it('aceptación 31: rechaza tramos solapados del local y de una profesional sin perder su horario', async () => {
+    const n = await alta('Tramos Solapados Test');
+    const h = api();
+    for (const staffId of [null, n.profesionalId]) {
+      await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId, tramos: SEMANA });
+      const antes = (await pedir(h, 'GET', `negocios/${n.id}`)).body.horario;
+      const r = await pedir(h, 'PUT', `negocios/${n.id}/horario`, {
+        staffId, tramos: [{ weekday: 1, apertura: '10:00', cierre: '14:00' }, { weekday: 1, apertura: '13:00', cierre: '18:00' }],
+      });
+      expect(r.status).toBe(409);
+      expect(r.body.mensaje).toBe('Hay tramos que se solapan el mismo día. Revisa las horas de apertura y cierre.');
+      expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.horario).toEqual(antes);
+      const contiguos = await pedir(h, 'PUT', `negocios/${n.id}/horario`, {
+        staffId, tramos: [{ weekday: 1, apertura: '10:00', cierre: '14:00' }, { weekday: 1, apertura: '14:00', cierre: '18:00' }],
+      });
+      expect(contiguos.status).toBe(200);
+    }
+  });
+
   it('desactivar un servicio con citas: no se borra, el agente deja de ofrecerlo y las citas siguen', async () => {
     const n = await alta('Desactivar Test');
     const h = api();

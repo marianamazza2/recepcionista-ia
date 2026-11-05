@@ -13,6 +13,8 @@
 //   · Errores → una frase para el panel (errores.ts); el interno, a onError.
 //   · Los handlers son delgados: validan la forma (entrada.ts) y llaman a
 //     db/negocios, db/visor, citas/manual, db/usage o al canal web.
+//   · Aceptación 12: el teléfono del local se normaliza antes de guardar;
+//     las letras se rechazan sin modificar los demás datos.
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
@@ -134,7 +136,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
           sector: e.textoOpcional('sector', 'el sector', 120),
           timezone: zona(e),
           direccion: e.textoOpcional('direccion', 'la dirección', 300),
-          telefonoHumano: e.textoOpcional('telefonoHumano', 'el teléfono del local', 30),
+          telefonoHumano: e.telefonoOpcional('telefonoHumano', 'teléfono del local'),
           tonoDeVoz: e.textoOpcional('tonoDeVoz', 'el tono de voz', 500),
           mensajeBienvenida: e.textoOpcional('mensajeBienvenida', 'el mensaje de bienvenida', 500),
         });

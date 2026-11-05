@@ -86,6 +86,14 @@ cli, dev, vercel → cualquiera
   panel (:4312, `PANEL_PORT`): `dev/panel-build.ts` compila `admin/` con Vite
   (devDependency, también) y lo vuelve a compilar al cambiar un archivo.
 
+## Validaciones del panel
+
+- La API normaliza el teléfono opcional del local con `core/phone.ts` antes
+  de guardar: letras o números incompletos se rechazan, vacío sigue valiendo.
+- Los solapes de tramos se rechazan en Postgres (por negocio, día y
+  profesional; el local tiene su propia exclusión). La API traduce el error
+  sin cambiar lo guardado. No dupliques esta restricción en React.
+
 ## Si cambiás algo de acá
 
 **Obligatorio:** si tu cambio toca la arquitectura, una regla de negocio o la

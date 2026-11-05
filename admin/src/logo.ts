@@ -1,11 +1,12 @@
 // =============================================================================
-// Logo del negocio (PI-10, PW-17)
+// Logo del negocio (Fase 4 · PI-10, PW-17; aceptación 15)
 // =============================================================================
 // Se sube PNG, JPG, SVG o WebP. Si pesa más de 150 KB, se reduce aquí, en el
 // navegador, a 256 × 256 (en el círculo del chat se ve a 36 px) antes de
 // guardarlo: el servidor no tiene librerías de imagen. La base solo acepta
 // data URL de esos tipos y hasta 200.000 caracteres (D-75); si aun así no
-// cabe, se dice con palabras.
+// cabe, se dice con palabras. Se decodifica también el archivo pequeño: su
+// extensión y MIME no garantizan que sea una imagen válida.
 // =============================================================================
 
 export const MAX_BYTES_SIN_REDUCIR = 150 * 1024;
@@ -37,11 +38,11 @@ function cargarImagen(src: string): Promise<HTMLImageElement> {
 export async function prepararLogo(archivo: File): Promise<{ dataUrl: string; reducido: boolean }> {
   if (!TIPOS.includes(archivo.type)) throw new LogoNoValido('El logo tiene que ser PNG, JPG, SVG o WebP.');
   const original = await leerComoDataUrl(archivo);
+  const img = await cargarImagen(original);
   if (archivo.size <= MAX_BYTES_SIN_REDUCIR && original.length <= MAX_CARACTERES) return { dataUrl: original, reducido: false };
 
   // Reducir: la imagen entera dentro de 256 × 256, centrada, con fondo
   // transparente (el círculo del chat es blanco).
-  const img = await cargarImagen(original);
   const ancho = img.naturalWidth || LADO;
   const alto = img.naturalHeight || LADO;
   const escala = Math.min(LADO / ancho, LADO / alto, 1);

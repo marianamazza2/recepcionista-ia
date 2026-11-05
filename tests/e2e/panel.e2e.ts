@@ -1,3 +1,4 @@
+// =============================================================================
 // El panel interno en el navegador (Fase 4 · 4.8) — npm run test:e2e
 //
 // Lo que haría Mariana: entrar, dar de alta un negocio mínimo solo con el
@@ -9,7 +10,9 @@
 // agenda, donde además se carga una cita a mano a una hora fuera de la rejilla.
 //
 // Cuentas con el proveedor falso (sin Supabase Auth). El negocio y la persona
-// del panel se borran al terminar.
+// del panel se borran al terminar. Caso 15: un archivo renombrado no sustituye
+// un logo válido, aunque pese menos de 150 KB.
+// =============================================================================
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -204,6 +207,20 @@ describe('el panel en el navegador', () => {
     expect(b!.logo).toMatch(/^data:image\/(png|webp);base64,/);
     expect(b!.logo!.length).toBeLessThanOrEqual(200_000);
     await panel.screenshot({ path: join(CAPTURAS, '1-ficha.png'), fullPage: true });
+  });
+
+  it('rechaza un archivo pequeño renombrado como imagen y conserva el logo (caso 15)', async () => {
+    const [antes] = await sql<{ logo: string }[]>`select widget_logo as logo from public.businesses where id = ${negocioId}`;
+    const falso = join(CAPTURAS, 'archivo-que-no-es-imagen.png');
+    writeFileSync(falso, '%PDF-1.7 documento de prueba, no una imagen');
+    await seccion('chat').locator('input[type=file]').setInputFiles(falso);
+    await expect.poll(() => seccion('chat').textContent(), { timeout: 5000 }).toContain('El archivo no parece una imagen.');
+    expect(await seccion('chat').locator('img').getAttribute('src')).toBe(antes!.logo);
+    await seccion('chat').getByRole('button', { name: 'Guardar' }).click();
+    await expect.poll(() => seccion('chat').getByRole('status').textContent(), ESPERA).toBe('Guardado.');
+    const [despues] = await sql<{ logo: string }[]>`select widget_logo as logo from public.businesses where id = ${negocioId}`;
+    expect(despues!.logo).toBe(antes!.logo);
+    await seccion('chat').screenshot({ path: join(CAPTURAS, '15-logo-conservado.png') });
   });
 
   it('con lo mínimo completo se activa y da el código del widget', async () => {
