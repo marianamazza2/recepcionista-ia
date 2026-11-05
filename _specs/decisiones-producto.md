@@ -517,6 +517,28 @@ toxina, o cualquier tratamiento que necesita antes una revisión médica):
 Mientras tanto, PA-13 vale tal cual para todo lo demás: si no se puede dar lo
 que piden, el agente dice por qué.
 
+**Cómo tiene que responder (Mariana, 05/11/2026, tras el informe de pruebas):**
+
+- **El local no abre ese día o a esa hora** (un domingo, un festivo, las 3 de
+  la madrugada, el descanso del mediodía): dice que **ese día o a esa hora
+  está cerrado** y ofrece lo más cercano.
+
+  > — Quiero una limpieza el domingo 8.
+  > — Los domingos estamos cerrados. El lunes 9 tengo a las 10:00, 10:30 u
+  >   11:00. ¿Te va alguna?
+
+- **Pide a una profesional que ese día no tiene citas** (no trabaja, está
+  ausente o lo tiene lleno): dice que **no hay citas disponibles con ella ese
+  día** (sin contar el motivo), mira si **otra profesional** tiene huecos ese
+  día y, si los hay, **pregunta** qué prefiere.
+
+  > — Quiero una limpieza con Lucía el miércoles 11.
+  > — El miércoles 11 no hay citas disponibles con Lucía. Ese día sí tengo
+  >   hueco con Marta. ¿Te lo busco con Marta o prefieres que sea con Lucía
+  >   otro día?
+
+  Si nadie tiene huecos ese día, ofrece a esa profesional en otros días.
+
 ⚠️ *Por confirmar:* cuándo se construye PA-13. Propuesta: justo al cerrar la
 Fase 4, antes del portal (no depende del guion).
 
@@ -1107,6 +1129,33 @@ normal para alguien que no va a trabajar más es desactivarla (PI-04).
 *Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
 profesional activa.
 
+### PI-21 · Un festivo o una ausencia encima de citas ya dadas · ✅ decidida el 05/11/2026
+
+Salió en el informe de pruebas (casos 37 y 42). Hoy, si se carga un festivo un
+día que ya tiene citas, las citas siguen en pie y nadie avisa.
+
+**Decisión (Mariana, 05/11/2026):** al cargar un festivo (o una ausencia) y
+haber citas ese día, el panel enseña un **cartel de aviso** con la lista de
+citas afectadas y pregunta:
+
+> Hay 2 citas ese día: Ana · Peeling · 10:00 y Bea · Manicura · 12:00. De
+> todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o
+> las cancelo?
+
+- **Dejarlas:** se guarda el festivo y las citas siguen igual.
+- **Cancelarlas:** se guarda el festivo y se cancelan esas citas.
+
+Lo mismo cuando el cambio se pide por el chat del portal del cliente (PC-10).
+
+⚠️ *Por confirmar:*
+
+- *Si se cancelan, ¿le llega a cada clienta el SMS de cancelación?*
+  Propuesta: **sí**, el mismo que al cancelar desde la agenda.
+- *¿También al cambiar el horario del local o de una profesional* (citas que
+  quedan fuera del horario nuevo)? Propuesta: **sí**, el mismo aviso.
+- *Cuándo se construye.* Propuesta: ya, en la Fase 4, antes del merge del
+  PR #2. Es el panel.
+
 
 ---
 
@@ -1129,6 +1178,7 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-07 | Leer la web del negocio | El chat **no** lee la web de la clínica para proponer servicios. Más adelante | — | ✅ decidida 05/11/2026 |
 | PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
+| PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1226,3 +1276,12 @@ interno.
 
 El cliente no ve ni cambia su tope (PW-04): lo pone Mariana en el panel
 interno según el plan contratado.
+
+### PC-10 · Un festivo encima de citas, por el chat del portal · ✅ decidida el 05/11/2026
+
+Si el cliente pide por el chat de su portal un festivo o una ausencia («el
+lunes 16 cerramos») y ese día hay citas, el chat se lo dice y pregunta, como
+el panel (PI-21):
+
+> El lunes 16 hay 2 citas: Ana a las 10:00 y Bea a las 12:00. De todos modos,
+> ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?
