@@ -476,7 +476,7 @@ intentos o algo falla.
 
 | # | Tema | Decisión / qué hace ahora | Estado |
 |---|---|---|---|
-| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, el tratamiento necesita una visita antes…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código | ✅ decidida 05/11/2026 (el valor de serie y cuándo se construye, ⚠️ por confirmar) |
+| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -491,34 +491,34 @@ el tratamiento, la profesional ni la hora sin decirlo y sin que ella diga que
 sí (PA-01).
 
 > — Quiero toxina el sábado.
-> — Los sábados la clínica no abre. Además, la toxina necesita antes una
->   primera visita con la doctora. ¿Te busco una primera visita el lunes o el
->   martes?
+> — Los sábados la clínica no abre. ¿Te va bien el viernes por la tarde o el
+>   lunes por la mañana?
 
 **Lo garantiza el código, no solo el prompt** (regla de oro): el motor y las
 herramientas devuelven el **motivo** cuando algo no se puede (local cerrado,
-profesional que no trabaja ese día, servicio que necesita otro antes), y la
+profesional que no trabaja ese día, festivo o ausencia), y la
 herramienta de reservar **no reserva un servicio distinto del que se
 confirmó**.
 
-**Ajuste por negocio (por servicio):** si necesita otro servicio antes (por
-ejemplo, la primera visita antes de la toxina) y qué hace el agente si la
-clienta dice que ya lo hizo:
+**Aplazado (Mariana, 05/11/2026): un servicio que necesita otro antes.**
+No se construye ahora: es lógica muy de cada local y salió de un ejemplo de
+la demo, no de un negocio real. Se hará cuando un cliente lo necesite. Para
+entonces queda apuntado cómo lo quiere Mariana en su caso (Clínica Olea: la
+toxina, o cualquier tratamiento que necesita antes una revisión médica):
 
-- **Reservar directamente.** Es lo que quiere Clínica Olea: si la clienta ya
-  hizo la primera visita, se le reserva la toxina.
-- **Pasarlo al equipo** (PA-12), sin reservar.
+1. La clienta pide toxina. El agente le pregunta: *"¿Ya has tenido una
+   revisión médica con nosotros?"*
+2. **Si dice que no:** le explica por qué hace falta y le ofrece cita para la
+   revisión médica.
+3. **Si dice que sí:** lo que cuenta es que tenga una **cita de revisión
+   médica** en el sistema. Ser clienta (tener ficha) no basta: puede haber
+   venido a otro tratamiento que no la pedía.
 
-⚠️ **Por confirmar con Mariana:**
+Mientras tanto, PA-13 vale tal cual para todo lo demás: si no se puede dar lo
+que piden, el agente dice por qué.
 
-- *Valor de serie.* Propuesta: **reservar directamente** (como Olea).
-- *Si ya consta en el sistema.* Propuesta: si la clienta ya tiene una cita
-  pasada y atendida de ese servicio previo (por su teléfono), se reserva sin
-  preguntar.
-- *Cuándo se construye.* Propuesta: justo después de cerrar la Fase 4,
-  mientras Mariana escribe el guion del alta por chat (no depende de él). El
-  ajuste se carga en el panel interno; en el portal (Fase 9) entra como
-  pregunta de la sección "Servicios".
+⚠️ *Por confirmar:* cuándo se construye PA-13. Propuesta: justo al cerrar la
+Fase 4, antes del portal (no depende del guion).
 
 ---
 
@@ -1121,14 +1121,14 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | # | Tema | Decisión | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
 | PC-01 | Dos altas distintas | La **administrativa y legal** (datos fiscales, contacto, contrato con anexo RGPD, plan) la hace Mariana en su panel de clientes MAZZMKT, otro proyecto. La **del agente** la hace el cliente, por chat | — | ✅ decidida 05/11/2026 |
-| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 (la caducidad, ⚠️ por confirmar) |
+| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca a los **7 días**, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-03 | El alta por chat | En vez de formularios, un chat que pregunta **una cosa cada vez**, por secciones (0 bienvenida … 9 cierre). Antes de guardar cada sección enseña un **resumen visual** para confirmar | — | ✅ decidida 05/11/2026 (el guion, pendiente de Mariana) |
 | PC-04 | El portal que se va rellenando | Mientras chatea, el cliente ve su portal completarse. Después, el portal es suyo: lo ve todo y lo cambia **a mano o pidiéndoselo al chat** | — | ✅ decidida 05/11/2026 |
 | PC-05 | La vista de Mariana | Desde el panel interno ve el portal de cada cliente **tal como lo ve él** y lo puede editar. Los datos están en un solo sitio; las tres formas de cambiarlos muestran lo mismo | — | ✅ decidida 05/11/2026 |
-| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario (por ejemplo, un festivo) | Sí | ✅ decidida 05/11/2026 (el detalle, ⚠️ por confirmar) |
+| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario. En un festivo del local, abre la agenda **solo para ella y solo esas horas**. Se carga desde el portal y desde el panel interno | Sí | ✅ decidida 05/11/2026 |
 | PC-07 | Leer la web del negocio | El chat **no** lee la web de la clínica para proponer servicios. Más adelante | — | ✅ decidida 05/11/2026 |
-| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie | — | ⚠️ por confirmar |
-| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ⚠️ por confirmar |
+| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
+| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1159,15 +1159,14 @@ un enlace de invitación ligado a **ese negocio** y al **email de su contacto**:
   desde el panel interno de la Recepcionista, para que el portal no espere a
   ese otro proyecto.
 
-⚠️ *Por confirmar:* cuánto dura el enlace. Propuesta: **7 días**.
+**Caduca a los 7 días** (Mariana, 05/11/2026).
 
 ### PC-03 · El alta por chat · ✅ decidida el 05/11/2026
 
 El cliente abre el enlace y le recibe un chat que pregunta **una cosa cada
 vez**, como una conversación, siguiendo las secciones del panel:
 
-0. Bienvenida · 1. El negocio · 2. Servicios (con PA-13: si necesitan otro
-antes) · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
+0. Bienvenida · 1. El negocio · 2. Servicios · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
 5. Festivos y ausencias · 6. Reservas y cancelación · 7. Preguntas frecuentes ·
 8. El chat en su web · 9. Cierre.
 
@@ -1204,22 +1203,26 @@ puede tener un **turno suelto**: trabaja un día concreto en el que
 normalmente no trabajaría. Ejemplo: Núria trabaja el festivo del 8 de
 diciembre de 10:00 a 14:00.
 
-⚠️ *Por confirmar:* si un turno suelto **abre** la agenda en un festivo del
-local (propuesta: sí, solo para esa profesional y esas horas) y si se puede
-cargar también desde el panel interno (propuesta: sí, en la sección de
-festivos y ausencias).
+**Decidido (Mariana, 05/11/2026):**
+
+- En un **festivo del local**, el turno suelto abre la agenda **solo para esa
+  profesional y solo en esas horas**. El resto del equipo sigue cerrado.
+- Se carga desde el portal y **también desde el panel interno**.
+- Se explica en el manual ("Cómo funciona el Recepcionista"), junto con las
+  demás excepciones del horario, para que se entienda qué manda sobre qué.
 
 ### PC-07 · Leer la web del negocio · ✅ decidida el 05/11/2026
 
 El chat no lee la web de la clínica para proponer los servicios. Se deja para
 más adelante.
 
-### PC-08 · Zona horaria · ⚠️ por confirmar
+### PC-08 · Zona horaria · ✅ decidida el 05/11/2026
 
-*Propuesta:* no se pregunta; todos los negocios, Europe/Madrid de serie. Si
-algún día hay un cliente en Canarias, se cambia desde el panel interno.
+No se pregunta: todos los negocios, Europe/Madrid de serie. Si un negocio
+está en otra zona (por ejemplo, Canarias), la cambia Mariana desde el panel
+interno.
 
-### PC-09 · El tope mensual de la IA · ⚠️ por confirmar
+### PC-09 · El tope mensual de la IA · ✅ decidida el 05/11/2026
 
-*Propuesta:* el cliente no ve ni cambia su tope (PW-04): lo pone Mariana en
-el panel interno según el plan contratado.
+El cliente no ve ni cambia su tope (PW-04): lo pone Mariana en el panel
+interno según el plan contratado.
