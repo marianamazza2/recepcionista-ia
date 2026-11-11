@@ -23,6 +23,16 @@ import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
 
 type Props = { negocio: Negocio; poner: (n: Negocio) => void };
 
+/**
+ * PI-22: tras guardar una sección que no se recarga sola (datos, reglas,
+ * chat), su versión pasa a ser la nueva; luego se pone la ficha. Si otra
+ * persona la cambió antes, la API responde 409 con el aviso y no se guarda.
+ */
+function guardado(setVersion: (v: string) => void, de: (n: Negocio) => string, poner: (n: Negocio) => void, r: Negocio): void {
+  setVersion(de(r));
+  poner(r);
+}
+
 export function Ficha(p: Props) {
   return (
     <div className="grid gap-6 lg:grid-cols-[180px_1fr]">
@@ -246,11 +256,16 @@ function Datos({ negocio: n, poner }: Props) {
     tonoDeVoz: n.tonoDeVoz ?? '',
     mensajeBienvenida: n.mensajeBienvenida ?? '',
   });
+  // PI-22: la versión con la que se abrió esta sección (el formulario no se recarga solo).
+  const [version, setVersion] = useState(n.versiones.datos);
   const a = useAccion();
   const c = (k: keyof typeof f) => ({ value: f[k], onChange: (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value }) });
   const guardar = () =>
     a.hacer(async () =>
-      poner(
+      guardado(
+        setVersion,
+        (r) => r.versiones.datos,
+        poner,
         await api('PUT', `negocios/${n.id}/datos`, {
           nombre: f.nombre,
           sector: nada(f.sector),
@@ -259,6 +274,7 @@ function Datos({ negocio: n, poner }: Props) {
           telefonoHumano: nada(f.telefonoHumano),
           tonoDeVoz: nada(f.tonoDeVoz),
           mensajeBienvenida: nada(f.mensajeBienvenida),
+          version,
         }),
       ),
     );
@@ -315,6 +331,8 @@ function FilaServicio({ negocio: n, poner, servicio: s }: Props & { servicio: Se
       precio: f.precio === '' ? null : Number(String(f.precio).replace(',', '.')),
       precioVisible: f.precioVisible,
       activo,
+      // PI-22: la fila se recarga con cada ficha nueva, así que su huella es la de ahora.
+      ...(s ? { version: n.versiones.servicios[s.id] } : {}),
     };
     void a.hacer(async () => {
       poner(await api(s ? 'PUT' : 'POST', s ?`negocios/${n.id}/servicios/${s.id}` : `negocios/${n.id}/servicios`, body));
@@ -374,7 +392,7 @@ function FilaProfesional({ negocio: n, poner, profesional: p }: Props & { profes
   const guardar = (activo = p?.activo ?? true) => {
     if (p && p.activo && !activo && p.citasFuturas > 0 && !confirm(`${p.nombre} tiene ${p.citasFuturas} cita${p.citasFuturas > 1 ? 's' : ''} futura${p.citasFuturas > 1 ? 's' : ''}. Siguen en pie, pero el agente dejará de darle citas. ¿Desactivar?`)) return;
     void a.hacer(async () => {
-      poner(await api(p ? 'PUT' : 'POST', p ? `negocios/${n.id}/profesionales/${p.id}` : `negocios/${n.id}/profesionales`, { nombre: f.nombre, activo, servicioIds: f.servicioIds }));
+      poner(await api(p ? 'PUT' : 'POST', p ? `negocios/${n.id}/profesionales/${p.id}` : `negocios/${n.id}/profesionales`, { nombre: f.nombre, activo, servicioIds: f.servicioIds, ...(p ? { version: n.versiones.profesionales[p.id] } : {}) }));
       if (!p) setF({ nombre: '', servicioIds: [] });
     }, p ? 'Guardado.' : 'Profesional añadida.');
   };
@@ -481,7 +499,7 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
 
   const pc = usePreguntarCitas();
   const enviar = async (citas?: DecisionCitas) =>
-    poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}), ...(citas ? { citas } : {}) }));
+    poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}), ...(citas ? { citas } : {}), version: n.versiones.horario[staffId ?? 'local'] }));
   const guardar = () => {
     if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${listaFuera}. ¿Guardar igual?`)) return;
     void a.hacer(() => pc.intentar(enviar));
@@ -645,6 +663,7 @@ function Festivos({ negocio: n, poner }: Props) {
 
 function Reglas({ negocio: n, poner }: Props) {
   const [f, setF] = useState({ ...n.reglas, politicaCancelacion: n.reglas.politicaCancelacion ?? '' });
+  const [version, setVersion] = useState(n.versiones.reglas); // PI-22
   const a = useAccion();
   return (
     <Bloque id="reglas" titulo="Reservas y cancelación">
@@ -672,7 +691,7 @@ function Reglas({ negocio: n, poner }: Props) {
           <Campo etiqueta="Política de cancelación (el agente la explica tal cual)"><textarea className="campo" rows={2} value={f.politicaCancelacion} onChange={(e) => setF({ ...f, politicaCancelacion: e.target.value })} /></Campo>
         </div>
       </div>
-      <button type="button" className="boton mt-4" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api('PUT', `negocios/${n.id}/reglas`, { ...f, politicaCancelacion: nada(f.politicaCancelacion) })))}>Guardar</button>
+      <button type="button" className="boton mt-4" disabled={a.ocupado} onClick={() => void a.hacer(async () => guardado(setVersion, (r) => r.versiones.reglas, poner, await api('PUT', `negocios/${n.id}/reglas`, { ...f, politicaCancelacion: nada(f.politicaCancelacion), version })))}>Guardar</button>
       <Aviso error={a.error} ok={a.ok} />
     </Bloque>
   );
@@ -710,7 +729,7 @@ function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string |
       </div>
       <div className="mt-2 flex justify-end gap-2">
         {id ? <button type="button" className="boton-peligro" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api('DELETE', `negocios/${n.id}/preguntas/${id}`)), 'Borrada.')}>Borrar</button> : null}
-        <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api(id ? 'PUT' : 'POST', id ? `negocios/${n.id}/preguntas/${id}` : `negocios/${n.id}/preguntas`, f)), id ? 'Guardada.' : 'Añadida.')}>{id ? 'Guardar' : 'Añadir'}</button>
+        <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api(id ? 'PUT' : 'POST', id ? `negocios/${n.id}/preguntas/${id}` : `negocios/${n.id}/preguntas`, { ...f, ...(id ? { version: n.versiones.preguntas[id] } : {}) })), id ? 'Guardada.' : 'Añadida.')}>{id ? 'Guardar' : 'Añadir'}</button>
       </div>
       <Aviso error={a.error} ok={a.ok} />
     </div>
@@ -724,6 +743,7 @@ function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string |
 function Chat({ negocio: n, poner }: Props) {
   const [f, setF] = useState({ dominios: n.chat.dominios.join('\n'), color: n.chat.color, logo: n.chat.logo, privacidadUrl: n.chat.privacidadUrl ?? '', topeMensualUsd: n.chat.topeMensualUsd });
   const [avisoLogo, setAvisoLogo] = useState<string | null>(null);
+  const [version, setVersion] = useState(n.versiones.chat); // PI-22
   const a = useAccion();
   const subir = async (archivo: File | undefined) => {
     setAvisoLogo(null);
@@ -774,13 +794,17 @@ function Chat({ negocio: n, poner }: Props) {
         disabled={a.ocupado}
         onClick={() =>
           void a.hacer(async () =>
-            poner(
+            guardado(
+              setVersion,
+              (r) => r.versiones.chat,
+              poner,
               await api('PUT', `negocios/${n.id}/chat`, {
                 dominios: f.dominios.split(/[\n,]+/).map((d) => d.trim()).filter(Boolean),
                 color: f.color.trim(),
                 logo: f.logo,
                 privacidadUrl: nada(f.privacidadUrl),
                 topeMensualUsd: f.topeMensualUsd,
+                version,
               }),
             ),
           )

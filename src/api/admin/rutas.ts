@@ -57,6 +57,7 @@ import { json, leerJson, PeticionNoValida } from '../http.js';
 import type { AuthPanel } from './auth.js';
 import { Entrada, horaDeTramo, normalizarDominio, UUID } from './entrada.js';
 import { aErrorPanel, ErrorPanel, TEXTO_LO_QUE_FALTA } from './errores.js';
+import { comprobarVersion, versiones } from './versiones.js';
 
 /** El logo viaja en el cuerpo (hasta 200.000 caracteres): el panel admite más que el widget. */
 const MAX_CUERPO_PANEL = 512 * 1024;
@@ -101,8 +102,14 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       festivos: n.festivos.map((f) => ({ ...f, ...festivoLocal(f.desde, f.hasta, n.timezone) })),
       loQueFalta: n.loQueFalta.map((codigo) => ({ codigo, texto: TEXTO_LO_QUE_FALTA[codigo] })),
       widgetJs: `${deps.baseUrl.replace(/\/+$/, '')}/widget.js`,
+      // PI-22: la huella de cada sección, para que la segunda que guarde no pise a la primera.
+      versiones: versiones(n),
     });
   };
+
+  /** PI-22: la versión de ahora de una sección (404 si el negocio no existe). */
+  const versionDe = async (id: string, seccion: (v: ReturnType<typeof versiones>) => string | undefined) =>
+    seccion(versiones(await negocio(id)));
 
   const rutas: Ruta[] = [
     { metodo: 'GET', patron: /^yo$/, handler: async ({ persona }) => json({ email: persona.email }) },
@@ -135,6 +142,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       patron: new RegExp(`^negocios/${ID}/datos$`),
       handler: async ({ req, params }) => {
         const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.datos));
         await guardarDatos(deps.sql, params[0]!, {
           nombre: e.texto('nombre', 'el nombre del negocio', 120),
           sector: e.textoOpcional('sector', 'el sector', 120),
@@ -152,6 +160,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       patron: new RegExp(`^negocios/${ID}/reglas$`),
       handler: async ({ req, params }) => {
         const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.reglas));
         await guardarReglas(deps.sql, params[0]!, {
           antelacionMinHoras: e.entero('antelacionMinHoras', 'la antelación mínima', 0, 720),
           intervaloHuecosMin: e.entero('intervaloHuecosMin', 'cada cuánto se ofrecen horarios', 1, 240),
@@ -169,6 +178,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       patron: new RegExp(`^negocios/${ID}/chat$`),
       handler: async ({ req, params }) => {
         const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.chat));
         const crudos = e.valor('dominios');
         if (!Array.isArray(crudos) || crudos.length > 20 || crudos.some((d) => typeof d !== 'string')) throw new ErrorPanel(400, 'Los dominios tienen que ser una lista (como mucho 20).');
         const dominios: string[] = [];
@@ -221,7 +231,9 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       metodo: 'PUT',
       patron: new RegExp(`^negocios/${ID}/servicios/${ID}$`),
       handler: async ({ req, params }) => {
-        await guardarServicio(deps.sql, params[0]!, params[1]!, servicio(await cuerpo(req)));
+        const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.servicios[params[1]!]));
+        await guardarServicio(deps.sql, params[0]!, params[1]!, servicio(e));
         return detalle(params[0]!);
       },
     },
@@ -238,7 +250,9 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       metodo: 'PUT',
       patron: new RegExp(`^negocios/${ID}/profesionales/${ID}$`),
       handler: async ({ req, params }) => {
-        await guardarProfesional(deps.sql, params[0]!, params[1]!, profesional(await cuerpo(req)));
+        const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.profesionales[params[1]!]));
+        await guardarProfesional(deps.sql, params[0]!, params[1]!, profesional(e));
         return detalle(params[0]!);
       },
     },
@@ -251,6 +265,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
         await negocio(params[0]!);
         const e = await cuerpo(req);
         const staffId = e.uuidOpcional('staffId', 'la profesional');
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.horario[staffId ?? 'local']));
         const tramos = e.lista('tramos', 'los tramos', 42, (t) => ({
           weekday: t.entero('weekday', 'el día de la semana', 0, 6),
           apertura: t.hora('apertura', 'la apertura'),
@@ -322,7 +337,9 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       metodo: 'PUT',
       patron: new RegExp(`^negocios/${ID}/preguntas/${ID}$`),
       handler: async ({ req, params }) => {
-        await guardarPregunta(deps.sql, params[0]!, params[1]!, pregunta(await cuerpo(req)));
+        const e = await cuerpo(req);
+        comprobarVersion(e, await versionDe(params[0]!, (v) => v.preguntas[params[1]!]));
+        await guardarPregunta(deps.sql, params[0]!, params[1]!, pregunta(e));
         return detalle(params[0]!);
       },
     },

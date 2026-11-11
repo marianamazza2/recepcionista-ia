@@ -1,7 +1,7 @@
 // =============================================================================
 // Escenarios con el modelo real (Fase 2 · 2.7)
 // =============================================================================
-//   npm run agent:eval                 # los 13 escenarios
+//   npm run agent:eval                 # los 15 escenarios y el juez de tono
 //   npm run agent:eval -- --solo 3     # solo el escenario 3
 //   npm run agent:eval -- --ver        # además, la conversación entera
 //
@@ -15,9 +15,15 @@
 // Las comprobaciones de texto son heurísticas a propósito: detectan lo grave
 // (un precio inventado, una reserva que no debía) y dejan la conversación a la
 // vista con --ver para leerla.
+//
+// Juez de tono (PA-15, 11/11/2026): al final, un modelo barato (Haiku) lee
+// cada respuesta del agente contra las reglas de estilo aprobadas por
+// Mariana y da una línea ("tono: 14 de 15 bien") más las que fallan. No
+// cambia el resultado de los escenarios: es un aviso para leer, no un test.
 // =============================================================================
 
 import { existsSync } from 'node:fs';
+import Anthropic from '@anthropic-ai/sdk';
 import { parseArgs } from 'node:util';
 
 import type { Sql } from 'postgres';
@@ -186,7 +192,8 @@ function frasesAfirmativas(texto: string): string[] {
 const corto = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 160);
 
 // -----------------------------------------------------------------------------
-// Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12), el 12 (PR-08) y el 13 (PI-08, Fase 4)
+// Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12), el 12 (PR-08), el 13 (PI-08, Fase 4)
+// y el 14 y el 15 (PA-13, los dos fallos del informe de pruebas del 05/11)
 // -----------------------------------------------------------------------------
 
 const ESCENARIOS: Escenario[] = [
@@ -325,7 +332,7 @@ const ESCENARIOS: Escenario[] = [
       const charla = await conversar(e, c.id, ['[eval] Prefiero hablar con una persona, por favor.']);
       const n = await escalaciones(e, charla.conversationId);
       const [conv] = await e.sql<{ estado: string }[]>`select estado from public.conversations where id = ${charla.conversationId}`;
-      const daTelefono = !!e.config.telefonoHumano && charla.texto.replace(/\s/g, '').includes(e.config.telefonoHumano);
+      const daTelefono = !!e.config.telefonoHumano && charla.texto.replace(/\s/g, '').includes(e.config.telefonoHumano.replace(/^\+34/, '')) // PA-15: 910 000 000;
       return {
         ok: n === 1 && conv?.estado === 'escalada' && daTelefono,
         detalle: `escalaciones: ${n}; estado: ${conv?.estado}; da el teléfono: ${daTelefono}`,
@@ -467,9 +474,118 @@ const ESCENARIOS: Escenario[] = [
       return { ok: responde && !deriva, detalle: `responde con la pregunta frecuente: ${responde}; deriva: ${deriva}`, charla };
     },
   },
+  {
+    titulo: 'Pide un domingo (el local cierra) → primero dice que los domingos está cerrado y después ofrece otro día (PA-13)',
+    async correr(e) {
+      const domingo = await proximo(e, 0);
+      const charla = await conversar(e, null, [`[eval] Hola, quiero una limpieza facial profunda el ${comoLoDiria(domingo)} por la mañana.`]);
+      const primera = charla.respuestas[0]?.texto ?? '';
+      const diaPedido = charla.respuestas[0]?.herramientas.some((h) => (h.input as Record<string, unknown>).dia_pedido === domingo) ?? false;
+      // Lo dice ANTES de ofrecer horas: en el texto que va antes de la primera hora de la lista.
+      const antesDeLaLista = primera.split(/\n\s*-\s*\d/)[0] ?? primera;
+      const diceCerrado = /domingos?[^.?!]*cerrad|cerrad[^.?!]*domingos?/i.test(antesDeLaLista);
+      return {
+        ok: diceCerrado && diaPedido,
+        detalle: `pasa el día pedido: ${diaPedido}; empieza diciendo que el domingo está cerrado: ${diceCerrado}`,
+        charla,
+      };
+    },
+  },
+  {
+    titulo: 'Pide a Lucía un día que no tiene citas → "no hay citas disponibles con Lucía", sin el motivo, y pregunta si con Marta (PA-13)',
+    async correr(e) {
+      const miercoles = await proximo(e, 3);
+      const lucia = e.config.profesionales.find((p) => p.nombre === 'Lucía')!;
+      await e.sql`
+        insert into public.time_off (business_id, staff_id, desde, hasta, motivo)
+        values (${e.config.id}, ${lucia.id}, ${localToUtc(miercoles, '00:00', e.config.timezone)},
+                ${localToUtc(sumarDias(miercoles, 1), '00:00', e.config.timezone)}, '[eval] vacaciones de prueba')`;
+      try {
+        const charla = await conversar(e, null, [`[eval] Hola, quiero una limpieza facial profunda con Lucía el ${comoLoDiria(miercoles)} a las 11:00.`]);
+        const primera = charla.respuestas[0]?.texto ?? '';
+        const noHay = /no (hay|tengo|quedan)[^.?!]*(citas|hueco|horarios)[^.?!]*Luc[ií]a/i.test(primera);
+        const ofreceMarta = /Marta/.test(primera) && /\?/.test(primera);
+        const sinMotivo = !/vacaciones|no trabaja|libre|ausen/i.test(primera);
+        const id = await customerDe(e, charla.conversationId);
+        const citas = id ? await citasDe(e, id) : [];
+        return {
+          ok: noHay && ofreceMarta && sinMotivo && citas.length === 0,
+          detalle: `dice que no hay citas con Lucía: ${noHay}; pregunta por Marta: ${ofreceMarta}; sin el motivo: ${sinMotivo}; citas: ${citas.length}`,
+          charla,
+        };
+      } finally {
+        await e.sql`delete from public.time_off where business_id = ${e.config.id} and motivo = '[eval] vacaciones de prueba'`;
+      }
+    },
+  },
 ];
 
 // -----------------------------------------------------------------------------
+// Juez de tono (PA-15)
+// -----------------------------------------------------------------------------
+
+const MODELO_JUEZ = 'claude-haiku-5-5';
+
+const REGLAS_DE_TONO = `Eres revisora de estilo de una recepcionista virtual de un centro de estética en España. Te paso respuestas que escribió a clientas por chat. Para cada una, di si cumple estas reglas (aprobadas por la dueña):
+1. Frases completas y naturales, con conectores, como una persona de recepción cercana; no suena a robot ni cortada. Una respuesta de una sola línea seca ("Queda anotado para el equipo") falla.
+2. Si no puede dar algo, primero dice por qué y después la alternativa.
+3. Si no sabe algo, lo dice con naturalidad, dice qué hará y sigue ofreciendo ayuda.
+4. Suele terminar con una pregunta (mejor concreta). Una confirmación final de cita sin pregunta está bien.
+5. El teléfono escrito como se dice (910 000 789), nunca +34910000789.
+6. Como mucho un emoji, y solo en un saludo.
+7. De tú, español de España.
+Las listas de horas, una por línea, son correctas. Sé razonable: falla solo lo que claramente incumple una regla.`;
+
+interface Veredicto {
+  n: number;
+  bien: boolean;
+  regla: string;
+}
+
+async function juzgarTono(textos: { escenario: number; texto: string }[]): Promise<{ bien: number; fallos: { escenario: number; texto: string; regla: string }[]; usd: number }> {
+  const client = new Anthropic({ timeout: 60_000, maxRetries: 2 });
+  const lista = textos.map((t, i) => `[${i + 1}]\n${t.texto}`).join('\n\n');
+  const r = await client.messages.create({
+    model: MODELO_JUEZ,
+    max_tokens: 4000,
+    output_config: {
+      effort: 'low',
+      format: {
+        type: 'json_schema',
+        schema: {
+          type: 'object',
+          properties: {
+            veredictos: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  n: { type: 'integer' },
+                  bien: { type: 'boolean' },
+                  regla: { type: 'string', description: 'Si falla: qué regla y por qué, en una frase. Si está bien, vacío.' },
+                },
+                required: ['n', 'bien', 'regla'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['veredictos'],
+          additionalProperties: false,
+        },
+      },
+    },
+    system: REGLAS_DE_TONO,
+    messages: [{ role: 'user', content: `Respuestas:\n\n${lista}` }],
+  });
+  const bloque = r.content.find((b) => b.type === 'text');
+  const { veredictos } = JSON.parse(bloque && bloque.type === 'text' ? bloque.text : '{"veredictos":[]}') as { veredictos: Veredicto[] };
+  const fallos = veredictos
+    .filter((v) => !v.bien && textos[v.n - 1])
+    .map((v) => ({ escenario: textos[v.n - 1]!.escenario, texto: textos[v.n - 1]!.texto, regla: v.regla }));
+  // Haiku 5.5: 0,10 US$ / 0,50 US$ por millón de tokens de entrada / salida.
+  const usd = (r.usage.input_tokens * 0.1 + r.usage.output_tokens * 0.5) / 1e6;
+  return { bien: textos.length - fallos.length, fallos, usd };
+}
 
 async function main(): Promise<number> {
   if (existsSync('.env')) process.loadEnvFile('.env');
@@ -489,6 +605,7 @@ async function main(): Promise<number> {
     await limpiar(sql, config.id);
     const elegidos = values.solo ? [Number(values.solo)] : ESCENARIOS.map((_, i) => i + 1);
     let fallos = 0;
+    const paraElJuez: { escenario: number; texto: string }[] = [];
     for (const n of elegidos) {
       const esc = ESCENARIOS[n - 1];
       if (!esc) {
@@ -500,6 +617,7 @@ async function main(): Promise<number> {
       try {
         const r = await esc.correr(e);
         if (!r.ok) fallos++;
+        for (const x of r.charla.respuestas) if (x.texto.trim()) paraElJuez.push({ escenario: n, texto: x.texto });
         const llamadas = r.charla.respuestas.reduce((a, x) => a + x.llamadas, 0);
         console.log(
           `   ${r.ok ? `${VERDE}OK${NORMAL}` : `${ROJO}FALLA${NORMAL}`}  ${r.detalle} ${GRIS}(${llamadas} llamadas, ${((Date.now() - t0) / 1000).toFixed(1)} s)${NORMAL}`,
@@ -515,7 +633,21 @@ async function main(): Promise<number> {
     }
     await limpiar(sql, config.id);
 
-    const { usd } = costeTotal(e.usage);
+    let usdJuez = 0;
+    if (paraElJuez.length > 0) {
+      try {
+        const t = await juzgarTono(paraElJuez);
+        usdJuez = t.usd;
+        console.log(`Tono (PA-15): ${t.bien} de ${paraElJuez.length} respuestas bien ${GRIS}(juez ${MODELO_JUEZ})${NORMAL}`);
+        for (const f of t.fallos) console.log(`   ${ROJO}✗${NORMAL} escenario ${f.escenario}: ${f.regla}\n     ${GRIS}${corto(f.texto)}${NORMAL}`);
+        console.log();
+      } catch (err) {
+        console.log(`Tono (PA-15): no se pudo revisar (${err instanceof Error ? err.message : String(err)})\n`);
+      }
+    }
+
+    const { usd: usdAgente } = costeTotal(e.usage);
+    const usd = usdAgente + usdJuez;
     const u = Object.values(e.usage)[0];
     console.log(
       `RESULTADO: ${elegidos.length - fallos}/${elegidos.length} OK · coste total aprox. ${formatoUsd(usd)}` +

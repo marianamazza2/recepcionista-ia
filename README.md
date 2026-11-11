@@ -73,7 +73,7 @@ src/
 ├── dev/                 npm run dev: la demo y el panel en local
 └── cli/
     ├── chat.ts          npm run chat: conversar por la Terminal
-    ├── eval.ts          npm run agent:eval: los 13 escenarios con el modelo real
+    ├── eval.ts          npm run agent:eval: los 15 escenarios con el modelo real y el juez de tono
     ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
     ├── panel-cuenta.ts  npm run panel:cuenta: crear una cuenta del panel
     └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
@@ -216,7 +216,7 @@ psql "$DATABASE_URL" -c "select c.nombre, s.nombre as profesional,
 ### Los escenarios con el modelo real
 
 ```bash
-npm run agent:eval                # los 13 escenarios (≈ 0,40 US$ con Opus 5)
+npm run agent:eval                # los 15 escenarios y el juez de tono (≈ 0,45 US$ con Opus 5)
 npm run agent:eval -- --solo 3    # solo uno
 npm run agent:eval -- --ver       # con la conversación entera
 ```
@@ -562,7 +562,6 @@ tests siguen en Aurora.
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
 | Publicar el panel en Vercel | cuando Mariana lo confirme (PI-02) |
-| PA-13: el agente explica lo que no puede dar, garantizado por el código | después de la 4 (⚠️ cuándo, por confirmar) |
 | Portal del cliente y alta por chat, con enlace de invitación (PC-01 a PC-09) | 9, adelantada: va después de la 4; espera el guion de Mariana |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
@@ -591,8 +590,14 @@ más los cinco de Mariana. El informe con capturas está en Research Desk
   el email puesto.
 - **Consumo:** el campo "Mes" enseña el mes de la tabla en vez de verse vacío.
 
-Lo que espera a PA-13: el agente no explica que un día está cerrado o que la
-profesional no trabaja ese día (lo garantiza el motor, pero no lo dice).
+**PA-13, PA-15 y PI-22 (11/11/2026):** el agente explica primero por qué no
+puede dar un día (local cerrado, cerrado a esa hora, o no hay citas con esa
+profesional, con quién sí hay) a partir del `dia_pedido` que calcula
+`consultar_disponibilidad`; se expresa con las reglas y ejemplos aprobados
+(PA-15) y escribe el teléfono como se dice; y en el panel, si dos personas
+guardan la misma sección, gana la primera (PI-22). `agent:eval` suma los
+escenarios 14 y 15 y un juez de tono. Falta pasarlo con el modelo real: el
+11/11 la cuenta de Anthropic se quedó sin crédito.
 
 **PI-21 (05/11/2026):** un festivo, una ausencia o un horario nuevo que deja
 fuera citas ya dadas no se guarda sin preguntar: el panel enseña las citas y

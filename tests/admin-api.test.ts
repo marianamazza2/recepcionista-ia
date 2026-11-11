@@ -415,6 +415,47 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     void dentro;
   });
 
+  it('PI-22: en la misma sección gana la primera que guarda; la segunda no pisa y avisa; otra sección sí se guarda', async () => {
+    const n = await alta('Dos Pestanas Test');
+    const h = api();
+    const ficha = (await pedir(h, 'GET', `negocios/${n.id}`)).body;
+    const datos = { nombre: ficha.nombre, sector: ficha.sector, timezone: ficha.timezone, direccion: ficha.direccion, telefonoHumano: ficha.telefonoHumano, tonoDeVoz: ficha.tonoDeVoz };
+    expect(typeof ficha.versiones.datos).toBe('string');
+
+    // Pestaña A guarda primero, con la versión con la que abrió.
+    const a = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...datos, mensajeBienvenida: 'Primera', version: ficha.versiones.datos });
+    expect(a.status).toBe(200);
+    expect(a.body.versiones.datos).not.toBe(ficha.versiones.datos);
+
+    // Pestaña B, abierta antes, intenta guardar la misma sección: no se guarda.
+    const b = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...datos, mensajeBienvenida: 'Segunda', version: ficha.versiones.datos });
+    expect(b.status).toBe(409);
+    expect(b.body.error).toBe('cambiado_por_otra_persona');
+    expect(b.body.mensaje).toBe('Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas. No se ha guardado: recarga para ver lo último.');
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.mensajeBienvenida).toBe('Primera');
+
+    // Pero otra sección (las reglas) desde la pestaña B se guarda.
+    const r = await pedir(h, 'PUT', `negocios/${n.id}/reglas`, { ...ficha.reglas, antelacionMinHoras: 5, version: ficha.versiones.reglas });
+    expect(r.status).toBe(200);
+    expect(r.body.reglas.antelacionMinHoras).toBe(5);
+
+    // Igual por servicio, profesional y horario (cada uno su huella).
+    const sv = ficha.versiones.servicios[n.servicioId];
+    const servicio = ficha.servicios[0];
+    const cuerpoServicio = { nombre: servicio.nombre, descripcion: servicio.descripcion, duracionMin: servicio.duracionMin, bufferMin: servicio.bufferMin, precio: servicio.precio, precioVisible: servicio.precioVisible, activo: true };
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/servicios/${n.servicioId}`, { ...cuerpoServicio, precio: 25, version: sv })).status).toBe(200);
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/servicios/${n.servicioId}`, { ...cuerpoServicio, precio: 30, version: sv })).status).toBe(409);
+    const hv = ficha.versiones.horario.local;
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA.slice(0, 4), version: hv, citas: 'dejar' })).status).toBe(200);
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA, version: hv, citas: 'dejar' })).status).toBe(409);
+
+    // Una cita nueva no cambia la huella del servicio (citasFuturas no cuenta).
+    const antes = (await pedir(h, 'GET', `negocios/${n.id}`)).body.versiones.servicios[n.servicioId];
+    const c = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '11:00', telefono: '+34999000222', nombre: 'Clienta Huella' });
+    expect(c.status).toBe(201);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.versiones.servicios[n.servicioId]).toBe(antes);
+  });
+
   it('horario: un tramo que cierra antes de abrir se rechaza y no cambia nada', async () => {
     const n = await alta('Horario Test');
     const r = await pedir(api(), 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: [{ weekday: 1, apertura: '10:00', cierre: '20:00' }, { weekday: 2, apertura: '14:00', cierre: '10:00' }] });

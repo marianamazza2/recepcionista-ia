@@ -4,10 +4,18 @@
 // la semana, el local cierra todo el rango (festivo, vacaciones: time_off sin
 // profesional) o la profesional pedida no está. Nunca el motivo escrito en el
 // festivo: puede ser interno ("vacaciones de Lucía").
+//
+// PA-13 (05/11/2026, construida el 11/11): con dia_pedido, el día exacto que
+// nombró la clienta, la herramienta explica SIEMPRE ese día, aunque el modelo
+// busque en otro rango. En las pruebas del 05/11 el modelo se saltaba el
+// domingo o el miércoles de Lucía al buscar y nunca decía por qué. El motivo
+// sale del código: local cerrado ese día (de la semana o festivo), cerrado a
+// esa hora, o no hay citas con esa profesional ese día (sin contar por qué),
+// con los huecos que otras profesionales tienen ese mismo día.
 
 import { CustomerBusyError } from '../../adapters/booking/errors.js';
 import type { BusinessConfig } from '../../config/business.js';
-import { diasEntre, isFecha, isHora, localToUtc, sumarDias, weekdayDe } from '../time.js';
+import { DIAS_SEMANA, diasEntre, fechaLarga, isFecha, isHora, localToUtc, minutosDelDia, sumarDias, weekdayDe } from '../time.js';
 import {
   HUECOS_POR_RESPUESTA,
   alternativas,
@@ -25,7 +33,7 @@ import {
   servicioDesconocido,
   texto,
 } from './common.js';
-import type { AgentTool } from './types.js';
+import type { AgentTool, HuecoOfrecido, ToolContext } from './types.js';
 
 /** Rango máximo de una consulta. El motor admite 31 días; al chat le sobra con dos semanas. */
 const MAX_DIAS = 14;
@@ -41,7 +49,8 @@ export const consultarDisponibilidad: AgentTool = {
         'Busca los horarios libres de un servicio entre dos fechas (como mucho 14 días), opcionalmente con una profesional. ' +
         `Devuelve como mucho ${HUECOS_POR_RESPUESTA} horarios: si das hora_preferida, los más cercanos a esa hora; si no, los primeros. ` +
         'Cada horario trae día, hora y qué profesionales están libres. Si no hay ninguno, devuelve los más cercanos fuera del rango. ' +
-        'Es la ÚNICA fuente de horarios: nunca ofrezcas una hora que no venga de aquí. Fechas y horas en hora local del negocio.',
+        'Es la ÚNICA fuente de horarios: nunca ofrezcas una hora que no venga de aquí. Fechas y horas en hora local del negocio. ' +
+        'Si la clienta nombró un día, pásalo en dia_pedido: si ese día no se puede, dia_pedido.indicacion dice qué explicarle primero.',
       strict: true,
       input_schema: {
         type: 'object',
@@ -50,6 +59,12 @@ export const consultarDisponibilidad: AgentTool = {
           fecha_desde: { type: 'string', description: 'Primer día, formato AAAA-MM-DD' },
           fecha_hasta: { type: 'string', description: 'Último día, incluido, formato AAAA-MM-DD. Si se omite, solo fecha_desde' },
           hora_preferida: { type: 'string', description: 'Hora que pidió la clienta, formato HH:MM (24 h), si pidió una' },
+          dia_pedido: {
+            type: 'string',
+            description:
+              'El día exacto que nombró la clienta (AAAA-MM-DD), si nombró uno. Pásalo SIEMPRE, aunque sepas que ese día está cerrado ' +
+              'o que la profesional no trabaja: la respuesta trae en dia_pedido qué pasa ese día y qué decirle (PA-13).',
+          },
           profesional: {
             type: 'string',
             enum: config.profesionales.map((p) => p.nombre),
@@ -72,7 +87,8 @@ export const consultarDisponibilidad: AgentTool = {
     let desde = texto(input, 'fecha_desde') ?? '';
     const hasta = texto(input, 'fecha_hasta') ?? desde;
     const hora = texto(input, 'hora_preferida');
-    if (!isFecha(desde) || !isFecha(hasta)) {
+    const diaPedido = texto(input, 'dia_pedido');
+    if (!isFecha(desde) || !isFecha(hasta) || (diaPedido && !isFecha(diaPedido))) {
       return fallo({ motivo: 'fecha_no_valida', mensaje: 'Las fechas tienen que ir en formato AAAA-MM-DD.' });
     }
     if (hora && !isHora(hora)) {
@@ -123,12 +139,17 @@ export const consultarDisponibilidad: AgentTool = {
     }
     const todos = await huecos(ctx, { servicioId: servicio.id, staffId: profesional?.id, desde, hasta, cerca, excluir });
 
+    const explicacion =
+      diaPedido && diaPedido >= hoy
+        ? await explicarDiaPedido(ctx, { servicioId: servicio.id, profesional, dia: diaPedido, hora, excluir })
+        : undefined;
     const base = {
       servicio: servicio.nombre,
       duracion_min: servicio.duracionMin,
       ...(profesional ? { profesional: profesional.nombre } : {}),
       desde,
       hasta,
+      ...(explicacion ? { dia_pedido: explicacion } : {}),
     };
 
     if (todos.length > 0) {
@@ -159,6 +180,122 @@ export const consultarDisponibilidad: AgentTool = {
     });
   },
 };
+
+type Profesional = BusinessConfig['profesionales'][number];
+
+interface DiaPedido {
+  fecha: string;
+  dia: string;
+  se_puede: boolean;
+  motivo?: string;
+  horario_del_local_ese_dia?: string;
+  huecos_ese_dia?: HuecoOfrecido[];
+  con_otras_profesionales_ese_dia?: HuecoOfrecido[];
+  indicacion?: string;
+}
+
+/** "los domingos", "los lunes". */
+function losDias(fecha: string): string {
+  const d: string = DIAS_SEMANA[weekdayDe(fecha)]!;
+  return `los ${d.endsWith('s') ? d : `${d}s`}`;
+}
+
+/** "10:00 a 14:00 y 16:00 a 20:00". */
+function tramosEnTexto(tramos: { apertura: string; cierre: string }[]): string {
+  return tramos.map((t) => `${t.apertura} a ${t.cierre}`).join(' y ');
+}
+
+/**
+ * PA-13: qué pasa el día que nombró la clienta y qué decirle primero. Lo
+ * calcula el código para que el agente no lo esquive ni lo invente. Nunca el
+ * motivo de una ausencia (puede ser interno): con profesional, solo "no hay
+ * citas disponibles con ella ese día".
+ */
+async function explicarDiaPedido(
+  ctx: ToolContext,
+  o: { servicioId: string; profesional: Profesional | undefined; dia: string; hora: string | undefined; excluir: Awaited<ReturnType<typeof ocupadoDeLaClienta>> },
+): Promise<DiaPedido> {
+  const dia = fechaLarga(o.dia);
+  const base = { fecha: o.dia, dia };
+  const tramos = ctx.config.horario.filter((t) => t.weekday === weekdayDe(o.dia));
+  if (tramos.length === 0) {
+    return {
+      ...base,
+      se_puede: false,
+      motivo: 'el_local_no_abre_ese_dia',
+      indicacion: `Empieza diciéndole que ${losDias(o.dia)} estáis cerrados, así que ese día no puedes darle cita. Después ofrécele lo más cercano.`,
+    };
+  }
+  if ((await cierreQueCubre(ctx, o.dia, o.dia, null)) === 'el_local_cierra_esos_dias') {
+    return {
+      ...base,
+      se_puede: false,
+      motivo: 'el_local_cierra_ese_dia',
+      indicacion: `Empieza diciéndole que el ${dia} el local está cerrado, así que ese día no puedes darle cita (no digas el motivo). Después ofrécele lo más cercano.`,
+    };
+  }
+  const horario = tramosEnTexto(tramos);
+  const enHorario =
+    !o.hora || tramos.some((t) => minutosDelDia(o.hora!) >= minutosDelDia(t.apertura) && minutosDelDia(o.hora!) < minutosDelDia(t.cierre));
+  const cerradoALaHora: Partial<DiaPedido> = enHorario
+    ? {}
+    : {
+        motivo: 'el_local_esta_cerrado_a_esa_hora',
+        horario_del_local_ese_dia: horario,
+        indicacion: `Empieza diciéndole que a las ${o.hora} estáis cerrados (ese día abrís de ${horario}). Después ofrécele las horas más cercanas.`,
+      };
+  let cerca: Date | undefined;
+  try {
+    cerca = o.hora ? localToUtc(o.dia, o.hora, ctx.config.timezone) : undefined;
+  } catch {
+    cerca = undefined;
+  }
+  const suyos = await huecos(ctx, {
+    servicioId: o.servicioId,
+    staffId: o.profesional?.id,
+    desde: o.dia,
+    hasta: o.dia,
+    cerca,
+    excluir: o.excluir,
+  });
+  if (suyos.length > 0) {
+    return { ...base, se_puede: enHorario, ...cerradoALaHora, huecos_ese_dia: suyos.slice(0, HUECOS_POR_RESPUESTA) };
+  }
+  if (o.profesional) {
+    const nombre = o.profesional.nombre;
+    const otras = (
+      await huecos(ctx, {
+        servicioId: o.servicioId,
+        desde: o.dia,
+        hasta: o.dia,
+        cerca,
+        excluir: o.excluir,
+      })
+    )
+      .map((h) => ({ ...h, profesionales: h.profesionales.filter((p) => p !== nombre) }))
+      .filter((h) => h.profesionales.length > 0)
+      .slice(0, HUECOS_POR_RESPUESTA);
+    const quienes = [...new Set(otras.flatMap((h) => h.profesionales))];
+    return {
+      ...base,
+      se_puede: false,
+      motivo: 'no_hay_citas_con_esa_profesional_ese_dia',
+      ...(otras.length > 0 ? { con_otras_profesionales_ese_dia: otras } : {}),
+      indicacion:
+        `Empieza diciéndole: "El ${dia.replace(/ de \d{4}$/, '')} no hay citas disponibles con ${nombre}." No digas por qué. ` +
+        (otras.length > 0
+          ? `Después dile que ese día sí tienes hueco con ${quienes.join(' o ')} y pregúntale: "¿Te lo busco con ${quienes.join(' o ')} o prefieres que sea con ${nombre} otro día?". ` +
+            `No reserves con otra profesional sin que te diga que sí.`
+          : `Ese día nadie más tiene huecos: ofrécele otros días con ${nombre}.`),
+    };
+  }
+  return {
+    ...base,
+    se_puede: false,
+    motivo: 'no_quedan_huecos_ese_dia',
+    indicacion: `Empieza diciéndole que el ${dia.replace(/ de \d{4}$/, '')} ya no quedan horarios libres para ese servicio. Después ofrécele lo más cercano.`,
+  };
+}
 
 /**
  * Sin huecos en el rango: ¿es porque el local cierra todo el rango (festivo,

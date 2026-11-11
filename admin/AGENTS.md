@@ -22,7 +22,10 @@ Qué hace y cómo se usa: [`README.md`](README.md).
    fuera del horario del local se puede guardar (PD-01), pero se confirma
    antes (PI-18). Un festivo, una ausencia o un horario que deja fuera citas
    ya dadas: la API contesta `citas_afectadas` y el panel enseña el cartel
-   (dejarlas o cancelarlas, PI-21). Las cuentas de horarios son funciones puras en
+   (dejarlas o cancelarlas, PI-21). Cada guardado de una sección manda su
+   `version` (PI-22): datos, reglas y chat guardan la de cuando se abrieron
+   (sus formularios no se recargan solos) y la renuevan al guardar; las filas
+   y el horario usan la de la ficha actual, porque se recargan con ella. Las cuentas de horarios son funciones puras en
    `src/horario.ts`, testeadas desde `tests/panel-horario.test.ts`.
 5. **Lo que se ve de una conversación se pinta como texto** (React escapa):
    nunca `dangerouslySetInnerHTML`. Lo escribe gente de fuera.

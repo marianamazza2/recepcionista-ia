@@ -2,6 +2,7 @@
 //
 // Contra Estética Aurora (2030), con clientas de test que se borran al final.
 
+import { telefonoLegible } from '../src/core/phone.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { loadBusinessConfig, type BusinessConfig } from '../src/config/business.js';
@@ -233,7 +234,7 @@ describe('derivar y límites', () => {
     const r2 = await turno(modelo, conv, 'Bueno, resérvame igual el martes');
     expect(modelo.peticiones.length).toBe(llamadasAntes);
     expect(r2).toMatchObject({ escalada: true, motivoFin: 'conversacion_derivada', llamadas: 0 });
-    expect(r2.texto).toContain(config.telefonoHumano!);
+    expect(r2.texto).toContain(telefonoLegible(config.telefonoHumano!));
     const [fila] = await sql`
       select tool_calls from public.messages
        where conversation_id = ${conv} and rol = 'assistant' order by created_at desc limit 1`;
@@ -246,7 +247,7 @@ describe('derivar y límites', () => {
     const modelo = new ModeloSimulado([siempre, siempre, siempre, siempre]);
     const r = await turno(modelo, conv, 'Dame todos los huecos de octubre');
     expect(r).toMatchObject({ motivoFin: 'limite_vueltas', escalada: true, llamadas: 3 });
-    expect(r.texto).toContain(config.telefonoHumano!);
+    expect(r.texto).toContain(telefonoLegible(config.telefonoHumano!));
     const [c] = await sql`select estado from public.conversations where id = ${conv}`;
     expect(c!.estado).toBe('escalada');
     const esc = await sql`select motivo from public.escalations where conversation_id = ${conv}`;
@@ -283,7 +284,7 @@ describe('derivar y límites', () => {
     const modelo = new ModeloSimulado([{ content: [], stop_reason: 'refusal' }]);
     const r = await turno(modelo, conv, 'algo');
     expect(r).toMatchObject({ motivoFin: 'rechazo', escalada: true });
-    expect(r.texto).toContain(config.telefonoHumano!);
+    expect(r.texto).toContain(telefonoLegible(config.telefonoHumano!));
   });
 });
 
@@ -299,7 +300,7 @@ describe('texto para la clienta', () => {
     const r = await turno(modelo, conv, 'Quiero hablar con una persona');
     expect(r.texto).not.toContain('antml');
     expect(r).toMatchObject({ escalada: true, motivoFin: 'conversacion_derivada' });
-    expect(r.texto).toContain(config.telefonoHumano!);
+    expect(r.texto).toContain(telefonoLegible(config.telefonoHumano!));
   });
 
   it('las etiquetas sueltas se quitan y el resto del texto se conserva', async () => {

@@ -31,6 +31,8 @@ function ipNueva(): string {
   return `10.${(ultimaIp >> 8) & 255}.${ultimaIp & 255}.${Math.floor(Math.random() * 250) + 1}`;
 }
 const TELEFONO_LOCAL = '+34910000999';
+/** PA-15: en los textos para la clienta, el teléfono va como se dice. */
+const TELEFONO_LEGIBLE = '910 000 999';
 
 let A: TestBusiness & { key: string };
 let B: TestBusiness & { key: string };
@@ -285,7 +287,7 @@ describe('límites (PW-05) y tope mensual (PW-04): texto fijo sin llamar al mode
     const res = await post(h, { key: A.key, sessionToken: token, clientMessageId: randomUUID(), texto: 'Uno más' });
     const body = (await res.json()) as { aviso: string; respuesta: string };
     expect(body.aviso).toBe('limite_mensajes');
-    expect(body.respuesta).toContain(TELEFONO_LOCAL);
+    expect(body.respuesta).toContain(TELEFONO_LEGIBLE);
     expect(modelo.peticiones).toHaveLength(1); // solo el saludo
   });
 
@@ -312,7 +314,7 @@ describe('límites (PW-05) y tope mensual (PW-04): texto fijo sin llamar al mode
       const res = await post(h, { key: A.key, sessionToken: token, clientMessageId: randomUUID(), texto: 'Quiero cita' });
       const body = (await res.json()) as { aviso: string; respuesta: string };
       expect(body.aviso).toBe('tope_mensual');
-      expect(body.respuesta).toContain(TELEFONO_LOCAL);
+      expect(body.respuesta).toContain(TELEFONO_LEGIBLE);
       expect(modelo.peticiones).toHaveLength(1);
     } finally {
       await sql`delete from public.usage_events where business_id = ${A.businessId}`;
@@ -369,7 +371,7 @@ describe('errores', () => {
     const res = await post(api(modelo), { key: A.key, clientMessageId: randomUUID(), texto: 'Hola' });
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain(TELEFONO_LOCAL);
+    expect(body).toContain(TELEFONO_LEGIBLE);
     expect(body).not.toContain('ECONNRESET');
   });
 });

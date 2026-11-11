@@ -222,6 +222,16 @@ export interface Negocio {
   festivos: Festivo[];
   preguntas: Pregunta[];
   loQueFalta: Falta[];
+  /** PI-22: la huella de cada sección; se manda al guardarla para no pisar lo que guardó otra persona. */
+  versiones: {
+    datos: string;
+    reglas: string;
+    chat: string;
+    servicios: Record<string, string>;
+    profesionales: Record<string, string>;
+    preguntas: Record<string, string>;
+    horario: Record<string, string>;
+  };
 }
 
 export interface Clienta {

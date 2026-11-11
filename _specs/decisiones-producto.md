@@ -478,9 +478,9 @@ intentos o algo falla.
 
 | # | Tema | Decisión / qué hace ahora | Estado |
 |---|---|---|---|
-| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
+| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
 | PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
-| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026 (sin construir; el aviso de IA, decidido el 05/11 y construido, en PW-02) |
+| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -543,8 +543,24 @@ que piden, el agente dice por qué.
 
   Si nadie tiene huecos ese día, ofrece a esa profesional en otros días.
 
-⚠️ *Por confirmar:* cuándo se construye PA-13. Propuesta: justo al cerrar la
-Fase 4, antes del portal (no depende del guion).
+**Construida el 11/11/2026, en el PR de la Fase 4** (Mariana dijo que sí el
+11/11). Cómo lo garantiza el código: `consultar_disponibilidad` recibe el
+**día que nombró la clienta** (`dia_pedido`) y siempre explica ese día, aunque
+el modelo busque en otro rango (en las pruebas del 05/11 el modelo se saltaba
+el domingo o el miércoles de Lucía y por eso no decía nada). Devuelve si se
+puede, el motivo (local cerrado ese día de la semana, festivo del local,
+cerrado a esa hora con el horario de ese día, o no hay citas con esa
+profesional ese día, sin decir por qué), los huecos de otras profesionales
+ese día y la frase con la que tiene que empezar la respuesta.
+
+Lo de que **reservar no cambie el servicio confirmado** no lleva código
+nuevo: `crear_reserva` reserva exactamente el servicio, el día, la hora y la
+profesional que se le pasan, y solo después del sí de la clienta (PA-01). No
+hay un registro de «lo confirmado» con el que comparar; si hiciera falta, se
+añade.
+
+*Pendiente:* comprobarlo con el modelo real (`agent:eval`, escenarios 14 y
+15). El 11/11 no se pudo: la cuenta de Anthropic se quedó sin crédito.
 
 ### PA-14 · «Para Rodrigo» · ✅ decidida el 05/11/2026
 
@@ -636,7 +652,21 @@ falla, la respuesta concreta.
 línea fija del chat y el saludo («asistente virtual IA»), así que el agente
 ya no añade «(sí, soy una IA)» en cada primera respuesta.
 
-*Sin construir todavía:* se hará junto con PA-13.
+**Construida el 11/11/2026**, junto con PA-13:
+
+- El agente tiene las 7 reglas y estos ejemplos en su instrucción, igual
+  para todos los negocios (los ejemplos van con huecos, sin datos de ningún
+  negocio). Ya no dice «frases cortas, como en un chat».
+- **El teléfono, como se dice:** lo garantiza el código. El agente, los
+  mensajes fijos del chat, el SMS de cancelación y la página de la cita lo
+  escriben «910 000 789» (el enlace para llamar sigue con el +34).
+- **Comprobación automática del tono:** `agent:eval` termina con una línea
+  («Tono (PA-15): 14 de 15 respuestas bien») y las que fallan, revisadas por
+  un modelo barato (Haiku) con estas reglas. Es un aviso para leer, no
+  cambia el resultado de los escenarios.
+
+*Pendiente:* comprobarlo con el modelo real; el 11/11 la cuenta de Anthropic
+se quedó sin crédito.
 
 ---
 
@@ -1107,7 +1137,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
 | PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
 | PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
-| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026 (cuándo se construye, ⚠️ por confirmar) |
+| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026, construida 11/11/2026 (texto del aviso, ⚠️ por confirmar) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1288,8 +1318,15 @@ guardando las dos.
 Valdrá igual en el portal del cliente (Fase 9), donde editarán varias
 personas.
 
-⚠️ *Por confirmar:* el texto del aviso (propuesta, arriba) y cuándo se
-construye (propuesta: ya, en la Fase 4, antes del merge, como PI-21).
+**Construida el 11/11/2026, en el PR de la Fase 4**, con el texto de arriba.
+Cada sección de la ficha tiene una huella (datos, reglas, chat, cada
+servicio, cada profesional, cada pregunta y el horario del local y de cada
+profesional). El panel la manda al guardar; si otra persona la cambió
+mientras tanto, no se guarda y sale el aviso. Las citas nuevas no cuentan
+como cambio. Límite conocido: dos guardados en el mismo milisegundo pueden
+pasar los dos; para el portal (Fase 9) se pasaría a una versión en la base.
+
+⚠️ *Por confirmar:* el texto del aviso. Se usa la propuesta mientras tanto.
 
 
 ---

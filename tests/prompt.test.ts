@@ -1,5 +1,6 @@
 // System prompt desde la configuración (Fase 2 · 2.2)
 
+import { telefonoLegible } from '../src/core/phone.js';
 import { readFileSync } from 'node:fs';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -33,7 +34,14 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('no te vuelvas a presentar ni repitas que eres una IA');
     expect(p).toContain('Si te preguntan si eres una persona, di la verdad sin rodeos');
     expect(p).toContain('Calle Mayor 14');
-    expect(p).toContain('+34910000000');
+    // PA-15 (regla 5): el teléfono como se dice.
+    expect(p).toContain('Teléfono del local (escríbelo así): 910 000 000');
+    expect(p).not.toContain('+34910000000');
+    // PA-15: frases completas, ya no "frases cortas"; y PA-13: el día pedido, siempre.
+    expect(p).toContain('frases completas y naturales');
+    expect(p).not.toContain('frases cortas');
+    expect(p).toContain('# Cómo te expresas');
+    expect(p).toContain('pásalo siempre en dia_pedido');
     expect(p).toContain('- Limpieza facial profunda: 60 min, 55 €. Lo hacen: Lucía y Marta.');
     expect(p).toContain('- Depilación láser (zona pequeña): 30 min, 40 €. Lo hace: Lucía.');
     expect(p).toContain('- Consulta de valoración: 20 min, sin coste.');
@@ -141,5 +149,13 @@ describe('contextoDelTurno', () => {
     expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222' })).toContain(
       'Clienta: identificada (Ana, +34600111222).',
     );
+  });
+});
+
+describe('telefonoLegible (PA-15)', () => {
+  it('escribe un teléfono español como se dice y deja los demás tal cual', () => {
+    expect(telefonoLegible('+34910000789')).toBe('910 000 789');
+    expect(telefonoLegible('+34600111222')).toBe('600 111 222');
+    expect(telefonoLegible('+447700900123')).toBe('+447700900123');
   });
 });

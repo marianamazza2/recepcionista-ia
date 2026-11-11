@@ -83,6 +83,20 @@ No se declara una herramienta que todavía no hace nada (por eso
   trabaja"). Lo garantiza el motor; el prompt solo lo cuenta.
   `consultar_disponibilidad` dice `la_profesional_no_esta_esos_dias` si se
   pide a esa profesional solo en días que no trabaja.
+- **El día que pidió la clienta, explicado (PA-13, 11/11/2026):**
+  `consultar_disponibilidad` recibe `dia_pedido` y devuelve qué pasa ese día
+  (`se_puede`, `motivo`, huecos de ese día, huecos de otras profesionales) y
+  la `indicacion` con la que empieza la respuesta. Lo calcula el código: el
+  modelo se saltaba el día cerrado al buscar y nunca decía por qué. Nunca sale
+  el motivo de una ausencia (puede ser interno). Si cambiás los motivos,
+  actualizá los tests de `tests/tools.test.ts` (bloque PA-13) y los escenarios
+  14 y 15 de `agent:eval`.
+- **Cómo se expresa (PA-15, 11/11/2026):** la sección "Cómo te expresas" del
+  prompt lleva las 7 reglas y los ejemplos aprobados por Mariana, con
+  [huecos] y sin datos de ningún negocio (regla de oro). El teléfono, en
+  todo texto para la clienta, pasa por `telefonoLegible` (`phone.ts`):
+  "910 000 789". `agent:eval` termina con el juez de tono (Haiku), que es un
+  aviso, no un test.
 - **Preguntas frecuentes (Fase 4, PI-08):** van al final de "Datos del
   negocio", con la instrucción de responder con ellas tal cual y pasar al
   equipo lo que no esté. Es el único cambio del núcleo en la Fase 4; las

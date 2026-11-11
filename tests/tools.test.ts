@@ -13,7 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SupabaseAdapter } from '../src/adapters/booking/supabase.js';
 import type { BookingAdapter } from '../src/adapters/booking/types.js';
 import { loadBusinessConfig, type BusinessConfig } from '../src/config/business.js';
-import { normalizarTelefono } from '../src/core/phone.js';
+import { normalizarTelefono, telefonoLegible } from '../src/core/phone.js';
 import { executeTool, toolDefinitions } from '../src/core/tools/index.js';
 import type { ToolContext } from '../src/core/tools/types.js';
 import { localToUtc } from '../src/core/time.js';
@@ -238,6 +238,78 @@ describe('consultar_disponibilidad', () => {
     );
     expect(r.isError).toBe(true);
     expect(datos(r)).toMatchObject({ motivo: 'profesional_no_hace_servicio', profesionales_que_lo_hacen: ['Lucía'] });
+  });
+
+  describe('PA-13: el día que pidió la clienta, explicado aunque se busque en otro rango', () => {
+    const LF = 'Limpieza facial profunda';
+
+    it('un domingo: dice que los domingos estáis cerrados, aunque el rango empiece otro día', async () => {
+      const ctx = await nuevoCtx();
+      const d = datos(
+        await executeTool('consultar_disponibilidad', { servicio: LF, fecha_desde: '2030-10-25', fecha_hasta: '2030-10-28', dia_pedido: '2030-10-27' }, ctx),
+      );
+      expect(d.huecos.length).toBeGreaterThan(0);
+      expect(d.dia_pedido).toMatchObject({ fecha: '2030-10-27', se_puede: false, motivo: 'el_local_no_abre_ese_dia' });
+      expect(d.dia_pedido.indicacion).toContain('los domingos estáis cerrados');
+    });
+
+    it('a una hora en que el local está cerrado (el mediodía): lo dice con el horario de ese día', async () => {
+      const ctx = await nuevoCtx();
+      const d = datos(
+        await executeTool('consultar_disponibilidad', { servicio: LF, fecha_desde: '2030-10-21', hora_preferida: '15:00', dia_pedido: '2030-10-21' }, ctx),
+      );
+      expect(d.dia_pedido).toMatchObject({
+        se_puede: false,
+        motivo: 'el_local_esta_cerrado_a_esa_hora',
+        horario_del_local_ese_dia: '09:00 a 14:00 y 16:00 a 20:00',
+      });
+      expect(d.dia_pedido.indicacion).toContain('a las 15:00 estáis cerrados');
+      expect(d.dia_pedido.huecos_ese_dia.length).toBeGreaterThan(0);
+    });
+
+    it('un festivo del local: ese día está cerrado, sin el motivo escrito', async () => {
+      await sql`
+        insert into public.time_off (business_id, desde, hasta, motivo)
+        values (${AURORA.businessId}, ${localToUtc('2030-10-29', '00:00', TZ)}, ${localToUtc('2030-10-30', '00:00', TZ)}, 'test fase 2')`;
+      const ctx = await nuevoCtx();
+      const d = datos(
+        await executeTool('consultar_disponibilidad', { servicio: LF, fecha_desde: '2030-10-28', fecha_hasta: '2030-10-31', dia_pedido: '2030-10-29' }, ctx),
+      );
+      expect(d.dia_pedido).toMatchObject({ se_puede: false, motivo: 'el_local_cierra_ese_dia' });
+      expect(JSON.stringify(d)).not.toContain('test fase 2');
+      await sql`delete from public.time_off where business_id = ${AURORA.businessId} and motivo = 'test fase 2'`;
+    });
+
+    it('con una profesional que ese día no tiene citas: "no hay citas disponibles con ella", sin el motivo, y quién sí tiene', async () => {
+      await sql`
+        insert into public.time_off (business_id, staff_id, desde, hasta, motivo)
+        values (${AURORA.businessId}, ${AURORA.staff.lucia}, ${localToUtc('2030-10-23', '00:00', TZ)}, ${localToUtc('2030-10-24', '00:00', TZ)}, 'test fase 2')`;
+      const ctx = await nuevoCtx();
+      const d = datos(
+        await executeTool(
+          'consultar_disponibilidad',
+          { servicio: LF, profesional: 'Lucía', fecha_desde: '2030-10-21', fecha_hasta: '2030-10-25', hora_preferida: '11:00', dia_pedido: '2030-10-23' },
+          ctx,
+        ),
+      );
+      expect(d.dia_pedido).toMatchObject({ se_puede: false, motivo: 'no_hay_citas_con_esa_profesional_ese_dia' });
+      expect(d.dia_pedido.con_otras_profesionales_ese_dia.length).toBeGreaterThan(0);
+      expect(d.dia_pedido.con_otras_profesionales_ese_dia.every((h: any) => h.fecha === '2030-10-23' && h.profesionales.join() === 'Marta')).toBe(true);
+      expect(d.dia_pedido.indicacion).toContain('El miércoles 23 de octubre no hay citas disponibles con Lucía.');
+      expect(d.dia_pedido.indicacion).toContain('¿Te lo busco con Marta o prefieres que sea con Lucía otro día?');
+      expect(JSON.stringify(d)).not.toContain('test fase 2');
+      await sql`delete from public.time_off where business_id = ${AURORA.businessId} and motivo = 'test fase 2'`;
+    });
+
+    it('un día que sí se puede: se_puede y los huecos de ese día', async () => {
+      const ctx = await nuevoCtx();
+      const d = datos(
+        await executeTool('consultar_disponibilidad', { servicio: LF, fecha_desde: '2030-10-21', fecha_hasta: '2030-10-25', hora_preferida: '10:00', dia_pedido: '2030-10-22' }, ctx),
+      );
+      expect(d.dia_pedido.se_puede).toBe(true);
+      expect(d.dia_pedido.indicacion).toBeUndefined();
+      expect(d.dia_pedido.huecos_ese_dia[0]).toMatchObject({ fecha: '2030-10-22', hora: '10:00' });
+    });
   });
 
   it('rechaza fechas pasadas, mal escritas y rangos de más de 14 días', async () => {
@@ -654,7 +726,7 @@ describe('derivar_a_humano (PA-06)', () => {
   it('crea la escalación, marca la conversación y bloquea las herramientas que escriben', async () => {
     const ctx = await identificada();
     const r = await executeTool('derivar_a_humano', { motivo: 'la_clienta_lo_pide', resumen: 'Quiere hablar con alguien' }, ctx);
-    expect(datos(r)).toMatchObject({ derivada: true, telefono_local: config.telefonoHumano });
+    expect(datos(r)).toMatchObject({ derivada: true, telefono_local: telefonoLegible(config.telefonoHumano!) });
     expect(ctx.state.estado).toBe('escalada');
 
     const [conv] = await sql`select estado from public.conversations where id = ${ctx.conversationId}`;
@@ -675,7 +747,7 @@ describe('derivar una pregunta sin cerrar la conversación (PA-12)', () => {
   it('dato_desconocido y salud registran la consulta para el equipo y se puede seguir reservando', async () => {
     const ctx = await identificada();
     const r = await executeTool('derivar_a_humano', { motivo: 'dato_desconocido', resumen: 'Pregunta si hay parking' }, ctx);
-    expect(datos(r)).toMatchObject({ consulta_pasada_al_equipo: true, conversacion_sigue_abierta: true, telefono_local: config.telefonoHumano });
+    expect(datos(r)).toMatchObject({ consulta_pasada_al_equipo: true, conversacion_sigue_abierta: true, telefono_local: telefonoLegible(config.telefonoHumano!) });
     expect(ctx.state.estado).toBe('activa');
     await executeTool('derivar_a_humano', { motivo: 'salud', resumen: 'Pregunta por rosácea' }, ctx);
 

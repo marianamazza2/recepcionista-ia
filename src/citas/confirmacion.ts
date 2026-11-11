@@ -21,6 +21,7 @@ import type { Sql } from 'postgres';
 
 import type { SmsProvider } from '../adapters/sms/types.js';
 import type { BusinessConfig } from '../config/business.js';
+import { telefonoLegible } from '../core/phone.js';
 import { fechaLarga, utcToLocal } from '../core/time.js';
 import { nombreProfesional } from '../core/tools/common.js';
 import { inTenant } from '../db/tenant.js';
@@ -56,7 +57,7 @@ export function textoConfirmacion(
 
 /** PW-10: "{negocio}: tu cita del {día} a las {hora} se ha cancelado. Si no fuiste tú, llama al {teléfono}." */
 export function textoCancelacion(negocio: string, cita: { dia: string; hora: string }, telefono: string | null): string {
-  return `${negocio}: tu cita del ${cita.dia} a las ${cita.hora} se ha cancelado. Si no fuiste tú, ${telefono ? `llama al ${telefono}` : 'llama al local'}.`;
+  return `${negocio}: tu cita del ${cita.dia} a las ${cita.hora} se ha cancelado. Si no fuiste tú, ${telefono ? `llama al ${telefonoLegible(telefono)}` : 'llama al local'}.`;
 }
 
 export interface ResultadoConfirmacion {

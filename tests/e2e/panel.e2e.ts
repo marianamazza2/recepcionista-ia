@@ -330,6 +330,44 @@ describe('el panel en el navegador', () => {
     await panel.screenshot({ path: join(CAPTURAS, '5-consumo.png'), fullPage: true });
   });
 
+  it('PI-22: dos pestañas en la misma sección: gana la primera que guarda; la segunda avisa y no pisa', async () => {
+    const url = `${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`;
+    const otra = await panel.context().newPage();
+    try {
+      await panel.goto(url);
+      // La sesión vive en el sessionStorage de cada pestaña: la segunda empieza con la misma.
+      const guardada = await panel.evaluate(() => JSON.stringify(Object.entries(sessionStorage)));
+      await otra.addInitScript((e: string) => {
+        for (const [k, v] of JSON.parse(e) as [string, string][]) sessionStorage.setItem(k, v);
+      }, guardada);
+      await otra.goto(url);
+      const datosA = seccion('datos');
+      const datosB = otra.locator('#datos');
+      await datosA.getByLabel('Dirección').waitFor(ESPERA);
+      await datosB.getByLabel('Dirección').waitFor(ESPERA);
+
+      // A guarda primero.
+      await datosA.getByLabel('Dirección').fill('Calle Primera 1');
+      await datosA.getByRole('button', { name: 'Guardar' }).click();
+      await expect.poll(() => datosA.getByRole('status').textContent(), ESPERA).toBeTruthy();
+
+      // B, abierta antes, guarda la misma sección: aviso y no se guarda.
+      await datosB.getByLabel('Dirección').fill('Calle Segunda 2');
+      await datosB.getByRole('button', { name: 'Guardar' }).click();
+      await expect.poll(() => datosB.getByRole('alert').textContent(), ESPERA).toContain('Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas');
+      await datosB.screenshot({ path: join(CAPTURAS, '7-dos-pestanas.png') });
+      const [d] = await sql<{ direccion: string }[]>`select direccion from public.businesses where id = ${negocioId}`;
+      expect(d!.direccion).toBe('Calle Primera 1');
+
+      // A puede seguir guardando la misma sección (su versión se renovó al guardar).
+      await datosA.getByLabel('Dirección').fill('Calle Primera 3');
+      await datosA.getByRole('button', { name: 'Guardar' }).click();
+      await expect.poll(async () => (await sql<{ direccion: string }[]>`select direccion from public.businesses where id = ${negocioId}`)[0]!.direccion, ESPERA).toBe('Calle Primera 3');
+    } finally {
+      await otra.close();
+    }
+  });
+
   it('si la sesión caduca mientras edita, vuelve a «Entrar» avisándolo y con su email (caso 74)', async () => {
     await panel.goto(`${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`);
     await seccion('datos').getByLabel('Dirección').waitFor(ESPERA);

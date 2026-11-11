@@ -39,6 +39,12 @@ en [`README.md`](README.md).
     negocios y sin ajuste para quitarlo (Reglamento europeo de IA, art. 50).
     La bienvenida de cada negocio lo repite («asistente virtual IA», PA-04),
     pero esa sí la escribe el negocio: lo que garantiza el aviso es esta línea.
+12. **Gana la primera que guarda (PI-22, 11/11/2026):** la ficha trae
+    `versiones` (una huella por sección, en `admin/versiones.ts`) y todo
+    `PUT` que edita una sección comprueba la `version` que manda el panel
+    antes de guardar: si no coincide, 409 `cambiado_por_otra_persona` y no
+    se guarda nada. Una ruta de edición nueva tiene que llamar a
+    `comprobarVersion` y su huella tiene que estar en `versiones()`.
 
 ## El panel (`admin/`, Fase 4)
 

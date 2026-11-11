@@ -112,6 +112,19 @@ y del mismo horario (local o profesional), y conserva todos los tramos
 anteriores. Dos tramos contiguos sí valen. PD-01 no cambia: el horario propio
 puede coincidir con el del local o salirse de él.
 
+### Dos personas en la misma sección (PI-22)
+
+`GET negocios/:id` trae `versiones`: `datos`, `reglas`, `chat`, y por id
+`servicios`, `profesionales`, `preguntas` y `horario` (`local` o el id de la
+profesional). Los `PUT` de esas secciones aceptan `version`: si no coincide
+con la de ahora, **409** sin guardar nada:
+
+```json
+{ "error": "cambiado_por_otra_persona", "mensaje": "Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas. No se ha guardado: recarga para ver lo último." }
+```
+
+Sin `version` no se comprueba (el panel siempre la manda).
+
 ### Citas afectadas (PI-21)
 
 `PUT negocios/:id/horario` y `POST negocios/:id/festivos` aceptan `citas`:
