@@ -14,9 +14,11 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 4 (panel interno) construida, a falta de que Mariana la
-revise y la publique.** Hay un **panel** (`admin/`, `npm run dev` →
-http://localhost:4312/panel/) donde se da de alta un negocio entero sin SQL
+**Estado: Fase 4 (panel interno) cerrada el 12/11/2026**, en local y en la
+nube, con el panel publicado en
+https://recepcionista-ia-api.vercel.app/panel/ (solo con cuenta, PI-01). Lo
+siguiente es la Fase 9 (portal del cliente), que espera el guion de Mariana.
+Hay un **panel** (`admin/`, `npm run dev` → http://localhost:4312/panel/) donde se da de alta un negocio entero sin SQL
 (datos, servicios, profesionales, horarios, festivos, reglas, preguntas
 frecuentes y el chat en su web), se activa o se pausa, se copia el código del
 widget, se prueba el chat, se ven las conversaciones (con las herramientas que
@@ -381,13 +383,17 @@ carga el widget de **cualquier** negocio activo con `localhost` en sus
 dominios. El widget solo aparece con el negocio **activo** (PI-16): antes de
 activarlo, se prueba con "Probar el chat" del panel.
 
-### Publicarlo (solo con el visto bueno de Mariana, PI-02)
+### Publicado (PI-02, 12/11/2026)
 
-Va en el mismo proyecto de Vercel, bajo `/panel/`: el build ya lo incluye.
-Falta: añadir en Vercel las variables `SUPABASE_PROJECT_REF` y
-`SUPABASE_ANON_KEY` (sin ellas el panel responde "no configurado") y, si se
-quiere una dirección propia, un tercer dominio y `PANEL_HOST` con ese dominio
-(su raíz lleva al panel).
+Va en el mismo proyecto de Vercel, bajo `/panel/`:
+**https://recepcionista-ia-api.vercel.app/panel/**. Vercel tiene
+`SUPABASE_PROJECT_REF` y `SUPABASE_ANON_KEY` (sin ellas el panel respondería
+"no configurado"); sin cuenta, la API responde 401 `no_autorizado`. Las
+cuentas de la nube se crean con
+`./scripts/con-supabase.sh npm run panel:cuenta -- --email …` (la contraseña
+la escribe Mariana en su Terminal). Si algún día se quiere una dirección
+propia: un tercer dominio y `PANEL_HOST` con ese dominio (su raíz lleva al
+panel).
 
 ---
 
@@ -561,11 +567,22 @@ tests siguen en Aurora.
 |---|---|
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Publicar el panel en Vercel | cuando Mariana lo confirme (PI-02) |
 | Portal del cliente y alta por chat, con enlace de invitación (PC-01 a PC-09) | 9, adelantada: va después de la 4; espera el guion de Mariana |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
+
+### Cierre de la Fase 4 · 12/11/2026
+
+- **Nube:** aplicada la migración que faltaba (`20261102120000_horarios_sin_solape`,
+  aceptación 31) y actualizada la bienvenida de Olea y Aurora («asistente
+  virtual IA», PW-02). Se borraron 12 negocios de prueba que dejó una pasada
+  de tests cortada ese mismo día (slugs `*-test`).
+- **Tests en la nube:** SQL 12/12, TypeScript 191/191 por el pooler en modo
+  sesión y en modo transacción (el de Vercel).
+- **Panel publicado:** responde en `/panel/` y la API rechaza sin cuenta (401).
+- **Agente con el modelo real:** 15/15 escenarios y el juez de tono aprobó las
+  23 respuestas (12/11, ≈ 0,70 US$).
 
 ### Verificación local de aceptación · 02/11/2026
 
