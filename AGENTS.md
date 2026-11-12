@@ -274,4 +274,20 @@ Recepcionista") en su espacio de Research Desk: si un cambio altera **cómo se
 comporta el producto** (una regla, un ajuste por negocio), también hay que
 reflejarlo ahí. Lo indica cada spec de fase en su tarea de documentación.
 
+> **Regla obligatoria (Mariana, 05/11/2026): toda regla del recepcionista
+> va al manual "Cómo funciona el Recepcionista", en el mismo turno.** Cada
+> vez que se crea, cambia, aplaza o descarta una regla de cómo se comporta
+> el recepcionista (lo que dice o hace el agente, el widget, el panel o el
+> portal: cualquier PD/PR/PA/PW/PI/PC), se actualiza el manual en Research
+> Desk **en el mismo turno**, sin que Mariana lo pida. Vale también:
+>
+> - cuando la regla **solo queda decidida** y todavía no está construida (se
+>   marca así en el manual);
+> - cuando sale de una **consulta a Mariana** (una pregunta del informe de
+>   pruebas, una propuesta ⚠️ que confirma o cambia);
+> - para las propuestas ⚠️ por confirmar, que se ven como tales.
+>
+> Un cambio de regla sin el manual al día no está terminado. Cómo se hace:
+> skill `sync-research-desk`.
+
 `CLAUDE.md` solo importa este archivo: no le agregues contenido propio.

@@ -31,6 +31,12 @@ export class AuthFalsa implements AuthPanel {
     this.tokens.delete(token);
   }
 
+  /** Caduca todas las sesiones y renovaciones (la sesión no se puede recuperar). */
+  caducarTodo(): void {
+    this.tokens.clear();
+    this.renovaciones.clear();
+  }
+
   private sesion(u: UsuarioAuth): SesionPanel {
     const accessToken = randomBytes(24).toString('base64url');
     const refreshToken = randomBytes(24).toString('base64url');

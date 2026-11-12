@@ -24,6 +24,7 @@
 // =============================================================================
 
 import type { BusinessConfig } from '../config/business.js';
+import { telefonoLegible } from './phone.js';
 
 export interface AgentLimits {
   /** Vueltas de herramientas por mensaje de la clienta (maestro §9). */
@@ -73,7 +74,7 @@ export function textoParaLaClienta(texto: string): string {
 export type MotivoRespuestaFija = 'conversacion_derivada' | 'limite_vueltas' | 'limite_tokens' | 'error';
 
 export function respuestaFija(config: BusinessConfig, motivo: MotivoRespuestaFija): string {
-  const llamar = config.telefonoHumano ? ` Puedes llamar al ${config.telefonoHumano}.` : '';
+  const llamar = config.telefonoHumano ? ` Puedes llamar al ${telefonoLegible(config.telefonoHumano)}.` : '';
   if (motivo === 'conversacion_derivada') {
     return `Ya he pasado tu consulta al equipo de ${config.nombre}, que se encarga a partir de aquí.${llamar}`;
   }

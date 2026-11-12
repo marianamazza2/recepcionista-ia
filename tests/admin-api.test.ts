@@ -267,6 +267,25 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(c!.estado).toBe('confirmada');
   });
 
+  it('aceptación 27: un servicio que no hace ninguna profesional activa no llega al agente', async () => {
+    const n = await alta('Servicio Sin Nadie Test');
+    const h = api();
+    const r = await pedir(h, 'POST', `negocios/${n.id}/servicios`, { nombre: 'Masaje', descripcion: null, duracionMin: 60, bufferMin: 0, precio: 50, precioVisible: true, activo: true });
+    const masaje = r.body.servicios.find((s: { nombre: string }) => s.nombre === 'Masaje').id as string;
+    let config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte']);
+    expect(buildSystemPrompt(config)).not.toContain('Masaje');
+    // Si lo hace una profesional desactivada, tampoco.
+    const otra = await pedir(h, 'POST', `negocios/${n.id}/profesionales`, { nombre: 'Olga', activo: false, servicioIds: [masaje] });
+    expect(otra.status).toBe(200);
+    config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte']);
+    // En cuanto una profesional activa lo hace, se ofrece.
+    await pedir(h, 'PUT', `negocios/${n.id}/profesionales/${n.profesionalId}`, { nombre: 'Nora', activo: true, servicioIds: [n.servicioId, masaje] });
+    config = await loadBusinessConfig(sql, { id: n.id });
+    expect(config.servicios.map((s) => s.nombre)).toEqual(['Corte', 'Masaje']);
+  });
+
   it('preguntas frecuentes: van al prompt en el siguiente mensaje y el límite lo pone la base (RA007)', async () => {
     const n = await alta('Preguntas Test');
     const h = api();
@@ -331,6 +350,110 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(mal.body.mensaje).toBe('El final tiene que ser después del inicio.');
     const b = await pedir(h, 'DELETE', `negocios/${n.id}/festivos/${r.body.festivos[0].id}`);
     expect(b.body.festivos).toHaveLength(1);
+  });
+
+  it('PI-21: un festivo encima de citas pregunta antes; se dejan o se cancelan con su SMS', async () => {
+    const n = await alta('Festivo Con Citas Test');
+    const h = api();
+    const tel = '+34999000221';
+    const c1 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
+    const c2 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-22', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
+    expect([c1.status, c2.status]).toEqual([201, 201]);
+
+    // Sin decir qué hacer: 409 con la lista y no se guarda nada.
+    const p = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-21', motivo: 'Festivo local' });
+    expect(p.status).toBe(409);
+    expect(p.body.error).toBe('citas_afectadas');
+    expect(p.body.mensaje).toContain('¿Las dejamos programadas o las cancelo?');
+    expect(p.body.citas).toEqual([{ id: c1.body.id, fecha: '2030-10-21', hora: '10:00', clienta: 'Clienta Festivo', servicio: 'Corte', profesional: 'Nora' }]);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.festivos).toEqual([]);
+
+    // Dejarlas: se guarda y la cita sigue.
+    const dejar = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-21', motivo: 'Festivo local', citas: 'dejar' });
+    expect(dejar.status).toBe(200);
+    expect(dejar.body.festivos).toHaveLength(1);
+    let [e] = await sql`select estado from public.appointments where id = ${c1.body.id}`;
+    expect(e!.estado).toBe('confirmada');
+
+    // Cancelarlas (una ausencia de la profesional el 22): se guarda, se cancela y sale el SMS.
+    const antes = sms.enviados.length;
+    const cancelar = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: n.profesionalId, fechaDesde: '2030-10-22', motivo: 'Formación', citas: 'cancelar' });
+    expect(cancelar.status).toBe(200);
+    [e] = await sql`select estado from public.appointments where id = ${c2.body.id}`;
+    expect(e!.estado).toBe('cancelada');
+    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+
+    // Un valor que no es ninguna de las tres opciones se rechaza.
+    const mal = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-23', citas: 'borrar' });
+    expect(mal.status).toBe(400);
+  });
+
+  it('PI-21: un horario nuevo que deja fuera citas pregunta antes; solo cuenta las que este cambio deja fuera', async () => {
+    const n = await alta('Horario Con Citas Test');
+    const h = api();
+    const tel = '+34999000222';
+    const dentro = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-15', hora: '10:00', telefono: tel, nombre: 'Clienta Horario' });
+    const fuera = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-16', hora: '12:00', telefono: tel, nombre: 'Clienta Horario' });
+    const corto = [1, 2, 3, 4, 5].map((weekday) => ({ weekday, apertura: '10:00', cierre: '12:00' }));
+
+    const p = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: corto });
+    expect(p.status).toBe(409);
+    expect(p.body.citas.map((c: { id: string }) => c.id)).toEqual([fuera.body.id]);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.horario.filter((t: { staffId: string | null }) => t.staffId === null)[0]).toMatchObject({ apertura: '10:00', cierre: '14:00' });
+
+    // Un horario propio de Nora que también la deja fuera, cancelando: SMS a la clienta.
+    const antes = sms.enviados.length;
+    const r = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }], citas: 'cancelar' });
+    expect(r.status).toBe(200);
+    const estados = await sql`select id, estado from public.appointments where business_id = ${n.id} order by start_at`;
+    expect(estados.map((x) => x.estado)).toEqual(['confirmada', 'cancelada']);
+    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+
+    // Guardar otra vez el mismo horario ya no pregunta: no deja fuera ninguna cita nueva.
+    const otra = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }] });
+    expect(otra.status).toBe(200);
+    void dentro;
+  });
+
+  it('PI-22: en la misma sección gana la primera que guarda; la segunda no pisa y avisa; otra sección sí se guarda', async () => {
+    const n = await alta('Dos Pestanas Test');
+    const h = api();
+    const ficha = (await pedir(h, 'GET', `negocios/${n.id}`)).body;
+    const datos = { nombre: ficha.nombre, sector: ficha.sector, timezone: ficha.timezone, direccion: ficha.direccion, telefonoHumano: ficha.telefonoHumano, tonoDeVoz: ficha.tonoDeVoz };
+    expect(typeof ficha.versiones.datos).toBe('string');
+
+    // Pestaña A guarda primero, con la versión con la que abrió.
+    const a = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...datos, mensajeBienvenida: 'Primera', version: ficha.versiones.datos });
+    expect(a.status).toBe(200);
+    expect(a.body.versiones.datos).not.toBe(ficha.versiones.datos);
+
+    // Pestaña B, abierta antes, intenta guardar la misma sección: no se guarda.
+    const b = await pedir(h, 'PUT', `negocios/${n.id}/datos`, { ...datos, mensajeBienvenida: 'Segunda', version: ficha.versiones.datos });
+    expect(b.status).toBe(409);
+    expect(b.body.error).toBe('cambiado_por_otra_persona');
+    expect(b.body.mensaje).toBe('Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas. No se ha guardado: recarga para ver lo último.');
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.mensajeBienvenida).toBe('Primera');
+
+    // Pero otra sección (las reglas) desde la pestaña B se guarda.
+    const r = await pedir(h, 'PUT', `negocios/${n.id}/reglas`, { ...ficha.reglas, antelacionMinHoras: 5, version: ficha.versiones.reglas });
+    expect(r.status).toBe(200);
+    expect(r.body.reglas.antelacionMinHoras).toBe(5);
+
+    // Igual por servicio, profesional y horario (cada uno su huella).
+    const sv = ficha.versiones.servicios[n.servicioId];
+    const servicio = ficha.servicios[0];
+    const cuerpoServicio = { nombre: servicio.nombre, descripcion: servicio.descripcion, duracionMin: servicio.duracionMin, bufferMin: servicio.bufferMin, precio: servicio.precio, precioVisible: servicio.precioVisible, activo: true };
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/servicios/${n.servicioId}`, { ...cuerpoServicio, precio: 25, version: sv })).status).toBe(200);
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/servicios/${n.servicioId}`, { ...cuerpoServicio, precio: 30, version: sv })).status).toBe(409);
+    const hv = ficha.versiones.horario.local;
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA.slice(0, 4), version: hv, citas: 'dejar' })).status).toBe(200);
+    expect((await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA, version: hv, citas: 'dejar' })).status).toBe(409);
+
+    // Una cita nueva no cambia la huella del servicio (citasFuturas no cuenta).
+    const antes = (await pedir(h, 'GET', `negocios/${n.id}`)).body.versiones.servicios[n.servicioId];
+    const c = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '11:00', telefono: '+34999000222', nombre: 'Clienta Huella' });
+    expect(c.status).toBe(201);
+    expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.versiones.servicios[n.servicioId]).toBe(antes);
   });
 
   it('horario: un tramo que cierra antes de abrir se rechaza y no cambia nada', async () => {
@@ -424,7 +547,8 @@ describe('citas a mano (PR-04, PI-14)', () => {
     const pronto = await cita(fila!.hoy, fila!.hora, '+34999000333');
     expect(pronto.status).toBe(201);
 
-    await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA });
+    // La cita de hoy queda fuera del horario normal: se deja (PI-21).
+    await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: SEMANA, citas: 'dejar' });
     const fuera = await cita('2030-10-16', '13:30', '+34999000444');
     expect(fuera.status).toBe(409);
     expect(fuera.body.motivo).toBe('outside_hours');

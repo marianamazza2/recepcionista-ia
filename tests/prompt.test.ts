@@ -1,5 +1,6 @@
 // System prompt desde la configuración (Fase 2 · 2.2)
 
+import { telefonoLegible } from '../src/core/phone.js';
 import { readFileSync } from 'node:fs';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -28,8 +29,19 @@ describe('buildSystemPrompt', () => {
   it('con Aurora contiene sus datos, servicios, quién hace qué y precios visibles', () => {
     const p = buildSystemPrompt(aurora);
     expect(p).toContain('Eres la asistente virtual de Estética Aurora');
+    // PW-02/PA-04 (05/11/2026): la bienvenida ya dice "asistente virtual IA";
+    // el agente no lo repite, pero si le preguntan si es una persona, dice la verdad.
+    expect(p).toContain('no te vuelvas a presentar ni repitas que eres una IA');
+    expect(p).toContain('Si te preguntan si eres una persona, di la verdad sin rodeos');
     expect(p).toContain('Calle Mayor 14');
-    expect(p).toContain('+34910000000');
+    // PA-15 (regla 5): el teléfono como se dice.
+    expect(p).toContain('Teléfono del local (escríbelo así): 910 000 000');
+    expect(p).not.toContain('+34910000000');
+    // PA-15: frases completas, ya no "frases cortas"; y PA-13: el día pedido, siempre.
+    expect(p).toContain('frases completas y naturales');
+    expect(p).not.toContain('frases cortas');
+    expect(p).toContain('# Cómo te expresas');
+    expect(p).toContain('pásalo siempre en dia_pedido');
     expect(p).toContain('- Limpieza facial profunda: 60 min, 55 €. Lo hacen: Lucía y Marta.');
     expect(p).toContain('- Depilación láser (zona pequeña): 30 min, 40 €. Lo hace: Lucía.');
     expect(p).toContain('- Consulta de valoración: 20 min, sin coste.');
@@ -38,6 +50,8 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('- Lucía, los jueves: de 16:00 a 21:00');
     expect(p).toContain(aurora.politicaCancelacion!);
     expect(p).toContain(aurora.mensajeBienvenida!);
+    // Sin bienvenida, se presenta ella como asistente virtual IA (PW-02).
+    expect(buildSystemPrompt({ ...aurora, mensajeBienvenida: null })).toContain('preséntate como la asistente virtual IA de Estética Aurora');
     expect(p).toContain('cada 30 minutos');
     expect(p).toContain('2 horas de antelación');
   });
@@ -135,5 +149,13 @@ describe('contextoDelTurno', () => {
     expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222' })).toContain(
       'Clienta: identificada (Ana, +34600111222).',
     );
+  });
+});
+
+describe('telefonoLegible (PA-15)', () => {
+  it('escribe un teléfono español como se dice y deja los demás tal cual', () => {
+    expect(telefonoLegible('+34910000789')).toBe('910 000 789');
+    expect(telefonoLegible('+34600111222')).toBe('600 111 222');
+    expect(telefonoLegible('+447700900123')).toBe('+447700900123');
   });
 });

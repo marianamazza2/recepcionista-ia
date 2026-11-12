@@ -10,6 +10,7 @@
 // En la Fase 2 (sin panel) el equipo ve las derivaciones en `escalations`.
 
 import { escalateConversation } from '../../db/conversations.js';
+import { telefonoLegible } from '../phone.js';
 import { ok, texto } from './common.js';
 import type { AgentTool } from './types.js';
 
@@ -63,7 +64,7 @@ export const derivarAHumano: AgentTool = {
       return ok({
         consulta_pasada_al_equipo: true,
         conversacion_sigue_abierta: true,
-        telefono_local: ctx.config.telefonoHumano,
+        telefono_local: ctx.config.telefonoHumano ? telefonoLegible(ctx.config.telefonoHumano) : null,
         indicacion:
           'Dile que esa información no la tienes y que se la pasas al equipo, y pregúntale si puedes ayudarla en algo más. ' +
           'Sigues pudiendo dar, cambiar y cancelar citas. No prometas que la llamarán ni cuándo.',
@@ -72,7 +73,7 @@ export const derivarAHumano: AgentTool = {
     ctx.state.estado = 'escalada';
     return ok({
       derivada: true,
-      telefono_local: ctx.config.telefonoHumano,
+      telefono_local: ctx.config.telefonoHumano ? telefonoLegible(ctx.config.telefonoHumano) : null,
       indicacion:
         'Dile que has pasado su consulta al equipo y dale el teléfono del local. No prometas que la llamarán ni cuándo. ' +
         'En esta conversación ya no puedes reservar, cancelar ni mover citas.',

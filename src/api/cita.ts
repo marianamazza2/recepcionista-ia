@@ -14,6 +14,7 @@
 import type { Sql } from 'postgres';
 
 import { cancelarPorEnlace, citaPorEnlace, type CitaDelEnlace, type ResultadoCancelacion } from '../citas/enlace.js';
+import { telefonoLegible } from '../core/phone.js';
 import { escaparHtml as e } from './http.js';
 
 export interface CitaDeps {
@@ -72,7 +73,7 @@ function noValido(): Response {
 }
 
 function telefono(c: CitaDelEnlace): string {
-  return c.config.telefonoHumano ? `llama al <a href="tel:${e(c.config.telefonoHumano)}">${e(c.config.telefonoHumano)}</a>` : 'llama al centro';
+  return c.config.telefonoHumano ? `llama al <a href="tel:${e(c.config.telefonoHumano)}">${e(telefonoLegible(c.config.telefonoHumano))}</a>` : 'llama al centro';
 }
 
 function detalle(c: CitaDelEnlace): string {

@@ -113,13 +113,13 @@ describe('la demo en el navegador', () => {
     await abrirWidget(pagina);
     expect(await widget(pagina, '.cabecera h2').textContent()).toBe('Clínica Olea');
     expect(await widget(pagina, '.aviso').textContent()).toBe(
-      'Soy la asistente virtual de Clínica Olea, al escribir aceptas nuestra política de privacidad.',
+      'Chat atendido por inteligencia artificial. Al escribir aceptas nuestra política de privacidad.',
     );
     // La de la base: en la nube apunta a la demo publicada (PW-08).
     const [n] = await sql<{ url: string }[]>`select privacidad_url as url from public.businesses where id = ${OLEA.businessId}`;
     expect(await widget(pagina, '.aviso a').getAttribute('href')).toBe(n!.url);
     expect(await widget(pagina, '.aviso a').getAttribute('target')).toBe('_blank');
-    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Clínica Olea');
+    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual IA de Clínica Olea');
     // PW-17: el círculo de la cabecera con su logo (o, si no tiene, la inicial).
     const [l] = await sql<{ logo: string | null }[]>`select widget_logo as logo from public.businesses where id = ${OLEA.businessId}`;
     if (l!.logo) expect(await widget(pagina, '.cabecera .logo img').getAttribute('src')).toBe(l!.logo);
@@ -200,6 +200,6 @@ describe('la demo en el navegador', () => {
       'Tu conversación anterior ha terminado. Empezamos una nueva.',
     );
     expect(await widget(pagina, '.m.clienta').count()).toBe(0);
-    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual de Clínica Olea');
+    expect(await widget(pagina, '.m.asistente').first().textContent()).toContain('asistente virtual IA de Clínica Olea');
   });
 });

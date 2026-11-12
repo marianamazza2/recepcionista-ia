@@ -73,7 +73,7 @@ src/
 ├── dev/                 npm run dev: la demo y el panel en local
 └── cli/
     ├── chat.ts          npm run chat: conversar por la Terminal
-    ├── eval.ts          npm run agent:eval: los 13 escenarios con el modelo real
+    ├── eval.ts          npm run agent:eval: los 15 escenarios con el modelo real y el juez de tono
     ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
     ├── panel-cuenta.ts  npm run panel:cuenta: crear una cuenta del panel
     └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
@@ -216,7 +216,7 @@ psql "$DATABASE_URL" -c "select c.nombre, s.nombre as profesional,
 ### Los escenarios con el modelo real
 
 ```bash
-npm run agent:eval                # los 13 escenarios (≈ 0,40 US$ con Opus 5)
+npm run agent:eval                # los 15 escenarios y el juez de tono (≈ 0,45 US$ con Opus 5)
 npm run agent:eval -- --solo 3    # solo uno
 npm run agent:eval -- --ver       # con la conversación entera
 ```
@@ -528,7 +528,7 @@ referirse a ellos desde los tests y las pruebas manuales:
 | Horario propio | Lucía los jueves solo 16–21 (PD-01) |
 | Ajustes | Antelación 2 h · huecos cada 30 min · margen fuera del cierre · el agente pregunta con quién · cancelación: solo informa, plazo 24 h |
 | Bloqueos | Festivo del miércoles 21/10, vacaciones de Lucía, formación de Marta |
-| Bienvenida | *"Soy la asistente virtual de Estética Aurora…"* (PA-04) |
+| Bienvenida | *"Soy la asistente virtual IA de Estética Aurora…"* (PA-04; aviso de IA, PW-02) |
 | Widget | Clave fija `wk_demo_estetica_aurora_0001`, solo en `localhost`, color `#8a5a63`, isotipo inventado (`demo/aurora-isotipo.svg`), tope 100 US$ |
 | Preguntas frecuentes | Aparcamiento, formas de pago y bonos regalo (PI-08) |
 | Citas | Dos el lunes 19/10 a las 10:00 (profesionales distintos) + una cancelada |
@@ -550,7 +550,7 @@ tests siguen en Aurora.
 | Profesionales | Dra. Clara (todos) y Núria, enfermera (peeling y láser) |
 | Horario | L–J 10–20 · V 10–15 |
 | Ajustes | Los de Aurora: antelación 2 h, huecos cada 30 min, pregunta con quién, cancelación solo informa con plazo 24 h |
-| Bienvenida | *"¡Hola! Soy la asistente virtual de Clínica Olea. ¿En qué puedo ayudarte?"* (texto de Mariana, 04/11/2026: la forma corta que se propone a cada negocio nuevo) |
+| Bienvenida | *"¡Hola! Soy la asistente virtual IA de Clínica Olea. ¿En qué puedo ayudarte?"* (texto de Mariana, 04/11/2026, con "IA" desde el 05/11/2026 por el aviso de IA, PW-02: la forma que se propone a cada negocio nuevo) |
 | Widget | Clave `wk_demo_clinica_olea_0001`, color `#5c6b4f`, isotipo inventado (`demo/olea-isotipo.svg`), tope 20 US$. En local, solo `localhost`; en la nube, la demo publicada y mazzmkt.com |
 
 ---
@@ -562,7 +562,6 @@ tests siguen en Aurora.
 | Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
 | Publicar el panel en Vercel | cuando Mariana lo confirme (PI-02) |
-| PA-13: el agente explica lo que no puede dar, garantizado por el código | después de la 4 (⚠️ cuándo, por confirmar) |
 | Portal del cliente y alta por chat, con enlace de invitación (PC-01 a PC-09) | 9, adelantada: va después de la 4; espera el guion de Mariana |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
@@ -578,3 +577,29 @@ cierra la Fase 4: la migración y la verificación en la nube están pendientes.
 
 Aceptación local del logo (02/11/2026): también se decodifican las imágenes
 pequeñas; un archivo renombrado se rechaza y conserva el logo anterior (caso 15).
+
+### Plan de aceptación ejecutado en local · 05/11/2026
+
+76 de los 79 casos del plan (el bloque P, en la nube, va después del merge),
+más los cinco de Mariana. El informe con capturas está en Research Desk
+(«Informe de pruebas · Fase 4»). Arreglos nuevos, cada uno con su test:
+
+- **Caso 27:** un servicio que no hace ninguna profesional activa ya no llega
+  al agente (antes lo ofrecía y acababa derivando); el panel lo marca en ámbar.
+- **Caso 74:** si la sesión caduca mientras se edita, "Entrar" lo avisa y trae
+  el email puesto.
+- **Consumo:** el campo "Mes" enseña el mes de la tabla en vez de verse vacío.
+
+**PA-13, PA-15 y PI-22 (11/11/2026):** el agente explica primero por qué no
+puede dar un día (local cerrado, cerrado a esa hora, o no hay citas con esa
+profesional, con quién sí hay) a partir del `dia_pedido` que calcula
+`consultar_disponibilidad`; se expresa con las reglas y ejemplos aprobados
+(PA-15) y escribe el teléfono como se dice; y en el panel, si dos personas
+guardan la misma sección, gana la primera (PI-22). `agent:eval` suma los
+escenarios 14 y 15 y un juez de tono. Falta pasarlo con el modelo real: el
+11/11 la cuenta de Anthropic se quedó sin crédito.
+
+**PI-21 (05/11/2026):** un festivo, una ausencia o un horario nuevo que deja
+fuera citas ya dadas no se guarda sin preguntar: el panel enseña las citas y
+deja elegir entre dejarlas programadas o cancelarlas (cada clienta recibe su
+SMS). Lo comprueba la API (`citas_afectadas`) dentro de la misma transacción.

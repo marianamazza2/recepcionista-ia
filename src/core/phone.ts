@@ -34,3 +34,12 @@ export function normalizarTelefono(entrada: string): string | null {
   }
   return s;
 }
+
+/**
+ * PA-15 (regla 5): el teléfono como se dice, "910 000 789", no "+34910000789".
+ * Solo los españoles (el MVP es España); cualquier otro queda tal cual.
+ */
+export function telefonoLegible(telefono: string): string {
+  const m = /^\+34(\d{3})(\d{3})(\d{3})$/.exec(telefono);
+  return m ? `${m[1]} ${m[2]} ${m[3]}` : telefono;
+}

@@ -1,5 +1,7 @@
 // Consumo del mes de todos los negocios (PI-11): lo mismo que `npm run
 // consumo`, con las pruebas del panel aparte (PI-13) y el aviso del 80 %.
+// Sin mes elegido, el campo enseña el mes que devolvió el servidor (aceptación
+// Fase 4: antes se veía vacío aunque la tabla era del mes en curso).
 
 import { useState } from 'react';
 
@@ -17,7 +19,7 @@ export function Consumo() {
           <h1 className="text-xl font-semibold">Consumo</h1>
           <p className="text-sm text-slate-500">Coste de la IA del mes por negocio, en dólares. Las pruebas del panel van aparte, pero cuentan para el tope.</p>
         </div>
-        <label className="ml-auto"><span className="etiqueta">Mes</span><input type="month" className="campo" value={mes} onChange={(e) => setMes(e.target.value)} /></label>
+        <label className="ml-auto"><span className="etiqueta">Mes</span><input type="month" className="campo" value={mes || datos?.[0]?.mes || ''} onChange={(e) => setMes(e.target.value)} /></label>
       </div>
       {error ? <Aviso error={error} /> : !datos ? <Cargando /> : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">

@@ -18,7 +18,7 @@ Space: **"mm - agente recepcionista"** (`spc_20261015t1816fv77wyc`).
 
 | Si cambia… | Documento | Artifact |
 |---|---|---|
-| **Cualquier cosa de cómo funciona el producto** (siempre) | Cómo funciona el Recepcionista — el manual, el principal | `art_20261016t05187b4pfjv` |
+| **Cualquier regla del recepcionista** (siempre, en el mismo turno: también si solo queda decidida, si sale de una consulta a Mariana o si queda ⚠️ por confirmar; regla obligatoria del `AGENTS.md` raíz, §8) | Cómo funciona el Recepcionista — el manual, el principal | `art_20261016t05187b4pfjv` |
 | Un ajuste por negocio (nuevo o cambiado) | Cuestionario de alta: la pregunta, el ejemplo de Aurora y la ficha exportada | `art_20261016t0518xh6vgg1` |
 | El estado de las fases o la tabla de decisiones | Hoja de ruta Recepcionista IA | `art_20261016t0418n68yyee` |
 | **Cada paso que se cierra o empieza** (siempre, aunque no cambie el producto) | Mapa de avance · Recepcionista IA: lo que Mariana mira de un vistazo. Solo se tocan los datos del bloque `DATOS` del script (`HERE`, `TODO`, estados de `CURRENT.steps` y `NEXT`, `UPDATED`). Las fases cerradas pasan a `CLOSED` sin pasos | `art_20261101t1623jpfmw10` |

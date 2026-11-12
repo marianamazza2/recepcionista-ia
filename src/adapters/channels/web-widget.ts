@@ -30,6 +30,7 @@
 // `mensajes: []`, en el log pero fuera del historial de la API (D-45).
 // =============================================================================
 
+import { telefonoLegible } from '../../core/phone.js';
 import type { Sql } from 'postgres';
 
 import type { SmsProvider } from '../sms/types.js';
@@ -113,7 +114,7 @@ export interface ResultadoChat {
 // -----------------------------------------------------------------------------
 
 function llamar(negocio: WidgetBusiness): string {
-  return negocio.telefonoHumano ? `llama al ${negocio.telefonoHumano}` : 'llama al local';
+  return negocio.telefonoHumano ? `llama al ${telefonoLegible(negocio.telefonoHumano)}` : 'llama al local';
 }
 
 export function textoFijo(negocio: WidgetBusiness, aviso: AvisoWidget, limites: LimitesWidget = LIMITES_WIDGET): string {

@@ -157,7 +157,7 @@ describe('el SMS de confirmación', () => {
 describe('el SMS de cancelación (PW-10)', () => {
   it('texto de PW-10, con el teléfono del local o sin él', () => {
     expect(textoCancelacion('Estética X', { dia: 'martes 15 de octubre', hora: '10:00' }, '+34910000888')).toBe(
-      'Estética X: tu cita del martes 15 de octubre a las 10:00 se ha cancelado. Si no fuiste tú, llama al +34910000888.',
+      'Estética X: tu cita del martes 15 de octubre a las 10:00 se ha cancelado. Si no fuiste tú, llama al 910 000 888.',
     );
     expect(textoCancelacion('Estética X', { dia: 'martes 15 de octubre', hora: '10:00' }, null)).toBe(
       'Estética X: tu cita del martes 15 de octubre a las 10:00 se ha cancelado. Si no fuiste tú, llama al local.',
@@ -176,7 +176,7 @@ describe('el SMS de cancelación (PW-10)', () => {
     await cancelarPorChat();
     expect(await estado(citaId)).toBe('cancelada');
     expect(sms.enviados).toEqual([
-      { telefono, texto: 'Test test-cita-sms: tu cita del martes 15 de octubre a las 14:30 se ha cancelado. Si no fuiste tú, llama al +34910000888.' },
+      { telefono, texto: 'Test test-cita-sms: tu cita del martes 15 de octubre a las 14:30 se ha cancelado. Si no fuiste tú, llama al 910 000 888.' },
     ]);
     const filas = await sql<{ estado: string; texto: string }[]>`
       select estado, texto from public.sms_messages where appointment_id = ${citaId} order by created_at`;

@@ -344,9 +344,11 @@ cuestionario de alta): no hay un texto único en el código. La forma que
 prefiere Mariana (04/11/2026), y la que se propone a cada negocio nuevo, es
 **corta y sin lista de lo que sabe hacer**:
 
-> ¡Hola! Soy la asistente virtual de {negocio}. ¿En qué puedo ayudarte?
+> ¡Hola! Soy la asistente virtual IA de {negocio}. ¿En qué puedo ayudarte?
 
 El widget le añade el saludo de la hora (PW-02): *"¡Hola, buenas tardes! …"*.
+Desde el 05/11/2026 dice **«asistente virtual IA»** (ver *Aviso de IA*, en
+PW-02).
 
 ### PA-05 · Cuándo deriva a una persona
 
@@ -476,7 +478,9 @@ intentos o algo falla.
 
 | # | Tema | Decisión / qué hace ahora | Estado |
 |---|---|---|---|
-| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, el tratamiento necesita una visita antes…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código | ✅ decidida 05/11/2026 (el valor de serie y cuándo se construye, ⚠️ por confirmar) |
+| PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
+| PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
+| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -491,34 +495,178 @@ el tratamiento, la profesional ni la hora sin decirlo y sin que ella diga que
 sí (PA-01).
 
 > — Quiero toxina el sábado.
-> — Los sábados la clínica no abre. Además, la toxina necesita antes una
->   primera visita con la doctora. ¿Te busco una primera visita el lunes o el
->   martes?
+> — Los sábados la clínica no abre. ¿Te va bien el viernes por la tarde o el
+>   lunes por la mañana?
 
 **Lo garantiza el código, no solo el prompt** (regla de oro): el motor y las
 herramientas devuelven el **motivo** cuando algo no se puede (local cerrado,
-profesional que no trabaja ese día, servicio que necesita otro antes), y la
+profesional que no trabaja ese día, festivo o ausencia), y la
 herramienta de reservar **no reserva un servicio distinto del que se
 confirmó**.
 
-**Ajuste por negocio (por servicio):** si necesita otro servicio antes (por
-ejemplo, la primera visita antes de la toxina) y qué hace el agente si la
-clienta dice que ya lo hizo:
+**Aplazado (Mariana, 05/11/2026): un servicio que necesita otro antes.**
+No se construye ahora: es lógica muy de cada local y salió de un ejemplo de
+la demo, no de un negocio real. Se hará cuando un cliente lo necesite. Para
+entonces queda apuntado cómo lo quiere Mariana en su caso (Clínica Olea: la
+toxina, o cualquier tratamiento que necesita antes una revisión médica):
 
-- **Reservar directamente.** Es lo que quiere Clínica Olea: si la clienta ya
-  hizo la primera visita, se le reserva la toxina.
-- **Pasarlo al equipo** (PA-12), sin reservar.
+1. La clienta pide toxina. El agente le pregunta: *"¿Ya has tenido una
+   revisión médica con nosotros?"*
+2. **Si dice que no:** le explica por qué hace falta y le ofrece cita para la
+   revisión médica.
+3. **Si dice que sí:** lo que cuenta es que tenga una **cita de revisión
+   médica** en el sistema. Ser clienta (tener ficha) no basta: puede haber
+   venido a otro tratamiento que no la pedía.
 
-⚠️ **Por confirmar con Mariana:**
+Mientras tanto, PA-13 vale tal cual para todo lo demás: si no se puede dar lo
+que piden, el agente dice por qué.
 
-- *Valor de serie.* Propuesta: **reservar directamente** (como Olea).
-- *Si ya consta en el sistema.* Propuesta: si la clienta ya tiene una cita
-  pasada y atendida de ese servicio previo (por su teléfono), se reserva sin
-  preguntar.
-- *Cuándo se construye.* Propuesta: justo después de cerrar la Fase 4,
-  mientras Mariana escribe el guion del alta por chat (no depende de él). El
-  ajuste se carga en el panel interno; en el portal (Fase 9) entra como
-  pregunta de la sección "Servicios".
+**Cómo tiene que responder (Mariana, 05/11/2026, tras el informe de pruebas):**
+
+- **El local no abre ese día o a esa hora** (un domingo, un festivo, las 3 de
+  la madrugada, el descanso del mediodía): dice que **ese día o a esa hora
+  está cerrado** y ofrece lo más cercano.
+
+  > — Quiero una limpieza el domingo 8.
+  > — Los domingos estamos cerrados. El lunes 9 tengo a las 10:00, 10:30 u
+  >   11:00. ¿Te va alguna?
+
+- **Pide a una profesional que ese día no tiene citas** (no trabaja, está
+  ausente o lo tiene lleno): dice que **no hay citas disponibles con ella ese
+  día** (sin contar el motivo), mira si **otra profesional** tiene huecos ese
+  día y, si los hay, **pregunta** qué prefiere.
+
+  > — Quiero una limpieza con Lucía el miércoles 11.
+  > — El miércoles 11 no hay citas disponibles con Lucía. Ese día sí tengo
+  >   hueco con Marta. ¿Te lo busco con Marta o prefieres que sea con Lucía
+  >   otro día?
+
+  Si nadie tiene huecos ese día, ofrece a esa profesional en otros días.
+
+**Construida el 11/11/2026, en el PR de la Fase 4** (Mariana dijo que sí el
+11/11). Cómo lo garantiza el código: `consultar_disponibilidad` recibe el
+**día que nombró la clienta** (`dia_pedido`) y siempre explica ese día, aunque
+el modelo busque en otro rango (en las pruebas del 05/11 el modelo se saltaba
+el domingo o el miércoles de Lucía y por eso no decía nada). Devuelve si se
+puede, el motivo (local cerrado ese día de la semana, festivo del local,
+cerrado a esa hora con el horario de ese día, o no hay citas con esa
+profesional ese día, sin decir por qué), los huecos de otras profesionales
+ese día y la frase con la que tiene que empezar la respuesta.
+
+Lo de que **reservar no cambie el servicio confirmado** no lleva código
+nuevo: `crear_reserva` reserva exactamente el servicio, el día, la hora y la
+profesional que se le pasan, y solo después del sí de la clienta (PA-01). No
+hay un registro de «lo confirmado» con el que comparar; si hiciera falta, se
+añade.
+
+*Pendiente:* comprobarlo con el modelo real (`agent:eval`, escenarios 14 y
+15). El 11/11 no se pudo: la cuenta de Anthropic se quedó sin crédito.
+
+### PA-14 · «Para Rodrigo» · ✅ decidida el 05/11/2026
+
+Salió de la prueba 82 de Mariana: «Querer agendar una cita para Rodrigo el
+miércoles 11». Rodrigo es un profesional del negocio.
+
+**Regla:** si la clienta dice «para» un nombre que es de alguien del equipo,
+el agente entiende que quiere que la atienda esa persona (como «con
+Rodrigo»), sin preguntarlo. **Solo pregunta** si el nombre no es de nadie del
+equipo («¿La cita es para otra persona?»), y entonces aplica PA-11: la cita es
+del teléfono que se da.
+
+Es lo que el agente ya hacía en la prueba del 03/11; queda como regla.
+
+### PA-15 · Cómo se expresa · ✅ decidida el 05/11/2026
+
+Salió de la pregunta 2 del informe de pruebas: al pasar algo al equipo, a
+veces respondía solo «Queda anotado para el equipo». Mariana quiere que suene
+**cercano, como una persona y no como un robot hablando cortado**. Lo revisó
+en la hoja «Así habla tu recepcionista» (05/11/2026): aprobó las propuestas y
+cambió dos.
+
+**Reglas de estilo** (regla del motor, igual para todos los negocios; el
+«tono de voz» de cada negocio sigue siendo su ajuste):
+
+1. Frases completas y naturales, con conectores, como una persona de
+   recepción que escribe por chat. Nada de respuestas de una línea. Sustituye
+   la instrucción de hoy, «frases cortas, como en un chat».
+2. Primero el porqué y después la alternativa (PA-13).
+3. Cuando no sabe algo, lo dice con naturalidad, dice qué hará y sigue
+   ofreciendo ayuda (PA-12).
+4. Suele terminar con una pregunta concreta («¿te busco cita?»).
+5. El teléfono, escrito como se dice: 910 000 789.
+6. Como mucho un emoji, en el saludo.
+7. De tú, español de España.
+
+**Ejemplos aprobados** (van al agente como modelo, no como texto fijo):
+
+> **No sabe un dato.** Pues eso no lo sé, la verdad: no tengo información
+> sobre descuentos ni promociones. Se lo paso al equipo para que te lo
+> confirmen ellos. Mientras tanto, ¿te busco cita para algún tratamiento?
+
+> **Consejo de salud.** Eso no te lo puedo aconsejar yo: para la rosácea es
+> mejor que lo valore alguien del equipo, que conoce tu caso. Les paso tu
+> pregunta y te responden ellas. Si quieres, también te busco una cita para
+> que te lo miren en persona.
+
+> **Precio que no se enseña y tratamiento que no existe.** El precio del
+> peeling te lo confirman en el local, porque depende de cada caso. Y el
+> tratamiento facial de oro de 24k no lo tenemos entre nuestros servicios; de
+> todas formas, le paso tu pregunta al equipo por si acaso. ¿Te cuento qué
+> tratamientos faciales sí hacemos?
+
+> **Cerrado ese día.** Los domingos estamos cerrados, así que ese día no puedo
+> darte cita. Lo más cercano que tengo para una limpieza facial (60 min,
+> 45 €) es el lunes 9: 10:00 · 10:30 · 11:00. ¿Te va bien alguna? Si prefieres
+> otro día, dímelo y lo miro.
+
+> **La profesional no está ese día** (PA-13). El miércoles 11 no hay citas
+> disponibles con Lucía. Ese día sí tengo hueco con Marta a las 11:00. ¿Te lo
+> reservo con Marta, o prefieres que sea con Lucía otro día?
+
+> **Una hora que no está en la lista** (versión de Mariana). A las 10:15 no
+> tenemos disponibilidad. Ese lunes 16 tengo para el tratamiento de peeling:
+> 10:00 · 10:30 · 11:00.
+
+> **Ofrecer horarios** (la lista sigue, PA-03). ¡Claro! Mañana viernes 6 por
+> la tarde tengo hueco para una limpieza facial (60 min, 45 €): 16:30 · 17:00
+> · 17:30. Te pueden atender Lucía o Marta. ¿Tienes preferencia por alguna?
+
+> **No puede cancelar por el plazo.** Vaya, lo siento: como tu cita es mañana
+> a las 10:00, ya no puedo cancelarla desde aquí (se puede hasta 24 horas
+> antes). Le he pasado tu mensaje al equipo para que lo vean contigo. Si te
+> corre prisa, llámanos al 910 000 789 y lo solucionamos.
+
+> **Una queja** (versión de Mariana). Siento mucho que no te haya ayudado
+> como esperabas. Le paso tu mensaje al equipo para que lo revisen, y si
+> prefieres puedes llamarnos al 910 000 789.
+
+> **El saludo** (con el aviso de IA del 05/11). ¡Hola, buenas tardes! Soy
+> la asistente virtual IA de Clínica Olea. ¿En qué puedo ayudarte?
+
+**Cómo se comprueba:** una comprobación automática revisará el tono en cada
+pasada de los escenarios del agente (`agent:eval`), con estas reglas y
+ejemplos. A Mariana le llega una línea («tono: 10 de 11 bien») y, si algo
+falla, la respuesta concreta.
+
+**El aviso de IA** quedó decidido el 05/11/2026 (ver PW-02): lo dicen la
+línea fija del chat y el saludo («asistente virtual IA»), así que el agente
+ya no añade «(sí, soy una IA)» en cada primera respuesta.
+
+**Construida el 11/11/2026**, junto con PA-13:
+
+- El agente tiene las 7 reglas y estos ejemplos en su instrucción, igual
+  para todos los negocios (los ejemplos van con huecos, sin datos de ningún
+  negocio). Ya no dice «frases cortas, como en un chat».
+- **El teléfono, como se dice:** lo garantiza el código. El agente, los
+  mensajes fijos del chat, el SMS de cancelación y la página de la cita lo
+  escriben «910 000 789» (el enlace para llamar sigue con el +34).
+- **Comprobación automática del tono:** `agent:eval` termina con una línea
+  («Tono (PA-15): 14 de 15 respuestas bien») y las que fallan, revisadas por
+  un modelo barato (Haiku) con estas reglas. Es un aviso para leer, no
+  cambia el resultado de los escenarios.
+
+*Pendiente:* comprobarlo con el modelo real; el 11/11 la cuenta de Anthropic
+se quedó sin crédito.
 
 ---
 
@@ -531,7 +679,7 @@ antes de lanzar la fase.
 | # | Tema | Propuesta de serie | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
 | PW-01 | Marca del widget | Solo la del negocio (nombre y color). El nombre del producto no aparece hasta que exista (PD-07) | Color | ✅ decidida 28/10/2026 |
-| PW-02 | Aviso de privacidad | Línea fija antes del primer mensaje: "Soy la asistente virtual de {negocio}, al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora | URL de su política de privacidad | ✅ decidida 28/10/2026, reconfirmada el 04/11/2026 |
+| PW-02 | Aviso de privacidad e IA | Línea fija antes del primer mensaje: "Chat atendido por inteligencia artificial. Al escribir aceptas nuestra política de privacidad", con enlace. La bienvenida saluda según la hora y dice "asistente virtual IA" | URL de su política de privacidad | ✅ decidida 28/10/2026; texto con la IA, 05/11/2026 |
 | PW-03 | Cuánto dura la conversación en el navegador | Si vuelve antes de **2 h**, la retoma; después, conversación nueva | — | ✅ decidida 28/10/2026 |
 | PW-04 | Tope mensual por negocio | **100 US$/mes** de coste del agente. Al 100 %, mensaje fijo con el teléfono del local; al 80 %, aviso en el informe de consumo | Tope (de serie 100 US$) | ✅ decidida 28/10/2026 |
 | PW-05 | Límites anti-abuso | Mensajes de hasta **1.000 caracteres**; **20 mensajes por conversación y hora**; **10 conversaciones nuevas por hora** desde la misma IP | — | ✅ decidida 28/10/2026 |
@@ -550,7 +698,7 @@ publicidad gratuita.
 **Decisión (Mariana, 28/10/2026):** solo la marca del negocio. El "Funciona
 con …" se decide cuando exista el nombre del producto.
 
-### PW-02 · Aviso de privacidad · ✅ decidida el 28/10/2026
+### PW-02 · Aviso de privacidad e IA · ✅ decidida el 28/10/2026 (texto nuevo el 05/11/2026)
 
 Antes de que la clienta escriba, una línea fija: *"Asistente virtual. Al
 escribir aceptas la política de privacidad de {negocio}"*, con enlace a la
@@ -574,10 +722,24 @@ una IA. Al escribir…"*). **Mariana lo quitó el 04/11/2026:** no le gusta cóm
 suena. El aviso vuelve al texto del 28/10/2026. Hoy, lo de que es una IA no se
 dice de forma explícita en el widget: el agente lo dice si se lo preguntan
 (está en su prompt) y la política de privacidad del negocio lo explica.
-⚠️ **Por decidir con Mariana** (04/11/2026) cómo se cumple el aviso de IA del
-Reglamento europeo de IA y lo que pide A8 sin esa frase: por ejemplo decirlo
-en la bienvenida de cada negocio, en la política de privacidad del negocio, o
-con otra redacción del aviso que le guste.
+
+**Aviso de IA · ✅ decidido el 05/11/2026 (Mariana), construido.** El
+Reglamento europeo de IA (art. 50, en vigor desde el 2 de agosto de 2026)
+pide que la persona sepa que habla con una IA, de forma clara y como muy
+tarde en el primer contacto. Para evitar problemas legales, Mariana lo pone
+en los dos sitios:
+
+- **Línea fija** antes de escribir (sustituye al texto del 28/10):
+  *«Chat atendido por inteligencia artificial. Al escribir aceptas nuestra
+  política de privacidad.»* La pone el código, igual para todos los negocios:
+  ningún negocio la puede quitar.
+- **Saludo**, según la hora: *«¡Hola, buenas tardes! Soy la asistente virtual
+  IA de Clínica Olea. ¿En qué puedo ayudarte?»* Es la bienvenida que se
+  propone a cada negocio (PA-04).
+- **El agente** no repite «(sí, soy una IA)» en cada primera respuesta. Si la
+  bienvenida no lo presenta como asistente virtual IA, lo hace él en su
+  primera respuesta. Y si le preguntan si es una persona, contesta la verdad,
+  sin rodeos.
 
 ### PW-03 · Cuánto dura la conversación en el navegador · ✅ decidida el 28/10/2026
 
@@ -974,6 +1136,8 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
 | PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
+| PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
+| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026, construida 11/11/2026 (texto del aviso, ⚠️ por confirmar) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1107,6 +1271,63 @@ normal para alguien que no va a trabajar más es desactivarla (PI-04).
 *Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
 profesional activa.
 
+### PI-21 · Un festivo o una ausencia encima de citas ya dadas · ✅ decidida el 05/11/2026
+
+Salió en el informe de pruebas (casos 37 y 42). Hoy, si se carga un festivo un
+día que ya tiene citas, las citas siguen en pie y nadie avisa.
+
+**Decisión (Mariana, 05/11/2026):** al cargar un festivo (o una ausencia) y
+haber citas ese día, el panel enseña un **cartel de aviso** con la lista de
+citas afectadas y pregunta:
+
+> Hay 2 citas ese día: Ana · Peeling · 10:00 y Bea · Manicura · 12:00. De
+> todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o
+> las cancelo?
+
+- **Dejarlas:** se guarda el festivo y las citas siguen igual.
+- **Cancelarlas:** se guarda el festivo y se cancelan esas citas.
+
+Lo mismo cuando el cambio se pide por el chat del portal del cliente (PC-10).
+
+**También decidido (Mariana, 05/11/2026):**
+
+- Si se cancelan, a cada clienta le llega el **SMS de cancelación**, el mismo
+  que al cancelar desde la agenda.
+- El mismo aviso sale al **cambiar el horario** del local o de una
+  profesional, si quedan citas fuera del horario nuevo.
+
+**Construida el 05/11/2026** en la Fase 4, antes del merge del PR #2 (Mariana
+lo pidió así). Lo comprueba la API en la misma transacción que el cambio: si
+hay citas afectadas y no se ha dicho qué hacer, no guarda nada.
+
+### PI-22 · La misma sección editada en dos sitios a la vez · ✅ decidida el 05/11/2026
+
+Salió del informe de pruebas (caso 73). Hoy, si el mismo negocio está abierto
+en dos pestañas y en las dos se cambia **la misma sección** (por ejemplo, los
+datos del negocio), gana la última que se guarda y lo de la primera se pierde
+sin avisar.
+
+**Decisión (Mariana, 05/11/2026):** gana **la primera que se guardó**. Si
+alguien intenta guardar encima de datos que han cambiado desde que abrió la
+sección, **no se guarda** y el panel avisa. Secciones distintas se siguen
+guardando las dos.
+
+> Esto lo ha cambiado otra persona (u otra pestaña) mientras lo editabas. No
+> se ha guardado: recarga para ver lo último.
+
+Valdrá igual en el portal del cliente (Fase 9), donde editarán varias
+personas.
+
+**Construida el 11/11/2026, en el PR de la Fase 4**, con el texto de arriba.
+Cada sección de la ficha tiene una huella (datos, reglas, chat, cada
+servicio, cada profesional, cada pregunta y el horario del local y de cada
+profesional). El panel la manda al guardar; si otra persona la cambió
+mientras tanto, no se guarda y sale el aviso. Las citas nuevas no cuentan
+como cambio. Límite conocido: dos guardados en el mismo milisegundo pueden
+pasar los dos; para el portal (Fase 9) se pasaría a una versión en la base.
+
+⚠️ *Por confirmar:* el texto del aviso. Se usa la propuesta mientras tanto.
+
 
 ---
 
@@ -1121,14 +1342,15 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | # | Tema | Decisión | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
 | PC-01 | Dos altas distintas | La **administrativa y legal** (datos fiscales, contacto, contrato con anexo RGPD, plan) la hace Mariana en su panel de clientes MAZZMKT, otro proyecto. La **del agente** la hace el cliente, por chat | — | ✅ decidida 05/11/2026 |
-| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 (la caducidad, ⚠️ por confirmar) |
+| PC-02 | Enlace de invitación | Ligado a **un negocio y al email de su contacto**. Un solo uso, caduca a los **7 días**, Mariana lo anula o genera otro. Para entrar hay que **confirmar ese email**. Qué negocio es lo decide el código, no el chat. Mientras no exista el panel de clientes MAZZMKT, se genera desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-03 | El alta por chat | En vez de formularios, un chat que pregunta **una cosa cada vez**, por secciones (0 bienvenida … 9 cierre). Antes de guardar cada sección enseña un **resumen visual** para confirmar | — | ✅ decidida 05/11/2026 (el guion, pendiente de Mariana) |
 | PC-04 | El portal que se va rellenando | Mientras chatea, el cliente ve su portal completarse. Después, el portal es suyo: lo ve todo y lo cambia **a mano o pidiéndoselo al chat** | — | ✅ decidida 05/11/2026 |
 | PC-05 | La vista de Mariana | Desde el panel interno ve el portal de cada cliente **tal como lo ve él** y lo puede editar. Los datos están en un solo sitio; las tres formas de cambiarlos muestran lo mismo | — | ✅ decidida 05/11/2026 |
-| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario (por ejemplo, un festivo) | Sí | ✅ decidida 05/11/2026 (el detalle, ⚠️ por confirmar) |
+| PC-06 | Turnos sueltos | Una profesional puede trabajar **un día concreto** fuera de su horario. En un festivo del local, abre la agenda **solo para ella y solo esas horas**. Se carga desde el portal y desde el panel interno | Sí | ✅ decidida 05/11/2026 |
 | PC-07 | Leer la web del negocio | El chat **no** lee la web de la clínica para proponer servicios. Más adelante | — | ✅ decidida 05/11/2026 |
-| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie | — | ⚠️ por confirmar |
-| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ⚠️ por confirmar |
+| PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
+| PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
+| PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1159,15 +1381,14 @@ un enlace de invitación ligado a **ese negocio** y al **email de su contacto**:
   desde el panel interno de la Recepcionista, para que el portal no espere a
   ese otro proyecto.
 
-⚠️ *Por confirmar:* cuánto dura el enlace. Propuesta: **7 días**.
+**Caduca a los 7 días** (Mariana, 05/11/2026).
 
 ### PC-03 · El alta por chat · ✅ decidida el 05/11/2026
 
 El cliente abre el enlace y le recibe un chat que pregunta **una cosa cada
 vez**, como una conversación, siguiendo las secciones del panel:
 
-0. Bienvenida · 1. El negocio · 2. Servicios (con PA-13: si necesitan otro
-antes) · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
+0. Bienvenida · 1. El negocio · 2. Servicios · 3. Profesionales · 4. Horarios (con turnos sueltos, PC-06) ·
 5. Festivos y ausencias · 6. Reservas y cancelación · 7. Preguntas frecuentes ·
 8. El chat en su web · 9. Cierre.
 
@@ -1204,22 +1425,35 @@ puede tener un **turno suelto**: trabaja un día concreto en el que
 normalmente no trabajaría. Ejemplo: Núria trabaja el festivo del 8 de
 diciembre de 10:00 a 14:00.
 
-⚠️ *Por confirmar:* si un turno suelto **abre** la agenda en un festivo del
-local (propuesta: sí, solo para esa profesional y esas horas) y si se puede
-cargar también desde el panel interno (propuesta: sí, en la sección de
-festivos y ausencias).
+**Decidido (Mariana, 05/11/2026):**
+
+- En un **festivo del local**, el turno suelto abre la agenda **solo para esa
+  profesional y solo en esas horas**. El resto del equipo sigue cerrado.
+- Se carga desde el portal y **también desde el panel interno**.
+- Se explica en el manual ("Cómo funciona el Recepcionista"), junto con las
+  demás excepciones del horario, para que se entienda qué manda sobre qué.
 
 ### PC-07 · Leer la web del negocio · ✅ decidida el 05/11/2026
 
 El chat no lee la web de la clínica para proponer los servicios. Se deja para
 más adelante.
 
-### PC-08 · Zona horaria · ⚠️ por confirmar
+### PC-08 · Zona horaria · ✅ decidida el 05/11/2026
 
-*Propuesta:* no se pregunta; todos los negocios, Europe/Madrid de serie. Si
-algún día hay un cliente en Canarias, se cambia desde el panel interno.
+No se pregunta: todos los negocios, Europe/Madrid de serie. Si un negocio
+está en otra zona (por ejemplo, Canarias), la cambia Mariana desde el panel
+interno.
 
-### PC-09 · El tope mensual de la IA · ⚠️ por confirmar
+### PC-09 · El tope mensual de la IA · ✅ decidida el 05/11/2026
 
-*Propuesta:* el cliente no ve ni cambia su tope (PW-04): lo pone Mariana en
-el panel interno según el plan contratado.
+El cliente no ve ni cambia su tope (PW-04): lo pone Mariana en el panel
+interno según el plan contratado.
+
+### PC-10 · Un festivo encima de citas, por el chat del portal · ✅ decidida el 05/11/2026
+
+Si el cliente pide por el chat de su portal un festivo o una ausencia («el
+lunes 16 cerramos») y ese día hay citas, el chat se lo dice y pregunta, como
+el panel (PI-21):
+
+> El lunes 16 hay 2 citas: Ana a las 10:00 y Bea a las 12:00. De todos modos,
+> ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?

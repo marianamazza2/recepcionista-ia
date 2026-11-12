@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 import { conSaludo } from '../widget/src/saludo.js';
 
-const BIENVENIDA = '¡Hola! Soy la asistente virtual de Estética Aurora, ¿cómo puedo ayudarte?';
+const BIENVENIDA = '¡Hola! Soy la asistente virtual IA de Estética Aurora, ¿cómo puedo ayudarte?';
 
 describe('PW-02: saludo según la hora', () => {
   it('suma buenos días, buenas tardes o buenas noches a "¡Hola!"', () => {
-    expect(conSaludo(BIENVENIDA, 9)).toBe('¡Hola, buenos días! Soy la asistente virtual de Estética Aurora, ¿cómo puedo ayudarte?');
-    expect(conSaludo(BIENVENIDA, 16)).toBe('¡Hola, buenas tardes! Soy la asistente virtual de Estética Aurora, ¿cómo puedo ayudarte?');
-    expect(conSaludo(BIENVENIDA, 22)).toBe('¡Hola, buenas noches! Soy la asistente virtual de Estética Aurora, ¿cómo puedo ayudarte?');
+    expect(conSaludo(BIENVENIDA, 9)).toBe('¡Hola, buenos días! Soy la asistente virtual IA de Estética Aurora, ¿cómo puedo ayudarte?');
+    expect(conSaludo(BIENVENIDA, 16)).toBe('¡Hola, buenas tardes! Soy la asistente virtual IA de Estética Aurora, ¿cómo puedo ayudarte?');
+    expect(conSaludo(BIENVENIDA, 22)).toBe('¡Hola, buenas noches! Soy la asistente virtual IA de Estética Aurora, ¿cómo puedo ayudarte?');
   });
 
   it('franjas a la española: días de 6 a 14, tardes de 14 a 21', () => {

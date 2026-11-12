@@ -12,6 +12,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import type { BusinessConfig } from '../../config/business.js';
+import { telefonoLegible } from '../phone.js';
 import { reservarYCambiarCitaAnterior } from './cambiar.js';
 import { identificarCliente } from './clientes.js';
 import { derivarAHumano } from './derivar.js';
@@ -65,7 +66,7 @@ export async function executeTool(
       ok: false,
       error: {
         motivo: 'conversacion_derivada',
-        mensaje: `Esta conversación ya se pasó al equipo: no se puede reservar, cancelar ni mover citas aquí. Da el teléfono del local: ${ctx.config.telefonoHumano ?? 'el del local'}.`,
+        mensaje: `Esta conversación ya se pasó al equipo: no se puede reservar, cancelar ni mover citas aquí. Da el teléfono del local: ${ctx.config.telefonoHumano ? telefonoLegible(ctx.config.telefonoHumano) : 'el del local'}.`,
       },
     };
   } else {

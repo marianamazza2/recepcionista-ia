@@ -35,14 +35,15 @@ async function negocioYOrigen(deps: WebChatDeps, req: Request, key: unknown): Pr
 }
 
 /**
- * PW-02: dice quién atiende el chat y enlaza la política. Texto de Mariana
- * (28/10/2026, confirmado el 04/11/2026: sin "una IA", que se probó en A6 y
- * no le gustó). Lo de que es una IA queda en el prompt del agente, que lo
- * dice si se lo preguntan, y en la política de privacidad del negocio.
+ * PW-02: avisa de que el chat lo atiende una IA (Reglamento europeo de IA,
+ * art. 50: claro y antes del primer contacto) y enlaza la política. Texto de
+ * Mariana del 05/11/2026; sustituye al del 28/10. Lo pone el código, igual
+ * para todos: ningún negocio lo puede quitar. El saludo de cada negocio lo
+ * repite ("asistente virtual IA", PA-04).
  */
 export function avisoPrivacidad(negocio: Pick<WidgetBusiness, 'nombre' | 'privacidadUrl'>): { texto: string; enlace: string | null } {
   return {
-    texto: `Soy la asistente virtual de ${negocio.nombre}, al escribir aceptas nuestra política de privacidad.`,
+    texto: 'Chat atendido por inteligencia artificial. Al escribir aceptas nuestra política de privacidad.',
     enlace: negocio.privacidadUrl,
   };
 }
