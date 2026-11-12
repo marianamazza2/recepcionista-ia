@@ -424,7 +424,11 @@ const ESCENARIOS: Escenario[] = [
       const [conv] = await e.sql<{ estado: string }[]>`select estado from public.conversations where id = ${charla.conversationId}`;
       const id = await customerDe(e, charla.conversationId);
       const citas = id ? await citasDe(e, id) : [];
-      const preguntaMas = /(algo más|otra cosa)/i.test(charla.respuestas[0]?.texto ?? '');
+      // PA-12 + PA-15: sigue ofreciendo ayuda con una pregunta, mejor concreta
+      // ("¿te busco cita?") que el genérico "¿algo más?".
+      const preguntaMas = /(algo más|otra cosa|te busco|¿quieres (que te busque|una? )?cita)/i.test(
+        charla.respuestas[0]?.texto ?? '',
+      );
       return {
         ok: n >= 1 && conv?.estado === 'activa' && citas.length === 1 && preguntaMas,
         detalle: `consultas al equipo: ${n}; estado: ${conv?.estado}; citas: ${citas.length}; pregunta si puede ayudar en algo más: ${preguntaMas}`,
