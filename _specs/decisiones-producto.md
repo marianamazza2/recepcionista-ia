@@ -1640,7 +1640,9 @@ cambia lo que yo había propuesto, y es mejor.
   nueva cada vez.
 - **Las citas.** Son la agenda del negocio; su historial es suyo.
 
-**Se borra a los 6 meses:**
+**Se borra a los 6 meses** (Mariana lo volvió a confirmar el 13/11/2026, al
+preguntar para qué se borra: el historial de la clienta no se toca, lo que
+caduca es el texto del chat)**:**
 
 - **El texto del chat** (`messages`: lo que escribió la clienta y lo que
   contestó el agente). Las quejas salen en días o semanas, no en seis meses, y
