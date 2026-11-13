@@ -11,6 +11,8 @@
 import { BookingError } from '../../adapters/booking/errors.js';
 import type { Booking, TimeSlot } from '../../adapters/booking/types.js';
 import type { BusinessConfig, ProfesionalConfig, ServicioConfig } from '../../config/business.js';
+import { getCustomer } from '../../db/customers.js';
+import { telefonoLegible } from '../phone.js';
 import { fechaLarga, inicioDelDia, localToUtc, sumarDias, utcToLocal } from '../time.js';
 import type { HuecoOfrecido, ToolContext, ToolError, ToolResult } from './types.js';
 
@@ -80,7 +82,34 @@ export function profesionalDesconocida(config: BusinessConfig): ToolResult {
 export function sinClienta(): ToolResult {
   return fallo({
     motivo: 'clienta_no_identificada',
-    mensaje: 'Antes hay que identificar a la clienta: pídele su nombre y su teléfono y llama a identificar_cliente.',
+    mensaje: 'Antes hay que identificar a la clienta: pídele su nombre, su email y un móvil, y llama a identificar_cliente.',
+  });
+}
+
+/**
+ * PA-16: ver, cancelar o mover una cita que ya existe exige el código del
+ * email en esta conversación. Devuelve el error para el modelo, o null si
+ * puede seguir. Una clienta sin email (PA-17) no puede: tiene que llamar.
+ */
+export async function exigirCodigo(ctx: ToolContext): Promise<ToolResult | null> {
+  if (!ctx.state.customerId) return sinClienta();
+  if (ctx.state.verificada) return null;
+  const clienta = await getCustomer(ctx.sql, ctx.config.id, ctx.state.customerId);
+  if (!clienta?.email) {
+    const tel = ctx.config.telefonoHumano ? ` al ${telefonoLegible(ctx.config.telefonoHumano)}` : '';
+    return fallo({
+      motivo: 'sin_email',
+      mensaje:
+        'Esta clienta no tiene email en su ficha, así que no se le puede mandar el código: por este chat no se pueden ver, ' +
+        `cancelar ni mover sus citas. Dile con naturalidad que para eso tiene que llamar al local${tel}. No le enseñes ninguna cita.`,
+    });
+  }
+  return fallo({
+    motivo: 'falta_codigo',
+    mensaje:
+      'Para ver, cancelar o mover sus citas hace falta el código que le llega a su email. Llama a enviar_codigo, dile que le has ' +
+      'mandado un código de seis dígitos a su correo y pídeselo; cuando lo escriba, verificar_codigo. Hasta entonces no le ' +
+      'enseñes ni toques ninguna cita.',
   });
 }
 
@@ -349,7 +378,8 @@ export async function errorDeReserva(
       excluir: pedido.excluir ?? (await ocupadoDeLaClienta(ctx)),
     });
   }
-  if (e.reason === 'customer_busy') {
+  if (e.reason === 'customer_busy' && ctx.state.verificada) {
+    // PA-16: el detalle de su otra cita, solo con el código.
     const choca = await citaQueChoca(ctx, pedido.servicioId, pedido.fecha, pedido.hora);
     if (choca) error.cita_que_choca = describirCita(ctx, choca);
   }

@@ -166,7 +166,7 @@ describe('el loop', () => {
     const aviso = modelo.peticiones[2]!.messages.at(-1)!;
     expect(aviso).toEqual({
       role: 'system',
-      content: `Ahora en el local: lunes 14 de octubre de 2030, 10:00. Clienta: identificada (Clienta de test, ${telefono}). No le pidas nombre ni teléfono.`,
+      content: `Ahora en el local: lunes 14 de octubre de 2030, 10:00. Clienta: identificada (Clienta de test, sin email, ${telefono}). No le pidas nombre, email ni móvil.`,
     });
   });
 

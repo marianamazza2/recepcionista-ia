@@ -35,10 +35,11 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-06 | "La última vez te atendió…" | Solo cuenta la última cita **ya pasada** y atendida | — | 16/10/2026 |
 | PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
+| PD-13 | Qué se guarda y qué se borra | **La ficha de la clienta (nombre, teléfono, email) se guarda siempre**: es la base de clientas del negocio y lo que permite reconocerla cuando vuelve. **El texto del chat se borra a los 6 meses.** Las citas no se borran: son la agenda | — | ✅ decidida 13/11/2026 (falta construirla) |
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
-Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026. PI-20, ⚠️ por confirmar.
+Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026; PI-20, el 13/11/2026.
 
 ---
 
@@ -285,7 +286,7 @@ confirmó el 16/10/2026 con el valor de serie propuesto.
 | # | Tema | Decisión | Estado |
 |---|---|---|---|
 | PA-01 | Confirmar antes de reservar | Confirma **una sola vez** al elegir el horario ("¿me confirmas si es correcto?") y espera un sí antes de reservar, cancelar o mover | ✅ confirmada (ajustada el 16/10) |
-| PA-02 | Datos para reservar | Nombre y teléfono (el teléfono identifica a la clienta) | ✅ confirmada |
+| PA-02 | Datos para reservar | Nombre y **email** (el email identifica a la clienta); el teléfono se guarda para que el local pueda llamarla | ✅ confirmada · **cambiada el 13/11/2026 por PA-17** (antes identificaba el teléfono) |
 | PA-03 | Horarios que ofrece de una vez | Hasta 3, los más cercanos a lo que pidió, con el día una vez y las horas debajo | ✅ confirmada (formato, 16/10) |
 | PA-04 | Se presenta como asistente virtual | Sí, en el primer mensaje | ✅ confirmada |
 | PA-05 | Cuándo deriva a una persona | Si lo pide, si insiste tras PD-04, salud, quejas, cancelación bloqueada, si no entiende tras dos intentos o si algo falla | ✅ confirmada |
@@ -395,9 +396,9 @@ día. No queda ninguna abierta.
 
 | # | Tema | Decisión / qué hace ahora | Estado |
 |---|---|---|---|
-| PA-09 | Quién es quien escribe | **No se verifica la titularidad del teléfono.** Al reservar, llega un SMS de confirmación con un enlace para cancelar o cambiar la cita y el chat sigue pudiendo cancelar y mover (B2) | ✅ decidida 16/10/2026 |
+| PA-09 | Quién es quien escribe | Al reservar, la confirmación llega **por email** con un enlace para cancelar o cambiar (PW-18). Para ver, cancelar o mover **desde el chat** hace falta el **código** que llega a ese email (PA-16) | ✅ decidida 16/10/2026 · **cambiada el 13/11/2026 por PA-16 y PW-18** |
 | PA-10 | Preguntas de salud | Responde **solo con la información que dio el negocio** (el cliente del producto); si no la hay, deriva. Lo que no sabe, siempre lo deriva | ✅ decidida 16/10/2026 |
-| PA-11 | Para quién es la cita | La cita es del teléfono que se pide; el nombre es el de la persona que viene, **titular de esa línea** | ✅ decidida 16/10/2026 |
+| PA-11 | Para quién es la cita | La cita es del **email** que se pide; el nombre es el de la persona que viene | ✅ decidida 16/10/2026 · **cambiada el 13/11/2026 por PA-17** |
 | PA-12 | Lo que no sabe, sin cortar la conversación | Dice que no tiene el dato y que lo pasa al equipo, pregunta "¿puedo ayudarte en algo más?" y **sigue atendiendo** (también dando citas) | ✅ decidida 16/10/2026 |
 
 ### PA-09 · Quién es quien escribe · ✅ decidida el 16/10/2026
@@ -480,7 +481,9 @@ intentos o algo falla.
 |---|---|---|---|
 | PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
 | PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
-| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
+| PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026, construida 11/11/2026 (comprobada con el modelo real el 12/11/2026) |
+| PA-16 | Ver, cancelar o mover desde el chat | Hace falta un **código de verificación** que el agente manda al email de la clienta. Sin código, el agente no enseña ni toca ninguna cita. Desde el enlace del email no hace falta: el enlace ya es la prueba | — | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
+| PA-17 | Cómo se identifica a la clienta | **Por su email**, no por su teléfono. El teléfono se sigue guardando para que el local pueda llamarla (si no se presenta, si hay que avisar de algo) | — | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -814,6 +817,27 @@ externos**. Propuesta:
 - Texto: *"{negocio}: cita confirmada el {día} a las {hora} con {profesional}.
   Para verla o cancelarla: {enlace}"*. Sin datos de salud.
 
+**Pendiente (⚠️ por confirmar, 13/11/2026): qué proveedor y qué remitente.**
+Investigado el 13/11/2026 (detalle en "Costes y cosas a vigilar", Research
+Desk). Dos cosas que se deciden juntas:
+
+1. **El proveedor.** Proveedores españoles alrededor de 0,04 €/SMS
+   (LabsMobile, Esendex) frente a Twilio, unos 0,081 € (0,0875 US$). Con un
+   SMS por cita, un negocio mediano son 5-10 €/mes. *Propuesta:* LabsMobile
+   (español, API sencilla, sin cuota de alta), pidiendo precio también a
+   Esendex. Un proveedor europeo simplifica el anexo de RGPD: es
+   **subencargado** del tratamiento y los datos no salen de la UE.
+2. **El remitente, por el Registro de alias de la CNMC.** Desde el
+   **15/09/2026** las operadoras **bloquean** los SMS cuyo remitente
+   alfanumérico ("Clínica Olea") no esté inscrito en ese registro (Circular
+   1/2026 y 2/2026, Orden TDF/149/2025). El alias se inscribe a nombre de su
+   titular, con papeles de la empresa; lo puede tramitar el proveedor por él
+   y tarda semanas. *Propuesta:* empezar con **remitente numérico** (no es un
+   alias, no necesita registro y funciona el primer día; el texto ya empieza
+   con el nombre del negocio) y, para quien lo quiera, tramitar después su
+   alias. Lo que no se hará es mandar los SMS de un negocio con el alias de
+   otro.
+
 ### PW-08 · La demo pública · ✅ decidida el 20/10/2026
 
 La demo se probó primero en el ordenador de Mariana. **Decisión (Mariana,
@@ -842,15 +866,16 @@ cambia, se ajusta el código.
 
 | # | Tema | Propuesta de serie (lo que hace ahora) | ¿Ajuste por negocio? | Estado |
 |---|---|---|---|---|
-| PW-09 | SMS al mover una cita | **Sí**: llega el mismo SMS de confirmación con la hora nueva y un enlace nuevo | — | ✅ decidida 28/10/2026 |
-| PW-10 | SMS al cancelar por el chat | **Sí**: un SMS corto de "cita cancelada", sin enlace (PA-09). Desde la página del enlace, no | — | ✅ decidida 20/10/2026 |
+| PW-09 | Aviso al mover una cita | **Sí**: llega la misma confirmación con la hora nueva y un enlace nuevo, ahora **por email** (PW-18) | — | ✅ decidida 28/10/2026 (por email desde el 13/11/2026) |
+| PW-10 | Aviso al cancelar por el chat | **Sí**: un email corto de "cita cancelada", sin enlace. Desde la página del enlace, no | — | ✅ decidida 20/10/2026 (por email desde el 13/11/2026) |
 | PW-11 | Color del widget si el negocio no elige | Un gris azulado neutro (`#4f6d7a`) | Sí (el color, PW-01) | ✅ decidida 28/10/2026 |
 | PW-12 | Desde cuándo cuentan las 2 h (PW-03) | Desde el **último mensaje** de la conversación; al caducar, el widget lo avisa | — | ✅ decidida 28/10/2026 |
 | PW-13 | Las 10 conversaciones por conexión (PW-05) | Se cuentan **por negocio** | — | ✅ decidida 28/10/2026 |
 | PW-14 | Textos fijos del widget | Los de abajo, con el teléfono del local | — | ✅ decidida 28/10/2026 |
 | PW-15 | Cancelar desde la página del SMS | Pide un **"¿Seguro?"** antes de cancelar | — | ✅ decidida 28/10/2026 |
-| PW-17 | Logo del negocio en el widget | Un **círculo antes del nombre** en la cabecera del chat, con su logo o isotipo. Sin logo: la **inicial** del nombre | Sí (el logo) | ✅ decidida 28/10/2026 (lo de la inicial, ⚠️ por confirmar) |
+| PW-17 | Logo del negocio en el widget | Un **círculo antes del nombre** en la cabecera del chat, con su logo o isotipo. Sin logo: la **inicial** del nombre | Sí (el logo) | ✅ decidida 28/10/2026, la inicial confirmada 13/11/2026 |
 | PW-16 | Comprobar que no es un bot | Todavía no: si se ven abusos, comprobación invisible (Cloudflare Turnstile) | — | ✅ decidida 28/10/2026 |
+| PW-18 | Confirmar la cita por **email**, no por SMS | Al cerrar la cita el agente pide el email y manda ahí la confirmación, con el enlace, la política de cancelación del negocio y un archivo para el calendario. Sin email, la cita vale igual. El SMS se guarda para los recordatorios (Fase 6) | Sí (email, SMS o los dos) | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
 
 ### PW-09 · SMS al mover una cita · ✅ decidida el 28/10/2026
 
@@ -924,6 +949,95 @@ cancelar tu cita?"*, con la política de cancelación del negocio, y solo con
 **"Sí, cancelar la cita"** se cancela. Además evita que una app que abre el
 enlace para previsualizarlo cancele sin querer.
 
+### PW-18 · Confirmar la cita por email, no por SMS · ✅ decidida el 13/11/2026
+
+**Decisión (Mariana, 13/11/2026):** *"vamos a ir por email, hoy en día el SMS
+no lo lee nadie"*. La confirmación va por correo y hay que pedirle el email a
+la clienta. Salió al ver lo que cuesta el SMS y el papeleo del Registro de
+alias (PW-07).
+
+**A favor, y es mucho:**
+
+- **Cuesta prácticamente nada.** Unos 0,0004 € por email (Resend: 3.000 gratis
+  al mes y 20 US$ por 50.000; Amazon SES: 0,10 US$ por mil) contra 0,04 € por
+  SMS. Cien veces más barato.
+- **Sin el papeleo de la CNMC.** El Registro de alias es solo para SMS. El
+  remitente del email se configura **una vez** para todos los negocios
+  ("Clínica Olea" desde nuestro dominio, con SPF, DKIM y DMARC), no uno por
+  cliente ni semanas de espera.
+- **Cabe más.** El email puede llevar la dirección del local, la política de
+  cancelación y, sobre todo, un **archivo para añadir la cita al calendario**
+  del móvil. Eso ataca de verdad las ausencias, que es lo que busca la Fase 6.
+
+**En contra:**
+
+- **Puede caer en spam** o tardar horas en leerse. Un SMS se lee en minutos.
+  Para la confirmación da igual; para un recordatorio de "mañana a las 10" el
+  SMS sigue siendo mejor.
+- **Un email dictado se escribe mal más a menudo** que un teléfono, y hay
+  clientela que no lo usa.
+- **Es una pregunta más** en cada reserva, y cada pregunta es una clienta que
+  se cae.
+
+**Propuesta:**
+
+1. **El email se pide después de confirmar la cita**, no antes: "¡Listo, cita
+   confirmada! ¿Te mando la confirmación por email? Dime tu correo". Si no lo
+   quiere dar, la cita **vale igual** y se lo decimos.
+2. **El teléfono se sigue pidiendo como ahora** (PA-11): el local necesita
+   poder llamar, y la cita sigue colgada del teléfono.
+3. **El email es el canal de serie para confirmar**, y el SMS queda apagado
+   hasta los recordatorios (Fase 6). Eso saca del camino al primer cliente el
+   contrato del SMS, su coste y el registro de alias.
+4. Por negocio se podrá elegir email, SMS o los dos, cuando haga falta.
+5. **Sin datos de salud**, igual que el SMS: ni el asunto ni el cuerpo dicen
+   qué tratamiento es. El proveedor de email es **subencargado** del
+   tratamiento y va nombrado en el anexo de RGPD.
+
+**Qué dice el chat y qué dice el email** (Mariana, 13/11/2026). El chat se
+queda corto, como manda PA-15; la letra pequeña va en el correo:
+
+> ¡Listo! Cita el jueves 14 a las 10:00 con Núria. Te la mando por email con el
+> enlace para verla, cambiarla o cancelarla: dime tu correo.
+
+**Afirmación, no pregunta** (Mariana, 13/11/2026): el agente **no** pregunta si
+le manda la confirmación ("¿te la mando?"), lo da por hecho y solo pide el
+correo. Si la clienta no quiere darlo, la cita **vale igual** y se lo dice sin
+insistir.
+
+El **email** lleva: el día, la hora, el servicio, la profesional, la dirección
+del local, el **enlace a la página de la cita** (que ya permite cancelarla,
+PW-15), la **política de cancelación tal como la escribió el negocio** (con su
+plazo, PR-07) y el **archivo para añadir la cita al calendario**.
+
+Cancelar o cambiar, las tres puertas que ya existen, sin inventar ninguna: por
+el chat de la web, desde el enlace del email, o llamando al teléfono del local
+(que ya sale en todos los mensajes fijos). El plazo —24 h o lo que ponga cada
+negocio— no se escribe en el código: es el ajuste de PR-07.
+
+**Construida el 13/11/2026** (rama `email-y-codigo`, junto con PA-16 y
+PA-17): un `EmailProvider` con proveedor de prueba (en local sale en la
+Terminal; en Vercel, en los logs), el email con el enlace, la política del
+negocio y el archivo `.ics`, el aviso de cancelación y sus tests. Falta
+**elegir y conectar el proveedor real** (Resend, Amazon SES…) y el remitente
+del dominio: es tuyo, como el SMS.
+
+⚠️ *Por confirmar (13/11/2026), dos detalles que salieron al construirla:*
+
+1. **¿El email dice el tratamiento?** Arriba pone que lleva "el servicio",
+   pero el punto 5 dice "sin datos de salud: ni el asunto ni el cuerpo dicen
+   qué tratamiento es" (en medicina estética, "toxina botulínica" es un dato
+   de salud). *Mientras se decide, va sin el tratamiento:* día, hora,
+   profesional, dirección, enlace, política y `.ics`. Quien quiera verlo lo
+   tiene en la página de la cita (el enlace).
+2. **¿Cuándo pide el email?** Aquí dice "después de confirmar la cita"
+   ("¡Listo! … dime tu correo"); PA-17, escrita después, dice "nombre y email
+   para reservar, y el teléfono a continuación". Como el email es lo que
+   identifica a la clienta, *se construyó como PA-17:* lo pide con el nombre
+   al elegir el horario, lo repite, pide el móvil, reserva y al final dice
+   "te llega la confirmación a tu correo, con el enlace…" (sin preguntar si
+   se la manda).
+
 ### PW-16 · Comprobar que no es un bot · ✅ decidida el 28/10/2026
 
 Apareció al confirmar PW-05 (28/10/2026): ¿hay otra forma de frenar a los bots
@@ -956,9 +1070,9 @@ logo (mejor cuadrado, PNG, SVG o JPG, hasta ~150 KB).
   abre el chat).
 - El círculo va en blanco, para que cualquier logo se vea bien sobre el color
   del negocio.
-- *Propuesta, ⚠️ por confirmar:* **sin logo**, el círculo muestra la
-  **inicial** del nombre ("E" de Estética Aurora) en el color del negocio.
-  Alternativa: sin logo, no hay círculo.
+- **Confirmado (Mariana, 13/11/2026):** sin logo, el círculo muestra la
+  **inicial** del nombre ("E" de Estética Aurora) en el color del negocio. Es
+  lo que ya hace el widget.
 - Para Estética Aurora la demo usa un isotipo inventado (un sol que asoma).
 
 **Dominios (detalle de PW-06):** se compara el dominio exacto. `esteticaaurora.es`
@@ -1135,9 +1249,9 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
-| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | No cuenta como "una profesional que haga algún servicio" | — | ⚠️ por confirmar |
+| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | **No cuenta** como "una profesional que haga algún servicio", y el panel la marca en **ámbar** en cuanto se queda sin días | — | ✅ decidida 13/11/2026 (falta construirla) |
 | PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
-| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026, construida 11/11/2026 (texto del aviso, ⚠️ por confirmar) |
+| PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026, construida 11/11/2026 (texto del aviso confirmado 13/11/2026) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
 
 ### PI-15 · ¿Las pruebas del panel cuentan para el tope? · ✅ decidida el 29/10/2026
@@ -1256,20 +1370,32 @@ En el panel, cada día del horario de una profesional tiene un selector
 "Horas propias", y "Copiar a…" copia también el estado del día. El aviso de
 PI-18 sigue igual.
 
-### PI-20 · ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? · ⚠️ por confirmar
+### PI-20 · ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? · ✅ decidida el 13/11/2026
 
 Apareció al construir PI-19. Para activar un negocio hace falta "una
 profesional activa que haga algún servicio" (PI-03). Con PI-19 se puede
 marcar que una profesional **no trabaja ningún día**: técnicamente sigue
 "activa" y hace servicios, pero nunca tendrá huecos.
 
-*Propuesta:* que **no cuente**. Si todas las profesionales que hacen
-servicios están marcadas "no trabaja" todos los días, el panel diría "Falta:
-una profesional activa que haga algún servicio" y no dejaría activar. Lo
-normal para alguien que no va a trabajar más es desactivarla (PI-04).
+**Decisión (Mariana, 13/11/2026):** **no cuenta**. Si todas las profesionales
+que hacen servicios están marcadas "no trabaja" todos los días, el negocio no
+se puede activar: no tendría ni un hueco que ofrecer. Lo normal para alguien
+que no va a trabajar más es desactivarla (PI-04).
 
-*Mientras no se confirme,* el código sigue como antes: cuenta como cualquier
-profesional activa.
+**Además, un aviso.** No hace falta esperar a pulsar "Activar": en cuanto una
+profesional activa que hace servicios se queda sin ningún día de trabajo, el
+panel la marca en **ámbar** en su ficha, como ya hace con un servicio que no
+hace nadie (caso 27). El aviso dice qué pasa y qué hacer:
+
+> Núria no trabaja ningún día, así que no tiene huecos. Si ya no trabaja aquí,
+> desactívala; si vuelve, ponle sus días.
+
+Cuenta como "sin ningún día" quien tiene **todos** los días que abre el local
+marcados "no trabaja" (sus días propios fuera del horario del local no dan
+huecos: PD-01).
+
+*Falta construirlo:* `negocio_lo_que_falta()` (migración nueva) y el aviso en
+el panel. Mientras tanto, el código cuenta como antes.
 
 ### PI-21 · Un festivo o una ausencia encima de citas ya dadas · ✅ decidida el 05/11/2026
 
@@ -1326,7 +1452,7 @@ mientras tanto, no se guarda y sale el aviso. Las citas nuevas no cuentan
 como cambio. Límite conocido: dos guardados en el mismo milisegundo pueden
 pasar los dos; para el portal (Fase 9) se pasaría a una versión en la base.
 
-⚠️ *Por confirmar:* el texto del aviso. Se usa la propuesta mientras tanto.
+**Texto del aviso confirmado** (Mariana, 13/11/2026): se queda el de arriba, tal cual. Valdrá igual en el portal del cliente.
 
 
 ---
@@ -1351,6 +1477,7 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
 | PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
+| PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) aparece cuando ya hay algo que enseñar; antes, nada que pueda confundir ni dejar a medias | — | ✅ decidida 13/11/2026 (cuándo aparece, ⚠️ por confirmar) |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1407,6 +1534,10 @@ respuesta. Al terminar, el portal es suyo: ve toda la configuración de su
 recepcionista y la cambia **a mano** o **pidiéndoselo al chat** ("Núria no
 viene el jueves").
 
+**Matiz (PC-11, 13/11/2026):** al principio el portal **no está**. La primera
+vez que entra solo ve el chat; el portal aparece cuando ya hay datos que
+enseñar y desde ahí se va completando.
+
 ### PC-05 · La vista de Mariana · ✅ decidida el 05/11/2026
 
 Mariana ve el portal de cada cliente **tal como lo ve él**, desde su panel
@@ -1457,3 +1588,170 @@ el panel (PI-21):
 
 > El lunes 16 hay 2 citas: Ana a las 10:00 y Bea a las 12:00. De todos modos,
 > ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?
+
+### PC-11 · Qué ve el cliente al entrar por primera vez · ✅ decidida el 13/11/2026
+
+Mariana, 13/11/2026. El camino de un cliente nuevo, de principio a fin:
+
+1. Mariana le vende el servicio y **genera su enlace** (PC-02). El enlace es la
+   **única** puerta: no hay registro abierto en el portal, nadie se da de alta
+   por su cuenta.
+2. Con ese enlace **crea su cuenta** (su email, ya confirmado por el propio
+   enlace, y su contraseña). A partir de ahí entra con esas credenciales.
+3. **Dentro ve solo el chat.** Las secciones del portal —lo que se mira y se
+   edita a mano— **no están** hasta que haya datos: con el negocio vacío no
+   habría más que huecos y botones que no llevan a nada, y el cliente se
+   perdería antes de empezar.
+4. Según va contestando, el portal **aparece y se va completando** (PC-04), y
+   al terminar es suyo: lo ve todo y lo cambia a mano o pidiéndoselo al chat.
+
+*⚠️ Por confirmar, y a propósito (Mariana, 13/11/2026):* **cuándo aparece el
+portal se decide con el diseño de la pantalla, no antes.** Mariana no quiere
+que el portal distraiga al cliente mientras contesta el chat del alta.
+Primero escribe el guion; después se piensa la página entera (qué se ve
+mientras chatea, cuánto ocupa cada cosa, cuándo aparece el portal y cómo) y de
+ahí sale esta regla. La propuesta de "en cuanto se guarda la primera sección"
+queda como una opción más, no como lo decidido.
+
+Lo que sí está decidido: si un cliente vuelve a entrar con el alta a medias,
+le recibe el chat por donde lo dejó.
+
+**Confirmado (Mariana, 13/11/2026):** a partir de la segunda vez entra con
+**su email y su contraseña**, como el panel interno (PI-01). Y lo primero que
+ve es el chat saludando con su negocio por delante: "¡Hola, buenos días!
+Bienvenida al portal de Clínica Olea". Qué negocio es lo sabe el código por el
+enlace (PC-02), no porque el cliente lo escriba.
+
+### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
+
+Sale de PD-11 (el RGPD). Mariana lo decidió el 13/11/2026 con una idea clara
+suya: *"lo que tiene que guardarse siempre es la base de nombres, teléfono y
+email, para que el chat pueda identificar si no es su primera visita"*. Eso
+cambia lo que yo había propuesto, y es mejor.
+
+**Se guarda siempre, sin caducidad:**
+
+- **La ficha de la clienta** (nombre, teléfono y, con PW-18, email). Es la
+  **base de clientas del negocio**, su activo. Y es lo que hace que el agente
+  pueda decir "la última vez te atendió Lucía" (PR-06) en vez de tratarla como
+  nueva cada vez.
+- **Las citas.** Son la agenda del negocio; su historial es suyo.
+
+**Se borra a los 6 meses:**
+
+- **El texto del chat** (`messages`: lo que escribió la clienta y lo que
+  contestó el agente). Las quejas salen en días o semanas, no en seis meses, y
+  son datos de salud: cuanto menos tiempo, menos riesgo.
+- **La conversación en sí no se borra**, y **sigue ligada a su clienta**: así
+  el panel puede decir "esta clienta ha escrito 4 veces" aunque el texto ya no
+  esté. (Antes propuse desligarla; con la ficha guardada para siempre, eso no
+  protegía nada y perdía información.)
+- **El consumo no se toca:** vive en otra tabla, sin ningún dato personal y sin
+  depender de las conversaciones. Borrar el chat no afecta a lo que se gasta ni
+  a lo que se factura.
+
+**Si una clienta pide que la borren** (derecho de supresión): se borra **su
+ficha** (nombre, teléfono, email) y sus citas quedan como "clienta borrada",
+para no agujerear la agenda del negocio.
+
+**Lo que esto no resuelve, y hay que tener en cuenta:**
+
+- **Las copias de seguridad.** Supabase guarda copias; una fila borrada sigue
+  en la copia hasta que esa copia se rota. En el anexo de RGPD se dice que el
+  borrado llega a las copias en unos días, no al instante.
+- **La misma persona con otro teléfono es otra clienta.** La ficha se busca por
+  teléfono (PA-02); el email es un campo, no una segunda forma de buscarla. Si
+  vuelve con otro número, saldrá como nueva.
+
+*Falta construirlo:* el borrado a los 6 meses (una tarea que corra sola) y una
+forma de borrar a una clienta cuando lo reclame, que hoy habría que hacer a
+mano en la base.
+
+*Sigue abierto de PD-11:* si se filtran teléfonos y emails antes de mandar el
+texto al modelo. Mi propuesta: **no filtrar** (el agente necesita el teléfono
+para reservar y lo sensible va en texto libre, que no se puede filtrar) y a
+cambio pedirle a Anthropic un acuerdo de **retención cero**.
+
+### PA-16 · Ver, cancelar o mover desde el chat: con código al email · ✅ decidida el 13/11/2026
+
+Lo encontré el 13/11/2026: hasta ahora bastaba **el teléfono y un nombre** para
+que el agente enseñara las próximas citas de esa persona —con su tratamiento—
+y las cancelara. Quien conociera el teléfono de otra, se enteraba.
+
+**Decisión (Mariana, 13/11/2026):** *"en algún momento tiene que poner el
+código de verificación recibido al email, sino no puede cancelar"*.
+
+- **Reservar no cambia:** se pide nombre y email (PA-17), sin código. Pedir un
+  código antes de dar la primera cita espantaría a la mitad.
+- **Ver, cancelar o mover una cita que ya existe, desde el chat, sí:** el
+  agente manda un **código al email de la ficha** y no enseña nada hasta que la
+  clienta lo escribe. "Te he mandado un código a tu correo; dime los seis
+  dígitos y te lo gestiono."
+- **Desde el enlace del email no hace falta código:** ese enlace ya es la
+  prueba de que tiene acceso al correo (es el mismo enlace de PW-15, con su
+  token). Quien quiera cancelar en dos clics, lo hace desde ahí.
+- **Reconocerla sí se puede sin código.** Si vuelve y da su email, el agente
+  puede saludarla y proponerle la misma profesional (PR-06): eso no cuenta
+  nada que un desconocido pueda aprovechar.
+
+**Cómo tiene que ser el código,** para que no sea un adorno: seis dígitos,
+válido **10 minutos**, **un solo uso**, **tres intentos** y en la base solo su
+hash (SHA-256), como ya se guardan los tokens del widget y del enlace.
+
+### PA-17 · La clienta se identifica por su email · ✅ decidida el 13/11/2026
+
+**Decisión (Mariana, 13/11/2026):** *"quiero eliminar lo del SMS en lo posible,
+que la ficha se busque por email; el teléfono tenemos que tenerlo para
+llamarla en caso de que no se presente... la recepcionista del sitio tiene
+dónde contactarse"*.
+
+Cambia PA-02 y PA-11: hasta hoy la clienta **era** su teléfono.
+
+- **La ficha se busca por email.** Es lo que la identifica y a donde van la
+  confirmación (PW-18) y los códigos (PA-16).
+- **El teléfono se sigue guardando**, pero para el negocio: llamar si no se
+  presenta, avisar de un imprevisto del mismo día. No identifica.
+- **El SMS queda apagado.** Solo se enciende si un negocio concreto lo pide, y
+  entonces toca el papeleo del Registro de alias (PW-07).
+
+**Los tres detalles, decididos por Mariana el 13/11/2026:**
+
+1. **El agente repite el email para confirmarlo** antes de guardarlo, porque
+   sin un correo bueno no llega ni la confirmación ni el código: *"te
+   confirmo: maria.lopez@gmail.com, ¿es correcto?"*. Además se comprueba el
+   formato. Si aun así está mal, **la cita vale**: para eso está el teléfono.
+2. **El teléfono se pide justo después del email**, con el motivo delante y
+   con las palabras de Mariana: *"y un móvil, por si el centro necesita
+   avisarte alguna eventualidad y/o cambio de tu cita"*. Así no suena a
+   formulario: nombre y email para reservar, y el teléfono a continuación.
+3. **Una clienta sin email reserva igual**, con su teléfono y su nombre, y su
+   ficha se queda sin correo. Esa clienta **no puede cancelar ni cambiar por
+   el chat** —no hay a donde mandarle el código— y **tiene que llamar al
+   local**; el agente se lo dice claro al reservar y cuando lo intente. En la
+   base, la ficha se busca por email cuando lo hay y por teléfono cuando no.
+
+*Sigue abierto, sin prisa:* la misma persona con dos emails son dos fichas,
+como antes con dos teléfonos. Unir fichas desde el panel, más adelante.
+
+**Qué arrastra este cambio** (revisado el 13/11/2026, para que no se quede
+nada a medias):
+
+- **PA-02, PA-09 y PA-11** quedan reescritas: la clienta es su email, no su
+  teléfono, y la confirmación va por correo.
+- **PW-09 y PW-10** (avisar al mover y al cancelar) pasan de SMS a email.
+- **La cita a mano del panel** (PI-14) pide hoy teléfono y nombre y avisa de
+  que "le llegará un SMS": tiene que pedir también el email y decir email.
+- **La página de la cita** (PW-15) no cambia: su enlace ya es la prueba.
+- **Los recordatorios** de la Fase 6 nacerán por email. Si algún negocio los
+  quiere por SMS, se enciende para él con su papeleo (PW-07).
+
+**Construida el 13/11/2026** (rama `email-y-codigo`, con PA-16 y PW-18):
+migración `20261113120000_email_y_codigo`, aplicada también en la nube el 13/11/2026 (email único por negocio; el
+teléfono, único solo entre las fichas sin email; los códigos con su hash),
+`identificar_cliente` por email (una ficha antigua sin email que da su email
+lo recibe), las herramientas `enviar_codigo` y `verificar_codigo`, que ver,
+cancelar o mover lo exijan en el código, el prompt, la cita a mano del panel
+con email y los tests. Detalle de implementación: sin el código, si pide una
+hora en que ya tiene cita (PR-08), el agente le dice que ya tiene una cita a
+esa hora pero **no cuál** (eso solo con el código).
+

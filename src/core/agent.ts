@@ -44,7 +44,7 @@ import {
 } from './guardrails.js';
 import { buildSystemPrompt, contextoDelTurno } from './prompt.js';
 import { executeTool, toolDefinitions, type ToolExecution } from './tools/index.js';
-import type { ToolContext } from './tools/types.js';
+import type { EnviarCodigo, ToolContext } from './tools/types.js';
 
 type MessageParam = Anthropic.Beta.BetaMessageParam;
 type CreateParams = Anthropic.Beta.MessageCreateParamsNonStreaming;
@@ -113,6 +113,8 @@ export interface AgentDeps {
   now?: () => Date;
   /** Errores inesperados (de herramientas o de la API), para el log. */
   onError?: (e: unknown) => void;
+  /** PA-16: cómo manda el canal el código al email. Sin él, enviar_codigo falla y el agente deriva al teléfono. */
+  enviarCodigo?: EnviarCodigo;
 }
 
 export type MotivoFin = 'respuesta' | MotivoRespuestaFija | 'rechazo' | 'corte';
@@ -230,23 +232,32 @@ export async function runAgentTurn(
 
   const historial = await loadHistory(sql, config.id, conversationId);
   const clienta = conv.customerId ? await getCustomer(sql, config.id, conv.customerId) : null;
+  const adapter = deps.adapter ?? new SupabaseAdapter({ sql, businessId: config.id });
+  // PR-06 sin código (PA-16): reconocerla y proponerle su profesional de
+  // siempre no cuenta nada útil; ver sus citas, sí, y eso va con el código.
+  const ultima = clienta ? await adapter.getLastStaff(clienta.id) : null;
+  const ultimaProfesional = ultima ? (config.profesionales.find((p) => p.id === ultima)?.nombre ?? null) : null;
 
   // El mensaje de la clienta y, detrás, el contexto del turno como mensaje de
   // sistema: no se puede falsificar desde el chat y no invalida la caché.
   const turno: MessageParam[] = [
     { role: 'user', content: [{ type: 'text', text: mensaje }] },
-    { role: 'system', content: contextoDelTurno(config, now(), clienta) },
+    {
+      role: 'system',
+      content: contextoDelTurno(config, now(), clienta ? { ...clienta, ultimaProfesional } : null, conv.verificada),
+    },
   ];
   await appendMessages(sql, config.id, conversationId, [{ rol: 'user', contenido: mensaje, mensajes: turno, ...externalId }]);
   const mensajes = [...historial, ...turno];
 
   const ctx: ToolContext = {
     sql,
-    adapter: deps.adapter ?? new SupabaseAdapter({ sql, businessId: config.id }),
+    adapter,
     config,
     conversationId,
-    state: { customerId: conv.customerId, estado: conv.estado },
+    state: { customerId: conv.customerId, estado: conv.estado, verificada: conv.verificada },
     now,
+    ...(deps.enviarCodigo ? { enviarCodigo: deps.enviarCodigo } : {}),
   };
 
   const yaGastado = total(await usageAcumulado(sql, config.id, conversationId));

@@ -20,6 +20,7 @@ import {
   citaDeLaClienta,
   describirCita,
   errorDeReserva,
+  exigirCodigo,
   fallo,
   nombreProfesional,
   ocupadoDeLaClienta,
@@ -73,6 +74,9 @@ export const reservarYCambiarCitaAnterior: AgentTool = {
   async run(input, ctx) {
     const customerId = ctx.state.customerId;
     if (!customerId) return sinClienta();
+    // PA-16: mueve o anula una cita que ya existía: hace falta el código.
+    const sinCodigo = await exigirCodigo(ctx);
+    if (sinCodigo) return sinCodigo;
     const servicio = buscarServicio(ctx.config, texto(input, 'servicio'));
     if (!servicio) return servicioDesconocido(ctx.config);
     const nombreProf = texto(input, 'profesional');

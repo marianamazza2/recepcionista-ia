@@ -237,6 +237,8 @@ export interface Negocio {
 export interface Clienta {
   nombre: string | null;
   telefono: string;
+  /** PA-17: lo que la identifica; la agenda lo trae (el visor todavía no). */
+  email?: string | null;
 }
 
 export interface ConversacionResumen {

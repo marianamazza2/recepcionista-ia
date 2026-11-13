@@ -8,7 +8,7 @@ igual en el servidor local (`src/dev/server.ts`) y en la función de Vercel (`sr
 |---|---|
 | `app.ts` | El router: ruta + método → handler. 404/405 para lo demás |
 | `widget.ts` | `widgetConfig`, `chat`, `historial` |
-| `cita.ts` | La página HTML del enlace del SMS (ver y cancelar) |
+| `cita.ts` | La página HTML del enlace del email (ver y cancelar) |
 | `http.ts` | Piezas comunes: `json`, `leerJson` (con tope de tamaño), origen y CORS, preflight, IP, `escaparHtml` |
 | `admin/rutas.ts` | El panel interno (Fase 4): `/api/admin/…` |
 | `admin/auth.ts` | Cuentas del panel: `AuthPanel` y Supabase Auth (PI-01) |
@@ -97,8 +97,8 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `GET negocios/:id/conversaciones/:cid` | Una conversación: líneas (clienta, asistente, herramienta con entrada y resultado), derivaciones, coste | detalle |
 | `GET negocios/:id/derivaciones` · `POST …/derivaciones/:eid/resolver` | Pendientes y marcar resuelta (PI-07) | lista de pendientes |
 | `GET negocios/:id/agenda?fecha=AAAA-MM-DD` | Las citas del día (de serie, hoy en la zona del negocio) | `{fecha, citas}` |
-| `POST negocios/:id/citas` `{serviceId, staffId, fecha, hora, telefono, nombre, notas?}` | Cita a mano (PR-04, PI-14), con su SMS | `201 {id, sms}` |
-| `POST negocios/:id/citas/:aid/cancelar` | Cancelar desde la agenda, con SMS (PW-10) | `{cancelada}` |
+| `POST negocios/:id/citas` `{serviceId, staffId, fecha, hora, email?, telefono, nombre, notas?}` | Cita a mano (PR-04, PI-14), con su email si lo tiene (PW-18, PA-17) | `201 {id, email}` (`email`: estado del envío, o `null` sin email) |
+| `POST negocios/:id/citas/:aid/cancelar` | Cancelar desde la agenda, con su email de aviso (PW-10) | `{cancelada}` |
 | `POST negocios/:id/probar` `{sessionToken?, clientMessageId?, texto}` | Probar el chat (PI-13): como `POST /api/chat`, marcado como prueba | como `/api/chat` |
 | `GET consumo?mes=AAAA-MM` | El mes de todos los negocios, con las pruebas aparte (PI-11) | lista de informes |
 
@@ -139,4 +139,4 @@ fuera) y no se dijo qué hacer, responde **409** sin guardar nada:
 ```
 
 Con `"dejar"` se guarda y las citas siguen; con `"cancelar"` se guarda y se
-cancelan una a una como desde la agenda, cada una con su SMS de cancelación.
+cancelan una a una como desde la agenda, cada una con su email de cancelación (si la clienta tiene email).

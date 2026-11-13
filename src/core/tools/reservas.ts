@@ -2,6 +2,7 @@
 //
 // Reglas que se aplican AQUÍ, en el código (guardrails 2.5), y no solo en el prompt:
 //   · PA-08: cancelar, mover y ver solo operan sobre citas de la clienta identificada.
+//   · PA-16: y solo con el código de su email escrito en esta conversación.
 //   · PR-07: en modo "bloquear", dentro del plazo no se cancela ni se mueve.
 //   · PR-05: mover mantiene profesional y servicio (lo garantiza el adaptador);
 //     las alternativas que se ofrecen son con ella.
@@ -15,6 +16,7 @@ import {
   citaDeLaClienta,
   describirCita,
   errorDeReserva,
+  exigirCodigo,
   fallo,
   nombreProfesional,
   ocupadoDeLaClienta,
@@ -151,6 +153,8 @@ export const cancelarReserva: AgentTool = {
   },
 
   async run(input, ctx) {
+    const sinCodigo = await exigirCodigo(ctx);
+    if (sinCodigo) return sinCodigo;
     const cita = await citaDeLaClienta(ctx, texto(input, 'id_cita'));
     if (!('id' in cita)) return cita;
     if (cita.status === 'cancelada') {
@@ -212,6 +216,8 @@ export const reprogramarReserva: AgentTool = {
   },
 
   async run(input, ctx) {
+    const sinCodigo = await exigirCodigo(ctx);
+    if (sinCodigo) return sinCodigo;
     const cita = await citaDeLaClienta(ctx, texto(input, 'id_cita'));
     if (!('id' in cita)) return cita;
     if (cita.status !== 'confirmada' || cita.start.getTime() <= ctx.now().getTime()) {
@@ -275,6 +281,8 @@ export const buscarReservasCliente: AgentTool = {
   async run(_input, ctx) {
     const customerId = ctx.state.customerId;
     if (!customerId) return sinClienta();
+    const sinCodigo = await exigirCodigo(ctx);
+    if (sinCodigo) return sinCodigo;
     const [citas, ultima] = await Promise.all([
       ctx.adapter.listBookings({ customerId }),
       ctx.adapter.getLastStaff(customerId),

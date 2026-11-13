@@ -1,5 +1,5 @@
 // =============================================================================
-// /cita/:token — la página del enlace del SMS (Fase 3 · 3.5, PW-07)
+// /cita/:token — la página del enlace del email (Fase 3 · 3.5; por email desde PW-18)
 // =============================================================================
 //   GET              la cita y el botón "Cancelar la cita"
 //   POST paso=preguntar   "¿Seguro?" (confirmar antes de cancelar, como PA-01)

@@ -62,7 +62,7 @@ export function Probar({ negocio: n }: { negocio: Negocio }) {
       <aside className="space-y-3 text-sm text-slate-600">
         <p>Conversas con el agente de <strong>{n.nombre}</strong> con sus servicios, horarios y reglas, aunque todavía no esté activo.</p>
         <p>Usa la IA de verdad: <strong>cuesta lo mismo</strong> que una conversación real. Queda guardada como <em>prueba</em> en Conversaciones y el consumo la cuenta aparte.</p>
-        <p>Si reservas, la cita es real (y sale el SMS de prueba): cancélala desde el chat o desde la Agenda.</p>
+        <p>Si reservas, la cita es real (y sale el email de prueba, que se ve en la Terminal del servidor): cancélala desde la Agenda.</p>
         <button type="button" className="boton-suave" onClick={reiniciar}>Empezar otra conversación</button>
         <Aviso error={error} />
       </aside>

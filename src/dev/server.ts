@@ -15,7 +15,7 @@
 // con un negocio de verdad.
 //
 // Contra la base de DATABASE_URL (.env), con el modelo real (ANTHROPIC_API_KEY
-// de .env, nunca se muestra) y el proveedor de SMS de prueba: los SMS salen en
+// de .env, nunca se muestra) y el proveedor de email de prueba: los emails salen en
 // esta consola.
 //
 // Las cuentas del panel (PI-01) son las de Supabase Auth del proyecto en la
@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 import type { Sql } from 'postgres';
 
-import type { SmsProvider } from '../adapters/sms/types.js';
+import type { EmailProvider } from '../adapters/email/types.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
 import type { AuthPanel } from '../api/admin/auth.js';
@@ -56,7 +56,7 @@ export interface OpcionesServidores {
   sql: Sql;
   model: ModelClient;
   settings: AgentSettings;
-  sms: SmsProvider;
+  email: EmailProvider;
   apiPort: number;
   demoPort: number;
   /** El panel interno (Fase 4). Sin él, no se levanta. Sirve admin/dist ya compilado. */
@@ -106,7 +106,7 @@ export async function iniciarServidores(
     sql: o.sql,
     model: o.model,
     settings: o.settings,
-    sms: o.sms,
+    email: o.email,
     baseUrl: apiUrl,
     ...(o.now ? { now: o.now } : {}),
     ...(o.onError ? { onError: o.onError } : {}),
@@ -223,7 +223,7 @@ export async function iniciarServidores(
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const { createSql } = await import('../db/client.js');
   const { anthropicModelClient, settingsFromEnv } = await import('../core/agent.js');
-  const { SmsDePrueba } = await import('../adapters/sms/prueba.js');
+  const { EmailDePrueba } = await import('../adapters/email/prueba.js');
   const { authPanelDesdeEnv } = await import('../api/admin/auth.js');
   const { construirPanel } = await import('./panel-build.js');
   if (existsSync('.env')) process.loadEnvFile('.env');
@@ -240,7 +240,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     sql,
     model: anthropicModelClient(settings),
     settings,
-    sms: new SmsDePrueba(),
+    email: new EmailDePrueba(),
     apiPort: Number(process.env.API_PORT) || 4311,
     demoPort: Number(process.env.DEMO_PORT) || 4310,
     panelPort: Number(process.env.PANEL_PORT) || 4312,
@@ -251,7 +251,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`\nDemo de Clínica Olea: ${s.demoUrl}`);
   console.log(`Servidor del widget:     ${s.apiUrl}  (modelo ${settings.model}, esfuerzo ${settings.effort})`);
   console.log(`Panel interno:           ${s.panelUrl}/panel/${auth ? '' : '  (⚠️ sin cuentas: faltan SUPABASE_PROJECT_REF y SUPABASE_ANON_KEY en .env)'}`);
-  console.log('Los SMS de confirmación salen aquí (proveedor de prueba). Ctrl+C para parar.\n');
+  console.log('Los emails (confirmaciones y códigos) salen aquí (proveedor de prueba). Ctrl+C para parar.\n');
   const parar = async () => {
     await vigia?.close();
     await s.cerrar();

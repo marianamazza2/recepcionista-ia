@@ -75,8 +75,8 @@ en [`README.md`](README.md).
 `tests/admin-api.test.ts` cubre el panel con un `AuthPanel` falso.
 `tests/widget-api.test.ts` llama a `createApi` directamente con `Request`
 construidos a mano y el modelo simulado: dominio, sesión, idempotencia (también
-simultánea), orden, límites y tope. `tests/cita-sms.test.ts` cubre la página
-de la cita. Una ruta nueva o un caso de error nuevo lleva su test.
+simultánea), orden, límites y tope. `tests/cita-email.test.ts` cubre los emails
+(confirmación, código y cancelación) y la página de la cita. Una ruta nueva o un caso de error nuevo lleva su test.
 
 ## Si cambiás algo de acá
 

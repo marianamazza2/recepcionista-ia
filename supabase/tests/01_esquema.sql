@@ -93,13 +93,12 @@ select test.ok(
 );
 
 -- --- Unicidad del cliente por negocio ----------------------------------------
+-- Desde PA-17 (13/11/2026) identifica el email; sin email, el teléfono.
 select test.ok(
-  exists (
-    select 1 from pg_constraint
-     where conname = 'customers_telefono_unico_por_negocio'
-       and conrelid = 'public.customers'::regclass
-  ),
-  'customers tiene UNIQUE (business_id, telefono)'
+  (select count(*) from pg_indexes
+    where schemaname = 'public' and tablename = 'customers'
+      and indexname in ('customers_email_unico_por_negocio', 'customers_telefono_unico_sin_email')) = 2,
+  'customers: único por (negocio, email) y, sin email, por (negocio, teléfono) (PA-17)'
 );
 
 -- --- Embedding de 1024 dimensiones (maestro §5.4) ----------------------------

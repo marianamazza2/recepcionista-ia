@@ -18,6 +18,11 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 nube, con el panel publicado en
 https://recepcionista-ia-api.vercel.app/panel/ (solo con cuenta, PI-01). Lo
 siguiente es la Fase 9 (portal del cliente), que espera el guion de Mariana.
+Antes, en la rama `email-y-codigo` (13/11/2026): la clienta se identifica por
+su **email** (PA-17), la confirmación de la cita le llega **por email** con un
+archivo para el calendario (PW-18) y, para ver, cancelar o mover sus citas
+desde el chat, tiene que escribir el **código** que le llega a ese email
+(PA-16). El SMS queda apagado. Ver [Email y código](#email-y-código-antes-de-la-fase-9).
 Hay un **panel** (`admin/`, `npm run dev` → http://localhost:4312/panel/) donde se da de alta un negocio entero sin SQL
 (datos, servicios, profesionales, horarios, festivos, reglas, preguntas
 frecuentes y el chat en su web), se activa o se pausa, se copia el código del
@@ -28,8 +33,8 @@ rejilla, PR-04) y el consumo. Ver [Panel interno (Fase 4)](#panel-interno-fase-4
 Fase 3 (canal widget web): el agente de la Fase 2 ya
 atiende **desde una web**: una burbuja de chat que el negocio pega con una
 línea, un endpoint que resuelve el negocio por la clave pública del widget, el
-registro de lo que consume cada negocio (con tope mensual) y el SMS de
-confirmación con la página de la cita (con un proveedor de prueba: no se envía
+registro de lo que consume cada negocio (con tope mensual) y la confirmación
+(SMS hasta el 13/11/2026; ahora email, PW-18) con la página de la cita (con un proveedor de prueba: no se envía
 nada de verdad). Se prueba con la demo de Clínica Olea, una clínica de
 medicina estética inventada de Barcelona (`npm run dev`).
 
@@ -59,9 +64,10 @@ src/
 ├── api/                 las rutas HTTP: widget, chat, página de la cita (Fase 3) y el panel en admin/ (Fase 4)
 ├── adapters/
 │   ├── booking/         BookingAdapter (maestro §7), SupabaseAdapter y errores tipados
-│   ├── channels/        web-widget.ts: sesión, idempotencia, límites, tope, consumo, SMS
-│   └── sms/             SmsProvider y el proveedor de prueba
-├── citas/               SMS de confirmación y de cancelación, página del enlace, agenda y citas a mano (PI-14)
+│   ├── channels/        web-widget.ts: sesión, idempotencia, límites, tope, consumo, emails
+│   ├── email/           EmailProvider y el proveedor de prueba (PW-18)
+│   └── sms/             SmsProvider y el proveedor de prueba (apagado desde PW-18)
+├── citas/               emails de confirmación, cancelación y código (.ics incluido), página del enlace, agenda y citas a mano (PI-14)
 ├── config/business.ts   lo que el agente sabe de un negocio, leído de la base
 ├── core/                EL NÚCLEO (Fase 2). No se toca por cliente
 │   ├── agent.ts         el loop: tool use, historial, límites, derivar
@@ -106,7 +112,8 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261028100000_widget_logo` | Fase 3: `businesses.widget_logo`, el logo del círculo de la cabecera del widget como data URL (PW-17) |
 | `20261030120000_dias_libres` | Fase 4: `staff_dias_libres`, los días que una profesional no trabaja aunque el local abra (PI-19); `app.tramos_efectivos` no le da horario esos días |
 | `20261028120000_panel_interno` | Fase 4: `panel.personas` (quién entra al panel, PI-01), preguntas frecuentes en `knowledge_docs` con su límite (PI-08, `RA007`), `conversations.prueba` (PI-13), `escalations.resuelta_at` (PI-07), `negocio_lo_que_falta()` y no activar sin lo mínimo (PI-03, `RA008`), y el modo manual de `slot_es_valido`/`book_appointment` (PR-04, PI-14) |
-| `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local; nube pendiente |
+| `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local y en la nube (12/11/2026) |
+| `20261113120000_email_y_codigo` | PA-16, PA-17, PW-18: `customers.email` en minúsculas, único por negocio (y el teléfono, único solo entre las fichas sin email); `conversations.verificada_at`; `codigos_verificacion` (solo el hash, 3 intentos) y `email_messages`, con RLS. Aplicada en local y en la nube (13/11/2026: SQL 13/13 y TypeScript 210/210 por los dos modos del pooler) |
 
 ### Las dos garantías que ya están puestas
 
@@ -256,8 +263,9 @@ npm run dev
 ```
 
 - Abrí **http://localhost:4310**: la web inventada de Clínica Olea con la
-  burbuja abajo a la derecha. Escribí como una clienta; al reservar, el **SMS de
-  prueba** sale en la consola de `npm run dev`, con su enlace.
+  burbuja abajo a la derecha. Escribí como una clienta; al reservar, el **email de
+  prueba** sale en la consola de `npm run dev`, con su enlace (y el código, si
+  pedís ver o cancelar una cita).
 - El enlace (`http://localhost:4311/cita/…`) abre la página de la cita: la
   muestra y deja cancelarla (con PR-07, igual que el agente).
 - Recargá la página: la conversación sigue (2 h desde el último mensaje, PW-03
@@ -283,7 +291,7 @@ publica. `vercel.json` le dice que corra `npm run build:vercel`, que arma
 - **Variables del proyecto** (Settings → Environment Variables):
   `DATABASE_URL` (Supabase, pooler en modo transacción, puerto 6543),
   `ANTHROPIC_API_KEY` y `PUBLIC_API_URL`.
-- El SMS de prueba sale en los logs de la función (Vercel → Logs).
+- El email de prueba (confirmación y código) sale en los logs de la función (Vercel → Logs).
 - Probar el build en local: `PUBLIC_API_URL=https://ejemplo.vercel.app npm run build:vercel`.
 
 **La demo de ventas (Clínica Olea, A6).** Publicada el 04/11/2026 en
@@ -491,6 +499,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `11_dias_libres.sql` | PI-19: la tabla de días libres (duplicados, día válido, otro negocio, RLS) y el motor: ese día no hay tramos ni huecos, no se reserva tampoco a mano, la asignación automática va a otra profesional, "no trabaja" gana a las horas propias, y `available_slots` y `slot_es_valido` coinciden minuto a minuto |
 | `10_panel.sql` | Fase 4: `panel.personas` fuera de `public`, con RLS y sin política; preguntas frecuentes y su límite (RA007); conversación de prueba; derivación resuelta; lo que falta y no activar sin ello (RA008); citas a mano: sin rejilla ni antelación, pero nunca fuera de horario, en festivo, en una ausencia por horas, pisando otra cita o el margen |
 | `12_horarios_sin_solape.sql` | Solapes de tramos del local y de una profesional, INSERT y UPDATE; tramos contiguos, medianoche y aislamiento entre horarios, días y negocios |
+| `13_email_y_codigo.sql` | PA-17: email único por negocio, mismo móvil con dos emails, formato y minúsculas, sin email el teléfono sigue único; PA-16: el código solo como hash, 3 intentos, sin cruzar negocios; tipos de email; RLS |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -507,13 +516,14 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/agent.test.ts` | El loop con un **modelo simulado** (sin coste): todas las herramientas y todos los resultados juntos, historial solo-añadir, mensajes y tokens guardados, derivar, límites, fallos y rechazos |
 | `tests/widget-saludo.test.ts` | El saludo según la hora de la bienvenida del widget (PW-02) |
 | `tests/widget-api.test.ts` | El endpoint del widget: solo lo público en la config, dominio no permitido, sesión y token de otro negocio, PW-03 (2 h), idempotencia (también simultánea, con una sola cita y un solo SMS), orden de dos mensajes a la vez, límites PW-05, tope PW-04, consumo y errores |
-| `tests/cita-sms.test.ts` | El SMS de prueba al reservar (texto, enlace, sin token en la base), SMS fallido sin perder la cita, el SMS de cancelación por el chat (PW-10), la página del enlace (ver, cancelar en dos pasos, PR-07 en sus dos modos, enlace inventado o caducado) |
+| `tests/cita-email.test.ts` | PW-18: el email de prueba al reservar (sin el tratamiento, enlace, `.ics`, sin token en la base), sin email no se manda nada, email fallido sin perder la cita; cancelar por el chat solo con el código (PA-16) y su aviso sin enlace (PW-10); la página del enlace (dos pasos, PR-07, token caducado) |
+| `tests/codigo.test.ts` | PA-17: identificar por email (mayúsculas, mismo móvil con dos emails, ficha antigua sin email, sin email, email mal escrito, no cambiar de persona); PA-16: sin código no se ve, cancela ni mueve (ni se describe la cita que choca), con el código sí; hash, 3 intentos, 10 minutos, 3 por hora, no vale en otra conversación, sin email hay que llamar |
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
 | `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario (también solapes sin perder datos), normalización del teléfono del local, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
 | `tests/panel-horario.test.ts` | Las cuentas de horarios del panel: qué tramos propios caen fuera del horario del local (PI-18) y "Copiar a…" entre días |
 | `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
-| `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el SMS, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
+| `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el email, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
 forma). Limpian lo suyo al terminar: crean negocios de prueba que se borran, y
@@ -565,12 +575,36 @@ tests siguen en Aurora.
 
 | Pendiente | Fase |
 |---|---|
-| Proveedor real de SMS (hoy, uno de prueba que escribe en la consola) | cuando Mariana lo elija (PW-07) |
+| Proveedor real de email (hoy, uno de prueba que escribe en la consola y en los logs de Vercel) | cuando Mariana lo elija (PW-18) |
+| SMS (apagado desde PW-18) | 6, para los recordatorios, o si un negocio lo pide (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
 | Portal del cliente y alta por chat, con enlace de invitación (PC-01 a PC-09) | 9, adelantada: va después de la 4; espera el guion de Mariana |
 | Ingesta de conocimiento y embeddings | 5 |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
+
+### Email y código (antes de la Fase 9)
+
+Decidido por Mariana el 13/11/2026 (PA-16, PA-17, PW-18), en la rama
+`email-y-codigo`:
+
+- **La clienta es su email.** El agente pide nombre y email, se lo repite para
+  confirmarlo y pide un móvil "por si el centro necesita avisarte alguna
+  eventualidad y/o cambio de tu cita". Sin email reserva igual, pero para
+  cambiar o cancelar tiene que llamar al local.
+- **La confirmación llega por email**, con el enlace a la página de la cita,
+  la política de cancelación del negocio y un `.ics` para el calendario. Sin
+  el tratamiento (⚠️ por confirmar). Cancelar por el chat o desde el panel
+  manda un aviso sin enlace. El SMS queda apagado.
+- **Para ver, cancelar o mover una cita desde el chat, el código del email**:
+  seis dígitos, 10 minutos, un solo uso, 3 intentos, como mucho 3 por hora y
+  solo su hash en la base. Reservar no lo pide. Lo exigen las herramientas
+  (`exigirCodigo`), no el prompt.
+- **El panel**: la cita a mano pide también el email (opcional) y la agenda lo
+  enseña.
+- **Proveedor de email**: de momento el de prueba, también en Vercel (sale en
+  los logs). Conectar uno real (Resend, Amazon SES…) espera la decisión de
+  Mariana.
 
 ### Cierre de la Fase 4 · 12/11/2026
 
@@ -613,8 +647,8 @@ profesional, con quién sí hay) a partir del `dia_pedido` que calcula
 `consultar_disponibilidad`; se expresa con las reglas y ejemplos aprobados
 (PA-15) y escribe el teléfono como se dice; y en el panel, si dos personas
 guardan la misma sección, gana la primera (PI-22). `agent:eval` suma los
-escenarios 14 y 15 y un juez de tono. Falta pasarlo con el modelo real: el
-11/11 la cuenta de Anthropic se quedó sin crédito.
+escenarios 14 y 15 y un juez de tono, pasados con el modelo real el 12/11/2026
+(15/15 y las 23 respuestas del tono aprobadas).
 
 **PI-21 (05/11/2026):** un festivo, una ausencia o un horario nuevo que deja
 fuera citas ya dadas no se guarda sin preguntar: el panel enseña las citas y

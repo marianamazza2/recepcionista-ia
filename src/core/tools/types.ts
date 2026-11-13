@@ -6,7 +6,7 @@
 // Todas reciben y devuelven HORA LOCAL del negocio; la conversión a UTC vive en
 // src/core/time.ts.
 //
-// Las reglas que no se pueden dejar al prompt (PA-08, PR-07 bloquear, PA-06)
+// Las reglas que no se pueden dejar al prompt (PA-08, PA-16, PR-07 bloquear, PA-06)
 // se comprueban dentro de la ejecución: el modelo puede pedir lo que quiera,
 // la herramienta decide.
 // =============================================================================
@@ -31,10 +31,27 @@ export interface ToolContext {
   state: {
     customerId: string | null;
     estado: ConversationEstado;
+    /** PA-16: escribió bien el código de su email en esta conversación (verificar_codigo). */
+    verificada: boolean;
   };
   /** Reloj inyectable para los tests. */
   now: () => Date;
+  /**
+   * PA-16: manda el código al email de la clienta. Lo pone el canal (el núcleo
+   * no conoce el proveedor de email); sin él, enviar_codigo no puede mandarlo.
+   * Lanza si el envío falla.
+   */
+  enviarCodigo?: EnviarCodigo;
 }
+
+/** PA-16: cómo manda el canal el código al email (src/citas/codigo.ts). */
+export type EnviarCodigo = (datos: {
+  businessId: string;
+  customerId: string;
+  email: string;
+  nombre: string | null;
+  codigo: string;
+}) => Promise<void>;
 
 /** Error para el modelo: un motivo estable, una explicación y, si aplica, huecos alternativos. */
 export interface ToolError {

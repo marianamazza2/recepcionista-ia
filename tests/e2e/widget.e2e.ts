@@ -3,7 +3,7 @@
 // Levanta los dos servidores de la demo (src/dev/server.ts) con el modelo
 // SIMULADO (sin coste) y abre la web de la demo (Clínica Olea, A6) en Google Chrome sin
 // ventana (playwright-core con el Chrome instalado: no descarga navegadores).
-// Comprueba lo que haría Mariana a mano: escribir, reservar, ver el SMS de
+// Comprueba lo que haría Mariana a mano: escribir, reservar, ver el email de
 // prueba, abrir su enlace y cancelar; recargar y seguir la conversación;
 // abrir otro navegador y no verla; y que en un dominio no permitido el widget
 // no aparece.
@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { chromium, type Browser, type Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { SmsDePrueba } from '../../src/adapters/sms/prueba.js';
+import { EmailDePrueba } from '../../src/adapters/email/prueba.js';
 import { AJUSTES_DE_SERIE } from '../../src/core/agent.js';
 import { localToUtc } from '../../src/core/time.js';
 import { createSql } from '../../src/db/client.js';
@@ -29,14 +29,15 @@ const sql = createSql(undefined, { max: 6 });
 const AHORA = localToUtc('2030-10-14', '10:00', 'Europe/Madrid');
 const CLAVE_ALMACEN = `recepcionista:${OLEA.widgetKey}:sesion`;
 const telefono = telefonoDeTest();
+const CORREO = `clienta.e2e.${telefono.slice(-7)}@example.com`;
 
 const modelo = new ModeloSimulado([
-  texto('¡Hola! Para el martes 15 a las 10:00 tengo a la Dra. Clara. ¿Te la reservo? Dime tu nombre y tu teléfono.'),
-  herramientas({ name: 'identificar_cliente', input: { telefono, nombre: 'Clienta E2E' } }),
+  texto('¡Hola! Para el martes 15 a las 10:00 tengo a la Dra. Clara. ¿Te la reservo? Dime tu nombre y tu email.'),
+  herramientas({ name: 'identificar_cliente', input: { email: CORREO, telefono, nombre: 'Clienta E2E' } }),
   herramientas({ name: 'crear_reserva', input: { servicio: 'Primera visita médica', fecha: '2030-10-15', hora: '10:00', profesional: 'Dra. Clara' } }),
   texto('¡Hecho! Tienes cita el martes 15 de octubre a las 10:00 con la Dra. Clara.'),
 ]);
-const sms = new SmsDePrueba({ silencioso: true });
+const email = new EmailDePrueba({ silencioso: true });
 const tokens: string[] = [];
 const PRIMER_MENSAJE = 'Quiero una primera visita el martes 15 a las 10';
 let inicio: Date;
@@ -57,7 +58,7 @@ beforeAll(async () => {
     sql,
     model: modelo,
     settings: { ...AJUSTES_DE_SERIE, limits: { maxVueltas: 4, maxTokensConversacion: 1_000_000 } },
-    sms,
+    email,
     apiPort: puertoApi,
     demoPort: puertoApi + 100,
     now: () => AHORA,
@@ -126,7 +127,7 @@ describe('la demo en el navegador', () => {
     else expect(await widget(pagina, '.cabecera .logo').textContent()).toBe('C');
   });
 
-  it('se escribe, responde y acaba con una cita real en la base y su SMS de prueba', async () => {
+  it('se escribe, responde y acaba con una cita real en la base y su email de prueba', async () => {
     const entrada = widget(pagina, 'textarea');
     await entrada.fill(PRIMER_MENSAJE);
     await entrada.press('Enter');
@@ -134,7 +135,7 @@ describe('la demo en el navegador', () => {
     expect(await widget(pagina, '.m.asistente').nth(1).textContent()).toContain('tengo a la Dra. Clara');
     await guardarToken(pagina);
 
-    await entrada.fill(`Sí. Clienta E2E, ${telefono}`);
+    await entrada.fill(`Sí. Clienta E2E, ${CORREO}, ${telefono}`);
     await entrada.press('Enter');
     await expect.poll(() => widget(pagina, '.m.asistente').count(), ESPERA).toBe(3);
     expect(await widget(pagina, '.m.asistente').nth(2).textContent()).toContain('¡Hecho!');
@@ -144,8 +145,9 @@ describe('la demo en el navegador', () => {
        where a.business_id = ${OLEA.businessId} and c.telefono = ${telefono}`;
     expect(citas).toHaveLength(1);
     expect(citas[0]!.estado).toBe('confirmada');
-    expect(sms.enviados).toHaveLength(1);
-    expect(sms.enviados[0]!.texto).toContain('Clínica Olea: cita confirmada el martes 15 de octubre a las 10:00 con Dra. Clara.');
+    expect(email.enviados).toHaveLength(1);
+    expect(email.enviados[0]).toMatchObject({ para: CORREO, asunto: 'Tu cita en Clínica Olea: martes 15 de octubre a las 10:00' });
+    expect(email.enviados[0]!.texto).toContain('Con: Dra. Clara');
   });
 
   it('al recargar la página la conversación sigue', async () => {
@@ -161,8 +163,8 @@ describe('la demo en el navegador', () => {
     expect(await widget(otro, '.m.clienta').count()).toBe(0);
   });
 
-  it('el enlace del SMS abre la cita y permite cancelarla', async () => {
-    const enlace = sms.enviados[0]!.texto.split(' ').at(-1)!;
+  it('el enlace del email abre la cita y permite cancelarla', async () => {
+    const enlace = /https?:\/\/\S+\/cita\/\S+/.exec(email.enviados[0]!.texto)![0];
     expect(enlace.startsWith(`${servidores.apiUrl}/cita/`)).toBe(true);
     const p = await (await navegador.newContext()).newPage();
     await p.goto(enlace);
