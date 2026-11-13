@@ -613,8 +613,8 @@ profesional, con quién sí hay) a partir del `dia_pedido` que calcula
 `consultar_disponibilidad`; se expresa con las reglas y ejemplos aprobados
 (PA-15) y escribe el teléfono como se dice; y en el panel, si dos personas
 guardan la misma sección, gana la primera (PI-22). `agent:eval` suma los
-escenarios 14 y 15 y un juez de tono. Falta pasarlo con el modelo real: el
-11/11 la cuenta de Anthropic se quedó sin crédito.
+escenarios 14 y 15 y un juez de tono, pasados con el modelo real el 12/11/2026
+(15/15 y las 23 respuestas del tono aprobadas).
 
 **PI-21 (05/11/2026):** un festivo, una ausencia o un horario nuevo que deja
 fuera citas ya dadas no se guarda sin preguntar: el panel enseña las citas y
