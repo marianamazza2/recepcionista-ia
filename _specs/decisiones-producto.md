@@ -35,7 +35,7 @@ Mariana) y el *Cuestionario de alta* (para usar con cada cliente).
 | PR-06 | "La última vez te atendió…" | Solo cuenta la última cita **ya pasada** y atendida | — | 16/10/2026 |
 | PR-07 | Cancelar o reprogramar dentro del plazo | Lo decide cada negocio | Modo (de serie: **solo informar**) y plazo en horas (de serie: **24**) | 16/10/2026 |
 | PR-08 | Dos citas a la vez | Una clienta **no puede tener dos citas que se pisen**. Si pide una a la hora de otra suya, el agente dice que no puede; si ella quiere, se queda la nueva y la anterior se mueve o se anula, todo junto | — | 16/10/2026 |
-| PD-13 | Qué se guarda y qué se borra | **La ficha de la clienta (nombre, teléfono, email) se guarda siempre**: es la base de clientas del negocio y lo que permite reconocerla cuando vuelve. **El texto del chat se borra a los 6 meses.** Las citas no se borran: son la agenda | — | ✅ decidida 13/11/2026 (falta construirla) |
+| PD-13 | Qué se guarda y qué se borra | **La ficha de la clienta (nombre, teléfono, email) se guarda siempre**: es la base de clientas del negocio y lo que permite reconocerla cuando vuelve. **El texto del chat se borra a los 6 meses.** Las citas no se borran: son la agenda | — | ✅ decidida y construida 13/11/2026 (todavía se lanza a mano) |
 
 Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al construirlo (PW-09 a PW-15) están al final: todas ✅ decididas (PW-08 y PW-10 el 20/10/2026; el resto, y PW-16, que apareció al confirmarlas, el 28/10/2026).
 
@@ -1249,7 +1249,7 @@ Aparecieron al construir el panel, el 28/10/2026. **Mariana las decidió el
 | PI-16 | El widget de un negocio en prueba | **No aparece**: solo funciona con el negocio **activo**. "Activar" es el interruptor de publicar. Antes, se prueba con "Probar el chat" del panel | — | ✅ decidida 29/10/2026 |
 | PI-17 | Un negocio pausado en el panel | No se puede probar su chat ni cargar o cancelar citas a mano: hay que reactivarlo antes | — | ✅ decidida 29/10/2026 |
 | PI-19 | Días que una profesional no trabaja (amplía PD-01) | Cada día: **como el local** (de serie), **no trabaja** u **horas propias**. Lo aplica el motor: ese día no ofrece ni reserva, tampoco a mano | Sí (los días de cada profesional) | ✅ decidida 30/10/2026 |
-| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | **No cuenta** como "una profesional que haga algún servicio", y el panel la marca en **ámbar** en cuanto se queda sin días | — | ✅ decidida 13/11/2026 (falta construirla) |
+| PI-20 | ¿Una profesional que no trabaja ningún día cuenta en "lo que falta"? | **No cuenta** como "una profesional que haga algún servicio", y el panel la marca en **ámbar** en cuanto se queda sin días | — | ✅ decidida y construida 13/11/2026 |
 | PI-21 | Un festivo, una ausencia o un cambio de horario encima de citas | Cartel con las citas afectadas: ¿se dejan o se cancelan? Si se cancelan, SMS de cancelación a cada clienta | — | ✅ decidida 05/11/2026 · construida el 05/11/2026 |
 | PI-22 | La misma sección editada en dos sitios a la vez | **Gana la primera que se guardó.** La segunda no se guarda: avisa de que alguien la cambió mientras tanto y hay que recargar | — | ✅ decidida 05/11/2026, construida 11/11/2026 (texto del aviso confirmado 13/11/2026) |
 | PI-18 | Horario propio fuera del horario del local | Se permite (PD-01), pero el panel lo marca siempre en pantalla (tramo en ámbar, aviso fijo y "Para revisar" arriba, junto a lo que falta) y al guardar pide confirmación | — | ✅ decidida 29/10/2026 |
@@ -1394,8 +1394,11 @@ Cuenta como "sin ningún día" quien tiene **todos** los días que abre el local
 marcados "no trabaja" (sus días propios fuera del horario del local no dan
 huecos: PD-01).
 
-*Falta construirlo:* `negocio_lo_que_falta()` (migración nueva) y el aviso en
-el panel. Mientras tanto, el código cuenta como antes.
+**Construido el 13/11/2026.** `app.profesional_trabaja_algun_dia()` decide
+quién cuenta y `negocio_lo_que_falta()` la usa: sin nadie con días, el negocio
+no se activa (lo impide la base, RA008) y el panel dice que falta "una
+profesional activa que haga algún servicio **y trabaje algún día**". En su
+ficha sale el aviso en ámbar con el texto de arriba.
 
 ### PI-21 · Un festivo o una ausencia encima de citas ya dadas · ✅ decidida el 05/11/2026
 
@@ -1663,9 +1666,12 @@ para no agujerear la agenda del negocio.
   teléfono (PA-02); el email es un campo, no una segunda forma de buscarla. Si
   vuelve con otro número, saldrá como nueva.
 
-*Falta construirlo:* el borrado a los 6 meses (una tarea que corra sola) y una
-forma de borrar a una clienta cuando lo reclame, que hoy habría que hacer a
-mano en la base.
+**Construido el 13/11/2026.** Dos funciones en Postgres
+(`app.borrar_conversaciones_vencidas`, `app.borrar_clienta`) y un comando,
+`npm run borrado`, que sin `--si` solo dice qué se borraría. El borrado es un
+delete de verdad. **Lo que falta:** que corra **solo** (una tarea diaria);
+mientras tanto lo lanza Mariana desde la Terminal, porque poner un cron de
+Vercel toca lo publicado y necesita su visto bueno.
 
 *Sigue abierto de PD-11:* si se filtran teléfonos y emails antes de mandar el
 texto al modelo. Mi propuesta: **no filtrar** (el agente necesita el teléfono

@@ -20,7 +20,8 @@
     "build:widget": "tsx src/cli/build-widget.ts",
     "build:vercel": "tsx src/vercel/build.ts",
     "panel:cuenta": "tsx src/cli/panel-cuenta.ts",
-    "build:panel": "vite build --config admin/vite.config.ts"
+    "build:panel": "vite build --config admin/vite.config.ts",
+    "borrado": "tsx src/cli/borrado.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

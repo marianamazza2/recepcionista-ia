@@ -51,12 +51,21 @@ supabase/
    `book_appointment`. Al añadir un argumento con valor de serie a una
    función, se **borra** la firma anterior en la misma migración: si no, las
    dos casan con las llamadas de siempre y Postgres no sabe cuál usar.
+   Quién cuenta como profesional para activar un negocio sale de
+   `app.profesional_trabaja_algun_dia` (PI-20, 13/11/2026): quien no trabaja
+   ningún día no tiene huecos, así que `negocio_lo_que_falta` no la cuenta. El
+   borrado de datos (PD-13) también vive en la base
+   (`app.borrar_conversaciones_vencidas`, `app.borrar_clienta`): así vale igual
+   desde la Terminal, desde el panel o desde una tarea programada, y es un
+   **delete** de verdad, no una marca.
 10. **Errores propios con SQLSTATE `RA0NN`** (el siguiente libre: hoy
-    **RA009**), con `hint`/mensaje legible. Cada código nuevo se traduce:
+    **RA011**), con `hint`/mensaje legible. Cada código nuevo se traduce:
     los del motor de reservas en `src/adapters/booking/errors.ts` (ver
     [`src/adapters/AGENTS.md`](../src/adapters/AGENTS.md)); los del panel
     (RA007 preguntas frecuentes, RA008 activar incompleto) en
-    `src/api/admin/errores.ts`.
+    `src/api/admin/errores.ts`. Los del borrado (RA009 retención menor que un
+    mes, RA010 clienta de otro negocio, PD-13) no pasan por el panel: solo los
+    ve `npm run borrado`, que ya dice qué hacer.
 11. **Horas:** `timestamptz` en UTC para instantes; horarios en hora local
     del negocio (D-09) y se cruzan con `AT TIME ZONE b.timezone`, nunca con
     offsets a mano (T-01).

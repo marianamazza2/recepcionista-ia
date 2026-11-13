@@ -171,7 +171,7 @@ describe('alta de un negocio (PI-03) y el agente', () => {
     const r = await pedir(h, 'POST', `negocios/${c.body.id}/activar`);
     expect(r.status).toBe(409);
     expect(r.body.falta).toEqual(['servicio', 'profesional', 'horario', 'telefono', 'dominio']);
-    expect(r.body.mensaje).toBe('Falta: un servicio activo · una profesional activa que haga algún servicio · horario del local · teléfono del local · un dominio para el chat');
+    expect(r.body.mensaje).toBe('Falta: un servicio activo · una profesional activa que haga algún servicio y trabaje algún día · horario del local · teléfono del local · un dominio para el chat');
   });
 
   it('alta completa por la API → se activa y el agente ofrece huecos y reserva por el widget', async () => {

@@ -146,6 +146,7 @@ npm run chat -- --negocio estetica-aurora     # conversar por la Terminal (usa l
 npm run agent:eval          # escenarios con el modelo real (cuesta céntimos)
 npm run dev                 # demo del widget (:4310 web, :4311 servidor) y panel (:4312/panel/), con la API real
 npm run consumo -- --negocio estetica-aurora  # consumo del mes y % del tope
+npm run borrado             # qué texto de chat caduca (PD-13); con --si lo borra
 npm run panel:cuenta -- --email …              # crear una cuenta del panel (pide la contraseña en la Terminal)
 npm run build:widget        # genera widget/dist/widget.js
 npm run build:panel         # compila el panel en admin/dist (lo hacen solos npm run dev y build:vercel)

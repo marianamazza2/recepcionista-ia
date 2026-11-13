@@ -13,7 +13,7 @@ src/
 │   └── sms/          ADAPTADORES    el envío de SMS detrás de SmsProvider (apagado desde PW-18)
 ├── core/             NÚCLEO         el loop del agente, prompt, herramientas, guardrails. Igual para todos
 ├── config/           CONFIGURACIÓN  lo que el agente sabe de UN negocio, leído de la base
-├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget
+├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget, borrado (PD-13)
 ├── citas/            emails de confirmación, cancelación y código (con su .ics), página del enlace, agenda y citas a mano (PW-18, PA-16, PW-10, PI-14)
 ├── cli/              comandos de npm (chat, eval, consumo, build del widget, cuenta del panel)
 ├── dev/              servidor local de la demo y del panel, y la compilación del widget y del panel

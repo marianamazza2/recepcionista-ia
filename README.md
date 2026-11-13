@@ -83,6 +83,7 @@ src/
     ├── chat.ts          npm run chat: conversar por la Terminal
     ├── eval.ts          npm run agent:eval: los 15 escenarios con el modelo real y el juez de tono
     ├── consumo.ts       npm run consumo: el informe de consumo de un negocio
+    ├── borrado.ts       npm run borrado: retención del chat y borrar a una clienta (PD-13)
     ├── panel-cuenta.ts  npm run panel:cuenta: crear una cuenta del panel
     └── build-widget.ts  npm run build:widget: genera widget/dist/widget.js
 widget/                  el chat embebible (TypeScript sin dependencias)
@@ -114,6 +115,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261028120000_panel_interno` | Fase 4: `panel.personas` (quién entra al panel, PI-01), preguntas frecuentes en `knowledge_docs` con su límite (PI-08, `RA007`), `conversations.prueba` (PI-13), `escalations.resuelta_at` (PI-07), `negocio_lo_que_falta()` y no activar sin lo mínimo (PI-03, `RA008`), y el modo manual de `slot_es_valido`/`book_appointment` (PR-04, PI-14) |
 | `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local y en la nube (12/11/2026) |
 | `20261113120000_email_y_codigo` | PA-16, PA-17, PW-18: `customers.email` en minúsculas, único por negocio (y el teléfono, único solo entre las fichas sin email); `conversations.verificada_at`; `codigos_verificacion` (solo el hash, 3 intentos) y `email_messages`, con RLS. Aplicada en local y en la nube (13/11/2026: SQL 13/13 y TypeScript 210/210 por los dos modos del pooler) |
+| `20261113130000_borrado_y_avisos` | PD-13: `app.borrar_conversaciones_vencidas()` (el texto del chat caduca a los 6 meses; la conversación, la ficha, las citas y el consumo se quedan) y `app.borrar_clienta()` (derecho de supresión: su texto fuera, sus conversaciones desligadas, su ficha anónima y sus citas en pie). PI-20: `app.profesional_trabaja_algun_dia()` y `negocio_lo_que_falta()` ya no cuenta a quien no trabaja ningún día |
 
 ### Las dos garantías que ya están puestas
 
@@ -349,6 +351,27 @@ avisa desde el 80 %. Cuenta lo que pasa por el widget (no las pruebas por la
 Terminal); las de "Probar el chat" del panel, aparte. Lo mismo, para todos los
 negocios a la vez, en el panel → Consumo.
 
+### Borrar datos (PD-13)
+
+```bash
+npm run borrado                                                   # qué se borraría (no borra)
+npm run borrado -- --si                                           # borra el texto de chat vencido
+npm run borrado -- --si --meses 12                                # con otra retención
+npm run borrado -- --negocio clinica-olea --clienta maria@x.com   # ensayo para una clienta
+npm run borrado -- --negocio clinica-olea --clienta maria@x.com --si
+```
+
+Decidido el 13/11/2026 (PD-13): **el texto del chat caduca a los 6 meses**; la
+ficha de la clienta, sus citas y el consumo se guardan siempre. Y si una
+clienta ejerce su derecho de supresión, se borra **ella**: su texto entero, sus
+conversaciones desligadas y su ficha anónima, con sus citas en pie para no
+agujerear la agenda del negocio. **Sin `--si` no borra nada.** El borrado es
+real; las copias de seguridad de Supabase lo conservan hasta que rotan.
+
+Todavía **no corre solo**: lo lanza Mariana desde la Terminal. Ponerlo en una
+tarea diaria (un cron de Vercel) toca lo publicado, así que espera su visto
+bueno.
+
 ---
 
 ## Panel interno (Fase 4)
@@ -500,6 +523,7 @@ día en que se corren; la antelación se mide contra `now()`.
 | `10_panel.sql` | Fase 4: `panel.personas` fuera de `public`, con RLS y sin política; preguntas frecuentes y su límite (RA007); conversación de prueba; derivación resuelta; lo que falta y no activar sin ello (RA008); citas a mano: sin rejilla ni antelación, pero nunca fuera de horario, en festivo, en una ausencia por horas, pisando otra cita o el margen |
 | `12_horarios_sin_solape.sql` | Solapes de tramos del local y de una profesional, INSERT y UPDATE; tramos contiguos, medianoche y aislamiento entre horarios, días y negocios |
 | `13_email_y_codigo.sql` | PA-17: email único por negocio, mismo móvil con dos emails, formato y minúsculas, sin email el teléfono sigue único; PA-16: el código solo como hash, 3 intentos, sin cruzar negocios; tipos de email; RLS |
+| `14_borrado_y_avisos.sql` | PD-13: el texto vencido se borra y lo reciente no, la conversación y la ficha se quedan, el consumo no se toca, es idempotente; borrar a una clienta deja su ficha anónima y sus citas en pie, y una clienta de otro negocio se rechaza. PI-20: quien no trabaja ningún día no cuenta y el negocio no se activa; un tramo propio la devuelve a la cuenta |
 
 La aserción de cobertura de `04` es la que importa a futuro: **falla si alguien
 crea una tabla nueva y se olvida de activarle RLS o de darle política.**
@@ -519,10 +543,11 @@ crea una tabla nueva y se olvida de activarle RLS o de darle política.**
 | `tests/cita-email.test.ts` | PW-18: el email de prueba al reservar (sin el tratamiento, enlace, `.ics`, sin token en la base), sin email no se manda nada, email fallido sin perder la cita; cancelar por el chat solo con el código (PA-16) y su aviso sin enlace (PW-10); la página del enlace (dos pasos, PR-07, token caducado) |
 | `tests/codigo.test.ts` | PA-17: identificar por email (mayúsculas, mismo móvil con dos emails, ficha antigua sin email, sin email, email mal escrito, no cambiar de persona); PA-16: sin código no se ve, cancela ni mueve (ni se describe la cita que choca), con el código sí; hash, 3 intentos, 10 minutos, 3 por hora, no vale en otra conversación, sin email hay que llamar |
 | `tests/consumo.test.ts` | Eventos de consumo por turno y modelo, mes natural del tope, informe y aviso del 80 % |
+| `tests/borrado.test.ts` | PD-13: el texto vencido se borra y el reciente no, la conversación y la ficha se quedan, es idempotente, RA009 con menos de un mes; borrar a una clienta (por email o teléfono) deja su ficha anónima y sus citas en pie, y RA010 si es de otro negocio. PI-20: la cuenta que pinta el ámbar del panel |
 | `tests/vercel-build.test.ts` | La publicación de Vercel: la demo apunta a `PUBLIC_API_URL`, la función (Node 22, Frankfurt, 300 s) y sus rutas, y el archivo empaquetado respondiendo de verdad (dominio permitido y no permitido, 404) |
 | `tests/admin-api.test.ts` | La API del panel con cuentas falsas: 401 en todas las rutas sin cuenta válida, entrar y renovar, alta completa y que el agente reserve, activar incompleto, desactivar un servicio con citas, preguntas frecuentes en el prompt y su límite, cambiar la clave, logo, festivos, horario (también solapes sin perder datos), normalización del teléfono del local, citas a mano (y que el agente al moverlas respeta la rejilla), probar el chat, visor, derivaciones, consumo separado, negocio pausado y aislamiento entre negocios |
 | `tests/panel-horario.test.ts` | Las cuentas de horarios del panel: qué tramos propios caen fuera del horario del local (PI-18) y "Copiar a…" entre días |
-| `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda y consumo |
+| `tests/e2e/panel.e2e.ts` | `npm run test:e2e`: el panel en Chrome — entrar, alta mínima solo con el panel (horario copiado a los días laborables, el aviso de PI-18 al guardar un horario propio fuera del local, logo grande reducido solo), activar, reservar con su widget en la web de prueba, verlo en el visor, cita a mano en la agenda, consumo y el ámbar de PI-20 (una profesional sin ningún día) |
 | `tests/e2e/widget.e2e.ts` | `npm run test:e2e`: la demo en Chrome, de escribir a reservar, el email, recargar, otro navegador, cancelar por el enlace, un dominio no permitido y la conversación caducada (PW-12) |
 
 Estos sí confirman en la base (la concurrencia no se puede probar de otra
