@@ -15,6 +15,7 @@ import type { BusinessConfig } from '../../config/business.js';
 import { telefonoLegible } from '../phone.js';
 import { reservarYCambiarCitaAnterior } from './cambiar.js';
 import { identificarCliente } from './clientes.js';
+import { enviarCodigo, verificarCodigo } from './codigo.js';
 import { derivarAHumano } from './derivar.js';
 import { consultarDisponibilidad } from './disponibilidad.js';
 import { buscarReservasCliente, cancelarReserva, crearReserva, reprogramarReserva } from './reservas.js';
@@ -26,9 +27,11 @@ export const TOOLS: readonly AgentTool[] = [
   consultarDisponibilidad,
   crearReserva,
   derivarAHumano,
+  enviarCodigo,
   identificarCliente,
   reprogramarReserva,
   reservarYCambiarCitaAnterior,
+  verificarCodigo,
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 export function toolDefinitions(config: BusinessConfig): Anthropic.Beta.BetaTool[] {

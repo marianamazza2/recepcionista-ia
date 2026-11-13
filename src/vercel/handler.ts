@@ -9,12 +9,12 @@
 // Variables (en el proyecto de Vercel, nunca en el repo):
 //   DATABASE_URL       Supabase por el pooler en modo transacción (6543)
 //   ANTHROPIC_API_KEY  la clave de la API (nunca se muestra)
-//   PUBLIC_API_URL     la URL pública de esta función, para el enlace del SMS
+//   PUBLIC_API_URL     la URL pública de esta función, para el enlace del email
 //   SUPABASE_PROJECT_REF, SUPABASE_ANON_KEY  las cuentas del panel (Fase 4,
 //                      PI-01). Sin ellas, /api/admin responde 503.
 //   AGENT_*            opcionales, como en local
 //
-// SMS: el proveedor de prueba (PW-07). El SMS sale en los logs de la función
+// Email: el proveedor de prueba (PW-18). El email sale en los logs de la función
 // en Vercel; no se envía a nadie.
 //
 // La IP sale de x-forwarded-for, que en Vercel pone la plataforma.
@@ -24,7 +24,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { SmsDePrueba } from '../adapters/sms/prueba.js';
+import { EmailDePrueba } from '../adapters/email/prueba.js';
 import { authPanelDesdeEnv } from '../api/admin/auth.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
@@ -48,7 +48,8 @@ function crearApi(): ReturnType<typeof createApi> {
     sql: createSql(undefined, { max: 5, idle_timeout: 20 }),
     model: anthropicModelClient(settings),
     settings,
-    sms: new SmsDePrueba(),
+    // PW-18: hasta que Mariana elija proveedor, el email de prueba (va al log).
+    email: new EmailDePrueba(),
     baseUrl: publicUrl(),
     auth: authPanelDesdeEnv(),
     onError: (e) => console.error(`[error] ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`),

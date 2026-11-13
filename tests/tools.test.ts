@@ -44,7 +44,7 @@ async function nuevoCtx(opts: { now?: Date; config?: BusinessConfig; adapter?: B
     adapter: opts.adapter ?? adapter,
     config: opts.config ?? config,
     conversationId: conv.id,
-    state: { customerId: null, estado: 'activa' },
+    state: { customerId: null, estado: 'activa', verificada: false },
     now: () => opts.now ?? AHORA,
   };
 }
@@ -54,6 +54,9 @@ async function identificada(opts: Parameters<typeof nuevoCtx>[0] = {}): Promise<
   const telefono = telefonoDeTest();
   const r = await executeTool('identificar_cliente', { telefono, nombre: 'Clienta de test' }, ctx);
   expect(r.isError).toBe(false);
+  // Estos tests son de la agenda: se da por escrito el código del email
+  // (PA-16 tiene los suyos en codigo.test.ts).
+  ctx.state.verificada = true;
   return Object.assign(ctx, { telefono });
 }
 
@@ -134,7 +137,7 @@ describe('teléfonos', () => {
 });
 
 describe('definiciones', () => {
-  it('ocho herramientas, ordenadas, todas strict, sin buscar_en_conocimiento', () => {
+  it('diez herramientas, ordenadas, todas strict, sin buscar_en_conocimiento', () => {
     const defs = toolDefinitions(config);
     expect(defs.map((d) => d.name)).toEqual([
       'buscar_reservas_cliente',
@@ -142,9 +145,11 @@ describe('definiciones', () => {
       'consultar_disponibilidad',
       'crear_reserva',
       'derivar_a_humano',
+      'enviar_codigo',
       'identificar_cliente',
       'reprogramar_reserva',
       'reservar_y_cambiar_cita_anterior',
+      'verificar_codigo',
     ]);
     for (const d of defs) {
       expect(d.strict).toBe(true);
@@ -335,7 +340,7 @@ describe('identificar_cliente', () => {
     const telefono = telefonoDeTest();
     const nacional = telefono.slice(3).replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
     const r1 = await executeTool('identificar_cliente', { telefono: nacional, nombre: 'Nueva' }, ctx);
-    expect(datos(r1)).toMatchObject({ identificada: true, telefono, clienta_nueva: true, ultima_profesional: null });
+    expect(datos(r1)).toMatchObject({ identificada: true, email: null, clienta_nueva: true, ultima_profesional: null });
     expect(ctx.state.customerId).not.toBeNull();
     const [conv] = await sql`select customer_id from public.conversations where id = ${ctx.conversationId}`;
     expect(conv!.customer_id).toBe(ctx.state.customerId);
@@ -456,7 +461,7 @@ describe('crear_reserva', () => {
         adapter: ad,
         config: c,
         conversationId: conv.id,
-        state: { customerId: negocio.customerId, estado: 'activa' },
+        state: { customerId: negocio.customerId, estado: 'activa', verificada: true },
         now: () => ahora,
       };
       // El siguiente inicio de la rejilla a más de 30 min: está entre 30 y 60 min.
@@ -520,7 +525,7 @@ describe('cancelar_reserva y reprogramar_reserva', () => {
     const cita = await reservar(reserva, '2030-10-23', '17:00');
     // Tres horas antes de la cita.
     const ctx = Object.assign(await nuevoCtx({ now: localToUtc('2030-10-23', '14:00', TZ) }), {
-      state: { customerId: reserva.state.customerId, estado: 'activa' as const },
+      state: { customerId: reserva.state.customerId, estado: 'activa' as const, verificada: true },
     });
     const r = await executeTool('cancelar_reserva', { id_cita: cita.id_cita }, ctx);
     expect(datos(r)).toMatchObject({ cancelada: true, dentro_del_plazo: true, politica_cancelacion: config.politicaCancelacion });
@@ -531,7 +536,7 @@ describe('cancelar_reserva y reprogramar_reserva', () => {
     const cita = await reservar(reserva, '2030-10-24', '17:00');
     const bloquear: BusinessConfig = { ...config, cancelacionModo: 'bloquear' };
     const ctx = Object.assign(await nuevoCtx({ now: localToUtc('2030-10-24', '14:00', TZ), config: bloquear }), {
-      state: { customerId: reserva.state.customerId, estado: 'activa' as const },
+      state: { customerId: reserva.state.customerId, estado: 'activa' as const, verificada: true },
     });
 
     const c = await executeTool('cancelar_reserva', { id_cita: cita.id_cita }, ctx);
@@ -544,7 +549,7 @@ describe('cancelar_reserva y reprogramar_reserva', () => {
 
     // Fuera del plazo, el mismo modo sí cancela.
     const lejos = Object.assign(await nuevoCtx({ config: bloquear }), {
-      state: { customerId: reserva.state.customerId, estado: 'activa' as const },
+      state: { customerId: reserva.state.customerId, estado: 'activa' as const, verificada: true },
     });
     expect(datos(await executeTool('cancelar_reserva', { id_cita: cita.id_cita }, lejos)).cancelada).toBe(true);
   });
@@ -711,7 +716,7 @@ describe('PR-08: una clienta no puede tener dos citas a la vez', () => {
 
     const bloquear = Object.assign(
       await nuevoCtx({ now: localToUtc(D, '12:00', TZ), config: { ...config, cancelacionModo: 'bloquear' } }),
-      { state: { customerId: duena.state.customerId, estado: 'activa' as const } },
+      { state: { customerId: duena.state.customerId, estado: 'activa' as const, verificada: true } },
     );
     const b = await executeTool(
       'reservar_y_cambiar_cita_anterior',

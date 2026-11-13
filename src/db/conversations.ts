@@ -33,6 +33,8 @@ export interface Conversation {
   businessId: string;
   customerId: string | null;
   estado: ConversationEstado;
+  /** PA-16: la clienta escribió bien el código de su email en esta conversación. */
+  verificada: boolean;
 }
 
 /** Tokens de una llamada a la API, tal como los da `usage`. */
@@ -63,10 +65,11 @@ interface ConversationRow {
   business_id: string;
   customer_id: string | null;
   estado: ConversationEstado;
+  verificada_at: Date | null;
 }
 
 function toConversation(r: ConversationRow): Conversation {
-  return { id: r.id, businessId: r.business_id, customerId: r.customer_id, estado: r.estado };
+  return { id: r.id, businessId: r.business_id, customerId: r.customer_id, estado: r.estado, verificada: r.verificada_at !== null };
 }
 
 export async function createConversation(
@@ -81,7 +84,7 @@ export async function createConversation(
     (tx) => tx<ConversationRow[]>`
       insert into public.conversations (business_id, customer_id, canal)
       values (${businessId}::uuid, ${customerId}::uuid, ${canal})
-      returning id, business_id, customer_id, estado`,
+      returning id, business_id, customer_id, estado, verificada_at`,
   );
   return toConversation(row!);
 }
@@ -91,7 +94,7 @@ export async function getConversation(sql: Sql, businessId: string, conversation
     sql,
     businessId,
     (tx) => tx<ConversationRow[]>`
-      select id, business_id, customer_id, estado
+      select id, business_id, customer_id, estado, verificada_at
         from public.conversations
        where business_id = ${businessId}::uuid and id = ${conversationId}::uuid`,
   );
@@ -108,7 +111,7 @@ export async function findActiveConversation(
     sql,
     businessId,
     (tx) => tx<ConversationRow[]>`
-      select id, business_id, customer_id, estado
+      select id, business_id, customer_id, estado, verificada_at
         from public.conversations
        where business_id = ${businessId}::uuid
          and customer_id = ${customerId}::uuid

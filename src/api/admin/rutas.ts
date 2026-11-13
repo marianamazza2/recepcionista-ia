@@ -17,7 +17,7 @@
 //     las letras se rechazan sin modificar los demás datos.
 //   · PI-21: horario y festivos aceptan "citas" ('preguntar' de serie, 'dejar',
 //     'cancelar'). Con citas afectadas y sin decidir → 409 citas_afectadas con
-//     la lista, sin guardar nada. 'cancelar' las cancela con su SMS (PW-10).
+//     la lista, sin guardar nada. 'cancelar' las cancela con su email (PW-10).
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
@@ -413,9 +413,10 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
           hora: e.hora('hora', 'la hora'),
           telefono: e.texto('telefono', 'el teléfono de la clienta', 30),
           nombre: e.texto('nombre', 'el nombre de la clienta', 120),
+          email: e.textoOpcional('email', 'el email de la clienta', 254),
           notas: e.textoOpcional('notas', 'las notas', 500),
         });
-        return json({ id: r.cita.id, sms: r.sms?.estado ?? null }, 201);
+        return json({ id: r.cita.id, email: r.email?.estado ?? null }, 201);
       },
     },
     {
@@ -461,7 +462,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
   ];
 
   function citasDeps() {
-    return { sql: deps.sql, sms: deps.sms, baseUrl: deps.baseUrl, onError };
+    return { sql: deps.sql, email: deps.email, baseUrl: deps.baseUrl, onError };
   }
 
   /** PI-21: lo que se decidió con las citas afectadas (de serie, preguntar). */
@@ -469,7 +470,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
     return e.valor('citas') === undefined ? 'preguntar' : e.opcion('citas', 'qué hacer con las citas', ['preguntar', 'dejar', 'cancelar'] as const);
   }
 
-  /** PI-21: se cancelan una a una, como desde la agenda: cada clienta recibe su SMS. */
+  /** PI-21: se cancelan una a una, como desde la agenda: cada clienta con email recibe su aviso. */
   async function cancelarAfectadas(businessId: string, ids: string[]): Promise<void> {
     for (const citaId of ids) await cancelarCitaManual(citasDeps(), businessId, citaId);
   }

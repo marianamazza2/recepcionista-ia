@@ -96,12 +96,16 @@ describe('buildSystemPrompt', () => {
     expect(bloquear).not.toContain('dentro_del_plazo=true');
   });
 
-  it('PA-10 y PA-11: salud solo con la información del negocio, lo que no sabe lo deriva, la cita es del titular del teléfono', () => {
+  it('PA-10 y PA-11: salud solo con la información del negocio, lo que no sabe lo deriva, la cita es de quien viene (por su email, PA-17)', () => {
     const p = buildSystemPrompt(aurora);
     expect(p).toContain('Solo puedes responder con lo que diga la información del negocio');
     expect(p).toContain('siempre lo pasas al equipo');
-    expect(p).toContain('el nombre es el de quien viene y el teléfono tiene que ser el suyo');
-    expect(p).toContain('nunca reserves para alguien con el teléfono de otra');
+    expect(p).toContain('La cita queda a nombre de quien viene: el nombre y el email son los suyos.');
+    // PA-17: email repetido y el móvil con el motivo de Mariana; PA-16: el código.
+    expect(p).toContain('Y un móvil, por si el centro necesita avisarte alguna eventualidad y/o cambio de tu cita.');
+    expect(p).toContain('hace falta el código que le llega a su email');
+    expect(p).toContain('No le preguntes si se la mandas: se la mandas siempre.');
+    expect(p).toContain('nunca reserves para alguien con el email de otra');
     expect(p).not.toContain('ofrécele pasarla con el equipo (deriva si acepta');
   });
 
@@ -146,8 +150,17 @@ describe('contextoDelTurno', () => {
   it('da la fecha y la hora local del negocio y si la clienta está identificada', () => {
     const t = new Date('2030-10-27T09:05:00Z'); // domingo, ya en horario de invierno: 10:05 en Madrid
     expect(contextoDelTurno(aurora, t, null)).toBe('Ahora en el local: domingo 27 de octubre de 2030, 10:05. Clienta: sin identificar.');
-    expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222' })).toContain(
-      'Clienta: identificada (Ana, +34600111222).',
+    expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222', email: 'ana@example.com' })).toContain(
+      'Clienta: identificada (Ana, ana@example.com, +34600111222). No le pidas nombre, email ni móvil.',
+    );
+    expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222', email: null }, false)).toContain('(Ana, sin email, +34600111222)');
+    // PR-06: la habitual, sin necesidad de código.
+    expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222', email: 'ana@example.com', ultimaProfesional: 'Lucía' })).toContain(
+      'Es habitual: la última vez la atendió Lucía (ultima_profesional).',
+    );
+    // PA-16: con el código escrito, lo sabe.
+    expect(contextoDelTurno(aurora, t, { nombre: 'Ana', telefono: '+34600111222', email: 'ana@example.com' }, true)).toContain(
+      'Ya escribió el código de su email',
     );
   });
 });

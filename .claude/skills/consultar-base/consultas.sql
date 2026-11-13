@@ -102,8 +102,18 @@ select e.tipo, sum(e.cantidad) as cantidad, round(sum(e.coste_estimado), 4) as c
  group by e.tipo
  order by e.tipo;
 
+-- @emails  (variables: negocio)
+-- Los últimos emails: confirmación, cancelación y código (PW-18, PA-16). El
+-- enlace y el código se guardan tapados.
+select m.created_at at time zone b.timezone as cuando, m.tipo, m.email, m.estado, m.proveedor, m.asunto, m.error
+  from public.email_messages m
+  join public.businesses b on b.id = m.business_id
+ where b.slug = :'negocio'
+ order by m.created_at desc
+ limit 10;
+
 -- @sms  (variables: negocio)
--- Los últimos SMS de confirmación (PW-07). El enlace se guarda tapado.
+-- Los últimos SMS (PW-07; apagados desde PW-18, 13/11/2026). El enlace se guarda tapado.
 select m.created_at at time zone b.timezone as cuando, m.estado, m.proveedor, m.texto, m.error
   from public.sms_messages m
   join public.businesses b on b.id = m.business_id

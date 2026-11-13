@@ -7,7 +7,8 @@ cambian sin tocar a quien las usa (maestro §7).
 adapters/
 ├── booking/   la agenda      types.ts (BookingAdapter) · supabase.ts · errors.ts
 ├── channels/  los canales    web-widget.ts (Fase 3) · whatsapp.ts (Fase 8, no existe aún)
-└── sms/       el envío SMS   types.ts (SmsProvider) · prueba.ts
+├── email/     el envío email types.ts (EmailProvider) · prueba.ts (PW-18, 13/11/2026)
+└── sms/       el envío SMS   types.ts (SmsProvider) · prueba.ts (apagado desde PW-18; vuelve en la Fase 6)
 ```
 
 ## booking/ — `BookingAdapter`
@@ -47,7 +48,8 @@ queda corta, se amplía `types.ts` para todos, no se hace un caso especial.
 Un canal convierte "llegó un mensaje por X" en una llamada a `runAgentTurn` y
 devuelve la respuesta. Es donde viven las reglas **del canal**: sesión,
 idempotencia, límites anti-abuso, tope mensual, registro de consumo y efectos
-posteriores (SMS). Ver la cabecera de `web-widget.ts` para el orden exacto.
+posteriores (emails de la cita). También le da al núcleo cómo mandar el
+código de PA-16 (`enviarCodigo`, de `citas/codigo.ts`). Ver la cabecera de `web-widget.ts` para el orden exacto.
 
 - Nunca reimplementa el loop del agente: lo llama.
 - **Idempotencia por id del mensaje en el canal** → `messages.external_id`
@@ -59,8 +61,27 @@ posteriores (SMS). Ver la cabecera de `web-widget.ts` para el orden exacto.
 - Un canal nuevo (WhatsApp) va en su propio archivo con la misma forma y
   reutiliza `db/usage.ts` y `citas/`.
 
-## sms/ — `SmsProvider`
+## email/ — `EmailProvider` (PW-18, PA-16)
 
+- Desde el 13/11/2026 la confirmación de la cita, su cancelación y el código
+  de verificación van **por email**. Solo existe el proveedor de **prueba**,
+  que imprime en la consola y marca el email como `prueba` (también en Vercel:
+  sale en los logs de la función). **No se conecta ni se contrata un
+  proveedor real (Resend, SES…) sin que Mariana lo decida.**
+- `enviar` lanza si falla; quien llama marca el email `fallido` y **la cita
+  sigue valiendo** (el código, en cambio, falla y el agente da el teléfono).
+- Tres emails, con sus textos en `src/citas/confirmacion.ts` y
+  `src/citas/codigo.ts`: **confirmación** al reservar o mover (con enlace a la
+  página de la cita, la política del negocio y un `.ics`), **cancelación** al
+  cancelar por el chat o desde el panel (sin enlace) y **código** (PA-16).
+  Solo si la clienta tiene email (PA-17).
+- Sin el tratamiento en el email (puede ser un dato de salud, ⚠️ por
+  confirmar con Mariana). En la base, el enlace y el código van tapados.
+
+## sms/ — `SmsProvider` (apagado desde PW-18)
+
+- **Nadie lo llama hoy**: se queda para los recordatorios (Fase 6) o para un
+  negocio que lo pida (con el Registro de alias de la CNMC, PW-07).
 - Solo existe el proveedor de **prueba**, que imprime en la consola y marca el
   SMS como `prueba` (PW-07). **No se conecta ni se contrata un proveedor real
   sin que Mariana lo decida**; cuando pase, es otra implementación de la
@@ -80,7 +101,7 @@ posteriores (SMS). Ver la cabecera de `web-widget.ts` para el orden exacto.
 forma de trabajo de esta carpeta, actualizá este `AGENTS.md` (y el raíz si
 aplica) en el mismo cambio. Ver §8 del [`AGENTS.md` raíz](../../AGENTS.md#8-mantener-esta-documentación).
 
-- La interfaz `BookingAdapter` o `SmsProvider` → todas sus implementaciones,
+- La interfaz `BookingAdapter`, `EmailProvider` o `SmsProvider` → todas sus implementaciones,
   sus tests y la cabecera de `types.ts`.
 - Un canal nuevo → este archivo, el árbol de `src/AGENTS.md` y el spec de su
   fase.

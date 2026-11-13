@@ -9,11 +9,12 @@ src/
 ├── adapters/
 │   ├── channels/     CANAL          lo que pasa con un mensaje de cada canal (web-widget.ts)
 │   ├── booking/      ADAPTADORES    la agenda detrás de BookingAdapter (SupabaseAdapter)
-│   └── sms/          ADAPTADORES    el envío de SMS detrás de SmsProvider
+│   ├── email/        ADAPTADORES    el envío de emails detrás de EmailProvider (PW-18)
+│   └── sms/          ADAPTADORES    el envío de SMS detrás de SmsProvider (apagado desde PW-18)
 ├── core/             NÚCLEO         el loop del agente, prompt, herramientas, guardrails. Igual para todos
 ├── config/           CONFIGURACIÓN  lo que el agente sabe de UN negocio, leído de la base
 ├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget
-├── citas/            SMS de confirmación y de cancelación, página del enlace, agenda y citas a mano (PA-09, PW-07, PW-10, PI-14)
+├── citas/            emails de confirmación, cancelación y código (con su .ics), página del enlace, agenda y citas a mano (PW-18, PA-16, PW-10, PI-14)
 ├── cli/              comandos de npm (chat, eval, consumo, build del widget, cuenta del panel)
 ├── dev/              servidor local de la demo y del panel, y la compilación del widget y del panel
 └── vercel/           la publicación en Vercel: la función (handler.ts) y el build (build.ts)
@@ -23,13 +24,13 @@ src/
 
 ```
 api → adapters/channels → core → config, db, adapters/booking
-                       ↘ citas → core (time, tools/common, tools/reservas → plazo de PR-07), adapters/sms, db
+                       ↘ citas → core (time, tools/common, tools/reservas → plazo de PR-07), adapters/email, db
 api/admin → db (negocios, visor, personas, usage), citas (manual), adapters/channels (probar el chat)
 citas/manual → adapters/booking (con manual: true), config, core (time, phone), db
 cli, dev, vercel → cualquiera
 ```
 
-- **`core/` nunca importa** de `api/`, `adapters/channels/`, `adapters/sms/`,
+- **`core/` nunca importa** de `api/`, `adapters/channels/`, `adapters/email/`, `adapters/sms/`,
   `citas/`, `cli/` ni `dev/`. Un canal nuevo (WhatsApp, Fase 8) se enchufa
   encima sin tocar el núcleo.
 - `core/` habla con la agenda **solo** a través de la interfaz
@@ -60,7 +61,7 @@ cli, dev, vercel → cualquiera
   offsets a mano. Las fechas viajan como `Date` (UTC) entre capas y como
   `'YYYY-MM-DD'` / `'HH:MM'` locales hacia el modelo.
 - **Inyectable para testear**: reloj (`now`), modelo (`ModelClient`),
-  proveedor de SMS, logger de errores (`onError`). Nada lee `new Date()` ni
+  proveedor de email, cómo se manda el código (`enviarCodigo`), logger de errores (`onError`). Nada lee `new Date()` ni
   `process.env` en el medio de la lógica; los ajustes se leen una vez
   (`settingsFromEnv`) y se pasan.
 - **Errores**: los de negocio son clases tipadas (`adapters/booking/errors.ts`)

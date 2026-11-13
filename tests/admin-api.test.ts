@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { OutsideHoursError } from '../src/adapters/booking/errors.js';
 import { SupabaseAdapter } from '../src/adapters/booking/supabase.js';
-import { SmsDePrueba } from '../src/adapters/sms/prueba.js';
+import { EmailDePrueba } from '../src/adapters/email/prueba.js';
 import { createApi } from '../src/api/app.js';
 import { loadBusinessConfig } from '../src/config/business.js';
 import { AJUSTES_DE_SERIE, type AgentSettings } from '../src/core/agent.js';
@@ -34,14 +34,14 @@ const ORIGEN = 'http://localhost:3000';
 const EMAIL = `panel-${randomUUID().slice(0, 8)}@example.test`;
 const PASSWORD = 'una-contraseña-de-test';
 const auth = new AuthFalsa();
-const sms = new SmsDePrueba({ silencioso: true });
+const email = new EmailDePrueba({ silencioso: true });
 const creados: string[] = [];
 let userId: string;
 let token: string;
 let ultimaIp = 0;
 
 function api(modelo: ModeloSimulado = new ModeloSimulado([]), conAuth = true) {
-  return createApi({ sql, model: modelo, settings: ajustes, sms, baseUrl: 'http://api.test', now: () => AHORA, auth: conAuth ? auth : null });
+  return createApi({ sql, model: modelo, settings: ajustes, email, baseUrl: 'http://api.test', now: () => AHORA, auth: conAuth ? auth : null });
 }
 
 async function pedir(
@@ -188,7 +188,7 @@ describe('alta de un negocio (PI-03) y el agente', () => {
         vistoHueco = JSON.stringify(p.messages.at(-1)).includes('10:00');
         return texto('El martes 15 tengo a las 10:00. ¿Te la reservo?');
       },
-      herramientas({ name: 'identificar_cliente', input: { telefono, nombre: 'Clienta Alta' } }),
+      herramientas({ name: 'identificar_cliente', input: { email: 'clienta.alta@example.com', telefono, nombre: 'Clienta Alta' } }),
       herramientas({ name: 'crear_reserva', input: { servicio: 'Corte', fecha: '2030-10-15', hora: '10:00', profesional: 'Nora' } }),
       texto('¡Hecho! Tienes cita el martes 15 a las 10:00 con Nora.'),
     ]);
@@ -201,7 +201,7 @@ describe('alta de un negocio (PI-03) y el agente', () => {
 
     const citas = await sql`select a.origen, s.nombre as servicio from public.appointments a join public.services s on s.id = a.service_id where a.business_id = ${n.id}`;
     expect(citas).toEqual([{ origen: 'agente', servicio: 'Corte' }]);
-    expect(sms.enviados.some((s) => s.telefono === telefono && s.texto.startsWith('Peluquería Alta Test: cita confirmada'))).toBe(true);
+    expect(email.enviados.some((s) => s.para === 'clienta.alta@example.com' && s.asunto.startsWith('Tu cita en Peluquería Alta Test'))).toBe(true);
   });
 });
 
@@ -352,12 +352,12 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(b.body.festivos).toHaveLength(1);
   });
 
-  it('PI-21: un festivo encima de citas pregunta antes; se dejan o se cancelan con su SMS', async () => {
+  it('PI-21: un festivo encima de citas pregunta antes; se dejan o se cancelan con su email', async () => {
     const n = await alta('Festivo Con Citas Test');
     const h = api();
     const tel = '+34999000221';
-    const c1 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
-    const c2 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-22', hora: '10:00', telefono: tel, nombre: 'Clienta Festivo' });
+    const c1 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-21', hora: '10:00', email: 'festivo@example.com', telefono: tel, nombre: 'Clienta Festivo' });
+    const c2 = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-22', hora: '10:00', email: 'festivo@example.com', telefono: tel, nombre: 'Clienta Festivo' });
     expect([c1.status, c2.status]).toEqual([201, 201]);
 
     // Sin decir qué hacer: 409 con la lista y no se guarda nada.
@@ -375,13 +375,13 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     let [e] = await sql`select estado from public.appointments where id = ${c1.body.id}`;
     expect(e!.estado).toBe('confirmada');
 
-    // Cancelarlas (una ausencia de la profesional el 22): se guarda, se cancela y sale el SMS.
-    const antes = sms.enviados.length;
+    // Cancelarlas (una ausencia de la profesional el 22): se guarda, se cancela y sale el email.
+    const antes = email.enviados.length;
     const cancelar = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: n.profesionalId, fechaDesde: '2030-10-22', motivo: 'Formación', citas: 'cancelar' });
     expect(cancelar.status).toBe(200);
     [e] = await sql`select estado from public.appointments where id = ${c2.body.id}`;
     expect(e!.estado).toBe('cancelada');
-    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+    expect(email.enviados.slice(antes).filter((s) => s.para === 'festivo@example.com' && /cancelad/i.test(s.asunto))).toHaveLength(1);
 
     // Un valor que no es ninguna de las tres opciones se rechaza.
     const mal = await pedir(h, 'POST', `negocios/${n.id}/festivos`, { staffId: null, fechaDesde: '2030-10-23', citas: 'borrar' });
@@ -392,8 +392,8 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     const n = await alta('Horario Con Citas Test');
     const h = api();
     const tel = '+34999000222';
-    const dentro = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-15', hora: '10:00', telefono: tel, nombre: 'Clienta Horario' });
-    const fuera = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-16', hora: '12:00', telefono: tel, nombre: 'Clienta Horario' });
+    const dentro = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-15', hora: '10:00', email: 'horario@example.com', telefono: tel, nombre: 'Clienta Horario' });
+    const fuera = await pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha: '2030-10-16', hora: '12:00', email: 'horario@example.com', telefono: tel, nombre: 'Clienta Horario' });
     const corto = [1, 2, 3, 4, 5].map((weekday) => ({ weekday, apertura: '10:00', cierre: '12:00' }));
 
     const p = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: null, tramos: corto });
@@ -401,13 +401,13 @@ describe('editar (PI-04, PI-08, PI-09, PI-10)', () => {
     expect(p.body.citas.map((c: { id: string }) => c.id)).toEqual([fuera.body.id]);
     expect((await pedir(h, 'GET', `negocios/${n.id}`)).body.horario.filter((t: { staffId: string | null }) => t.staffId === null)[0]).toMatchObject({ apertura: '10:00', cierre: '14:00' });
 
-    // Un horario propio de Nora que también la deja fuera, cancelando: SMS a la clienta.
-    const antes = sms.enviados.length;
+    // Un horario propio de Nora que también la deja fuera, cancelando: email a la clienta.
+    const antes = email.enviados.length;
     const r = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }], citas: 'cancelar' });
     expect(r.status).toBe(200);
     const estados = await sql`select id, estado from public.appointments where business_id = ${n.id} order by start_at`;
     expect(estados.map((x) => x.estado)).toEqual(['confirmada', 'cancelada']);
-    expect(sms.enviados.slice(antes).filter((s) => s.telefono === tel && /cancelad/i.test(s.texto))).toHaveLength(1);
+    expect(email.enviados.slice(antes).filter((s) => s.para === 'horario@example.com' && /cancelad/i.test(s.asunto))).toHaveLength(1);
 
     // Guardar otra vez el mismo horario ya no pregunta: no deja fuera ninguna cita nueva.
     const otra = await pedir(h, 'PUT', `negocios/${n.id}/horario`, { staffId: n.profesionalId, tramos: [{ weekday: 3, apertura: '10:00', cierre: '12:00' }] });
@@ -527,16 +527,17 @@ describe('PI-19: días que una profesional no trabaja', () => {
 });
 
 describe('citas a mano (PR-04, PI-14)', () => {
-  it('a las 10:15 (fuera de la rejilla) y dentro de la antelación se crean, con SMS; fuera de horario, en festivo o pisando otra, no', async () => {
+  it('a las 10:15 (fuera de la rejilla) y dentro de la antelación se crean, con su email; fuera de horario, en festivo o pisando otra, no', async () => {
     const n = await alta('Agenda Test');
     const h = api();
-    const cita = (fecha: string, hora: string, telefono = '+34999000222') =>
-      pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha, hora, telefono, nombre: 'Clienta Manual' });
+    const cita = (fecha: string, hora: string, telefono = '+34999000222', correo: string | null = null) =>
+      pedir(h, 'POST', `negocios/${n.id}/citas`, { serviceId: n.servicioId, staffId: n.profesionalId, fecha, hora, email: correo, telefono, nombre: 'Clienta Manual' });
 
-    const r = await cita('2030-10-16', '10:15');
+    const r = await cita('2030-10-16', '10:15', '+34999000222', 'Manual@Example.com');
     expect(r.status).toBe(201);
-    expect(r.body.sms).toBe('prueba');
-    expect(sms.enviados.at(-1)?.texto).toContain('Agenda Test: cita confirmada el miércoles 16 de octubre a las 10:15 con Nora');
+    expect(r.body.email).toBe('prueba');
+    expect(email.enviados.at(-1)).toMatchObject({ para: 'manual@example.com', asunto: 'Tu cita en Agenda Test: miércoles 16 de octubre a las 10:15' });
+    expect(email.enviados.at(-1)?.texto).toContain('Con: Nora');
 
     // Dentro de la antelación: la base mide contra su reloj (now()), así que
     // se usa el día de hoy de verdad con un negocio que abre las 24 h.
@@ -558,13 +559,18 @@ describe('citas a mano (PR-04, PI-14)', () => {
     const festivo = await cita('2030-10-17', '10:15', '+34999000444');
     expect(festivo.body).toMatchObject({ motivo: 'time_off', mensaje: 'Ese día u hora es festivo o la profesional está ausente.' });
     expect((await cita('2030-10-16', '11:30', 'no es un teléfono')).body.mensaje).toContain('El teléfono no es válido');
+    expect((await cita('2030-10-16', '11:30', '+34999000555', 'sin-arroba')).body.mensaje).toContain('El email no es válido');
+    // PA-17: sin email la cita se crea y no se manda nada.
+    const sinEmail = await cita('2030-10-18', '10:15', '+34999000666');
+    expect(sinEmail.status).toBe(201);
+    expect(sinEmail.body.email).toBeNull();
 
     const agenda = await pedir(h, 'GET', `negocios/${n.id}/agenda?fecha=2030-10-16`);
-    expect(agenda.body.citas).toMatchObject([{ horaInicio: '10:15', horaFin: '11:15', origen: 'manual', servicio: 'Corte', profesional: 'Nora', estado: 'confirmada', clienta: { telefono: '+34999000222' } }]);
+    expect(agenda.body.citas).toMatchObject([{ horaInicio: '10:15', horaFin: '11:15', origen: 'manual', servicio: 'Corte', profesional: 'Nora', estado: 'confirmada', clienta: { telefono: '+34999000222', email: 'manual@example.com' } }]);
 
     const cancelar = await pedir(h, 'POST', `negocios/${n.id}/citas/${r.body.id}/cancelar`);
     expect(cancelar.body).toEqual({ cancelada: true });
-    expect(sms.enviados.at(-1)?.texto).toContain('se ha cancelado');
+    expect(email.enviados.at(-1)?.asunto).toBe('Cita cancelada en Agenda Test');
     expect((await pedir(h, 'POST', `negocios/${n.id}/citas/${r.body.id}/cancelar`)).body).toEqual({ cancelada: false });
   });
 

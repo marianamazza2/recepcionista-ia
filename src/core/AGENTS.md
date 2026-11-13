@@ -29,8 +29,10 @@ elige según un ajuste.
    clienta en él: eso va en `contextoDelTurno`, un mensaje `system` detrás del
    de la clienta (D-46). Las listas, siempre en el mismo orden.
 4. **Lo que no se puede saltar, en el código** (D-50), no solo en el prompt:
-   PA-08 (solo sus citas, `tools/common.ts → citaDeLaClienta`), PR-07
-   bloquear, PA-06 (tras derivar no se escribe), precios ocultos (se descartan
+   PA-08 (solo sus citas, `tools/common.ts → citaDeLaClienta`), PA-16 (ver,
+   cancelar o mover solo con el código del email, `tools/common.ts →
+   exigirCodigo`; el código, sus intentos y su caducidad en `db/codigos.ts`),
+   PA-17 (la clienta es su email, `tools/clientes.ts`), PR-07 bloquear, PA-06 (tras derivar no se escribe), precios ocultos (se descartan
    al cargar la configuración), límites de vueltas y tokens.
 5. **El modelo nunca ve UTC ni ids de base que no necesita.** Las herramientas
    reciben y devuelven hora local (`fecha`, `hora`, `dia` legible).

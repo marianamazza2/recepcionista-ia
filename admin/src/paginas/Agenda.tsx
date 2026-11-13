@@ -40,7 +40,7 @@ export function Agenda({ negocio: n }: { negocio: Negocio }) {
                 <span className="w-24 font-mono">{c.horaInicio}–{c.horaFin}</span>
                 <span className="font-medium">{c.servicio}</span>
                 <span>con {c.profesional}</span>
-                <span className="text-slate-600">{c.clienta.nombre ?? ''} {c.clienta.telefono}</span>
+                <span className="text-slate-600">{c.clienta.nombre ?? ''} {c.clienta.telefono}{c.clienta.email ? ` · ${c.clienta.email}` : ''}</span>
                 <span className="text-xs text-slate-400">{ESTADO[c.estado]} · {ORIGEN[c.origen]}</span>
                 {c.estado === 'confirmada' ? (
                   <button
@@ -48,7 +48,7 @@ export function Agenda({ negocio: n }: { negocio: Negocio }) {
                     className="ml-auto text-xs text-red-700 hover:underline"
                     disabled={a.ocupado}
                     onClick={() =>
-                      confirm(`¿Cancelar la cita de ${c.clienta.nombre ?? c.clienta.telefono} a las ${c.horaInicio}? Le llegará un SMS de cancelación.`) &&
+                      confirm(`¿Cancelar la cita de ${c.clienta.nombre ?? c.clienta.telefono} a las ${c.horaInicio}?${c.clienta.email ? ' Le llegará un email de cancelación.' : ''}`) &&
                       void a.hacer(async () => { await api('POST', `negocios/${n.id}/citas/${c.id}/cancelar`); recargar(); }, 'Cita cancelada.')
                     }
                   >
@@ -69,22 +69,22 @@ export function Agenda({ negocio: n }: { negocio: Negocio }) {
 
 function CitaAMano({ negocio: n, fecha, onCreada }: { negocio: Negocio; fecha: string; onCreada: () => void }) {
   const servicios = n.servicios.filter((s) => s.activo);
-  const [f, setF] = useState({ serviceId: '', staffId: '', hora: '', telefono: '', nombre: '', notas: '' });
+  const [f, setF] = useState({ serviceId: '', staffId: '', hora: '', email: '', telefono: '', nombre: '', notas: '' });
   const a = useAccion();
   const servicio = f.serviceId || servicios[0]?.id || '';
   const quienes = n.profesionales.filter((p) => p.activo && p.servicioIds.includes(servicio));
   const staff = quienes.some((p) => p.id === f.staffId) ? f.staffId : (quienes[0]?.id ?? '');
   const crear = () =>
     a.hacer(async () => {
-      const r = await api<{ sms: string | null }>('POST', `negocios/${n.id}/citas`, { serviceId: servicio, staffId: staff, fecha, hora: f.hora, telefono: f.telefono, nombre: f.nombre, notas: f.notas || null });
-      setF({ ...f, hora: '', telefono: '', nombre: '', notas: '' });
+      const r = await api<{ email: string | null }>('POST', `negocios/${n.id}/citas`, { serviceId: servicio, staffId: staff, fecha, hora: f.hora, email: f.email || null, telefono: f.telefono, nombre: f.nombre, notas: f.notas || null });
+      setF({ ...f, hora: '', email: '', telefono: '', nombre: '', notas: '' });
       onCreada();
       return r;
-    }, 'Cita cargada. Se le ha mandado el SMS de confirmación.');
+    }, f.email ? 'Cita cargada. Se le ha mandado el email de confirmación.' : 'Cita cargada. Sin email, no le llega confirmación.');
   return (
     <div className="tarjeta h-fit">
       <h2 className="text-base font-semibold">Cargar una cita a mano</h2>
-      <p className="mt-1 text-xs text-slate-500">A cualquier hora (fuera de la rejilla) y sin antelación mínima. No se salta el horario, los festivos ni que dos citas se pisen. Llega el mismo SMS que si reservara el agente.</p>
+      <p className="mt-1 text-xs text-slate-500">A cualquier hora (fuera de la rejilla) y sin antelación mínima. No se salta el horario, los festivos ni que dos citas se pisen. Si tiene email, le llega la misma confirmación que si reservara el agente.</p>
       <div className="mt-4 space-y-3">
         <label className="block"><span className="etiqueta">Servicio</span>
           <select className="campo" value={servicio} onChange={(e) => setF({ ...f, serviceId: e.target.value })}>
@@ -97,6 +97,7 @@ function CitaAMano({ negocio: n, fecha, onCreada }: { negocio: Negocio; fecha: s
           </select>
         </label>
         <label className="block"><span className="etiqueta">Hora ({fecha.split('-').reverse().join('/')})</span><input className="campo" type="time" value={f.hora} onChange={(e) => setF({ ...f, hora: e.target.value })} /></label>
+        <label className="block"><span className="etiqueta">Email de la clienta (opcional)</span><input className="campo" type="email" placeholder="nombre@gmail.com" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
         <label className="block"><span className="etiqueta">Teléfono de la clienta</span><input className="campo" placeholder="+34 600 000 000" value={f.telefono} onChange={(e) => setF({ ...f, telefono: e.target.value })} /></label>
         <label className="block"><span className="etiqueta">Nombre</span><input className="campo" value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></label>
         <label className="block"><span className="etiqueta">Notas (opcional)</span><input className="campo" value={f.notas} onChange={(e) => setF({ ...f, notas: e.target.value })} /></label>

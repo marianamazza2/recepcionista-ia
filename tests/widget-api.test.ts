@@ -1,7 +1,7 @@
 // El canal widget web (Fase 3 · 3.2, 3.3, 3.7) con el modelo simulado: sin coste de API.
 //
 // Contra dos negocios de prueba que se crean al empezar y se borran al terminar
-// (arrastran conversaciones, consumo, citas y SMS). Las peticiones se hacen
+// (arrastran conversaciones, consumo, citas y emails). Las peticiones se hacen
 // con Request estándar contra el mismo handler que sirve el servidor local.
 
 import { randomUUID } from 'node:crypto';
@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { externalIdWeb, LIMITES_WIDGET } from '../src/adapters/channels/web-widget.js';
-import { SmsDePrueba } from '../src/adapters/sms/prueba.js';
+import { EmailDePrueba } from '../src/adapters/email/prueba.js';
 import { createApi } from '../src/api/app.js';
 import { AJUSTES_DE_SERIE, type AgentSettings, type ModelClient } from '../src/core/agent.js';
 import { costeUsd } from '../src/core/costes.js';
@@ -36,10 +36,10 @@ const TELEFONO_LEGIBLE = '910 000 999';
 
 let A: TestBusiness & { key: string };
 let B: TestBusiness & { key: string };
-let sms: SmsDePrueba;
+let email: EmailDePrueba;
 
 function api(model: ModelClient, extra: Partial<Parameters<typeof createApi>[0]> = {}) {
-  return createApi({ sql, model, settings: ajustes, sms, baseUrl: 'http://api.test', now: () => AHORA, ...extra });
+  return createApi({ sql, model, settings: ajustes, email, baseUrl: 'http://api.test', now: () => AHORA, ...extra });
 }
 
 function post(handler: ReturnType<typeof createApi>, body: Record<string, unknown>, origin: string | null = ORIGEN, ip = ipNueva()) {
@@ -69,7 +69,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  sms = new SmsDePrueba({ silencioso: true });
+  email = new EmailDePrueba({ silencioso: true });
 });
 
 afterAll(async () => {
@@ -225,11 +225,11 @@ describe('idempotencia y orden', () => {
     expect(m!.n).toBe(1);
   });
 
-  it('el mismo clientMessageId dos veces A LA VEZ con una reserva: una sola cita y un solo SMS', async () => {
+  it('el mismo clientMessageId dos veces A LA VEZ con una reserva: una sola cita y un solo email', async () => {
     const telefono = '+34611222333';
     const modelo = new ModeloSimulado([
       texto('Hola'),
-      herramientas({ name: 'identificar_cliente', input: { telefono, nombre: 'Ana Prueba' } }),
+      herramientas({ name: 'identificar_cliente', input: { email: 'ana.prueba@example.com', telefono, nombre: 'Ana Prueba' } }),
       herramientas({ name: 'crear_reserva', input: { servicio: 'Servicio 60 + 15', fecha: '2030-10-15', hora: '10:00' } }),
       texto('¡Hecho! Te espero el martes 15 a las 10:00.'),
     ]);
@@ -248,7 +248,7 @@ describe('idempotencia y orden', () => {
       select a.id from public.appointments a join public.customers c on c.id = a.customer_id
        where a.business_id = ${A.businessId} and c.telefono = ${telefono} and a.estado = 'confirmada'`;
     expect(citas).toHaveLength(1);
-    expect(sms.enviados).toHaveLength(1);
+    expect(email.enviados).toHaveLength(1);
   });
 
   it('dos mensajes distintos a la vez de la misma conversación: el historial queda en orden', async () => {

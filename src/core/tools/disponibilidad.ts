@@ -132,7 +132,8 @@ export const consultarDisponibilidad: AgentTool = {
         return ok({
           servicio: servicio.nombre,
           clienta_ya_tiene_cita: true,
-          cita_que_choca: describirCita(ctx, choca),
+          // PA-16: el detalle de su otra cita, solo con el código.
+          ...(ctx.state.verificada ? { cita_que_choca: describirCita(ctx, choca) } : {}),
           indicacion: motivoYMensaje(ctx.config, new CustomerBusyError('')).mensaje,
         });
       }

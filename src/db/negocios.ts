@@ -18,7 +18,7 @@
 //   · PI-21: un festivo, una ausencia o un horario nuevo que deja fuera citas
 //     ya dadas no se guarda sin decir qué hacer con ellas ('preguntar' lanza
 //     CitasAfectadas con la lista y no cambia nada; 'dejar' las deja;
-//     'cancelar' devuelve sus ids, que la API cancela con su SMS).
+//     'cancelar' devuelve sus ids, que la API cancela con su email de aviso).
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';

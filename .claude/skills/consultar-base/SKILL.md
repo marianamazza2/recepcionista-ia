@@ -1,6 +1,6 @@
 ---
 name: consultar-base
-description: Mira qué pasó en la base del Recepcionista IA, solo leyendo — una conversación entera con las herramientas que usó el agente y lo que le devolvieron, las citas de una clienta, las últimas citas, las derivaciones al equipo, el consumo del mes y los SMS de prueba. Usala cuando Mariana pregunte cosas como "¿qué le contestó el agente a…?", "el agente dijo algo raro", "¿se creó la cita?", "¿por qué no reservó?", "¿cuánto llevamos gastado?", "¿llegó el SMS?", o para depurar cualquier prueba del chat o del widget.
+description: Mira qué pasó en la base del Recepcionista IA, solo leyendo — una conversación entera con las herramientas que usó el agente y lo que le devolvieron, las citas de una clienta, las últimas citas, las derivaciones al equipo, el consumo del mes y los emails (y SMS) de prueba. Usala cuando Mariana pregunte cosas como "¿qué le contestó el agente a…?", "el agente dijo algo raro", "¿se creó la cita?", "¿por qué no reservó?", "¿cuánto llevamos gastado?", "¿llegó el email?", "¿le llegó el código?", o para depurar cualquier prueba del chat o del widget.
 ---
 
 # Consultar la base (solo lectura)
@@ -27,7 +27,8 @@ NUBE=1 $S <consulta> [var=valor …]     # Supabase en la nube
 | `citas` | `negocio` | Las 15 últimas citas creadas, en hora local |
 | `derivaciones` | `negocio` | Lo que se pasó al equipo y sigue sin resolver |
 | `consumo` | `negocio` | Mensajes, tokens, citas y coste en US$ del mes, frente al tope (PW-04) |
-| `sms` | `negocio` | Los últimos SMS de confirmación (PW-07) |
+| `emails` | `negocio` | Los últimos emails: confirmación, cancelación y código (PW-18, PA-16) |
+| `sms` | `negocio` | Los últimos SMS (apagados desde PW-18) |
 
 ## Cómo investigar "el agente dijo algo raro"
 

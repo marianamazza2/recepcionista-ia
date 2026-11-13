@@ -114,6 +114,10 @@ async function main(): Promise<number> {
             model: anthropicModelClient(settings),
             settings,
             onError: (e) => console.error(`${GRIS}[error] ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}${NORMAL}`),
+            // PA-16: aquí no hay proveedor de email; el código sale en la Terminal.
+            enviarCodigo: async ({ email, codigo }) => {
+              console.log(`${GRIS}(email de prueba a ${email}: tu código es ${codigo})${NORMAL}`);
+            },
           },
           { config, conversationId: conv.id, mensaje: linea },
         );

@@ -1,5 +1,5 @@
 // =============================================================================
-// La página del enlace del SMS: ver y cancelar una cita (Fase 3 · 3.5, PW-07)
+// La página del enlace del email: ver y cancelar una cita (Fase 3 · 3.5; PW-18)
 // =============================================================================
 // El token del enlace es lo único que identifica la cita: se busca por su hash
 // (único en toda la base) y solo mientras no haya caducado (al terminar la

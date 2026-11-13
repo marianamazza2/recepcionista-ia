@@ -11,7 +11,7 @@
 // Aceptación (caso 27): un servicio activo que no hace nadie se marca en ámbar.
 // PI-21: si un festivo, una ausencia o un horario nuevo dejan fuera citas, la
 // API no guarda y devuelve la lista; aquí sale un cartel que pregunta si se
-// dejan programadas o se cancelan (con su SMS) y se vuelve a enviar.
+// dejan programadas o se cancelan (con su email de aviso) y se vuelve a enviar.
 // =============================================================================
 
 import { useEffect, useState, type ReactNode } from 'react';
@@ -123,7 +123,7 @@ function CartelCitas({ pendiente, ocupado, decidir, cerrar }: { pendiente: Pendi
       <p className="mt-2">De todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="boton" disabled={ocupado} onClick={() => decidir('dejar')}>Dejarlas programadas</button>
-        <button type="button" className="boton-peligro" disabled={ocupado} onClick={() => decidir('cancelar')}>Cancelarlas (cada clienta recibe un SMS)</button>
+        <button type="button" className="boton-peligro" disabled={ocupado} onClick={() => decidir('cancelar')}>Cancelarlas (cada clienta con email recibe un aviso)</button>
         <button type="button" className="boton-suave" disabled={ocupado} onClick={cerrar}>No guardar</button>
       </div>
     </div>
@@ -132,7 +132,7 @@ function CartelCitas({ pendiente, ocupado, decidir, cerrar }: { pendiente: Pendi
 
 const OK_CITAS: Record<DecisionCitas, string> = {
   dejar: 'Guardado. Las citas siguen programadas.',
-  cancelar: 'Guardado. Las citas se han cancelado y cada clienta recibe un SMS.',
+  cancelar: 'Guardado. Las citas se han cancelado y cada clienta con email recibe un aviso.',
 };
 
 // -----------------------------------------------------------------------------

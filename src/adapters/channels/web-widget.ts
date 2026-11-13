@@ -16,8 +16,8 @@
 //      negocio (PW-04) → texto fijo, sin llamar al modelo.
 //   6. El turno del agente (núcleo de la Fase 2, sin cambios salvo el
 //      external_id).
-//   7. Consumo en usage_events, SMS de confirmación de las citas nuevas y
-//      movidas (PW-07, PW-09) y SMS de las canceladas (PW-10).
+//   7. Consumo en usage_events, email de confirmación de las citas nuevas y
+//      movidas (PW-18, PW-09) y de las canceladas (PW-10), si la clienta tiene email.
 //
 // PI-13: "Probar el chat" desde el panel usa este mismo camino con
 // `prueba: true` (la conversación queda marcada y su sesión no vale en el
@@ -33,10 +33,11 @@
 import { telefonoLegible } from '../../core/phone.js';
 import type { Sql } from 'postgres';
 
-import type { SmsProvider } from '../sms/types.js';
+import type { EmailProvider } from '../email/types.js';
 import { loadBusinessConfig } from '../../config/business.js';
 import { runAgentTurn, type AgentSettings, type ModelClient, type TurnResult } from '../../core/agent.js';
 import { textoParaLaClienta } from '../../core/guardrails.js';
+import { enviadorDeCodigos } from '../../citas/codigo.js';
 import { enviarCancelacion, enviarConfirmacion } from '../../citas/confirmacion.js';
 import { appendMessages } from '../../db/conversations.js';
 import { costeDelMes, eventosDelTurno, registrarUso, topeAlcanzado, type LlamadaRegistrada } from '../../db/usage.js';
@@ -80,8 +81,9 @@ export interface WebChatDeps {
   sql: Sql;
   model: ModelClient;
   settings: AgentSettings;
-  sms: SmsProvider;
-  /** URL pública de este servidor, para el enlace del SMS. */
+  /** PW-18: la confirmación de la cita y el código (PA-16) van por email. */
+  email: EmailProvider;
+  /** URL pública de este servidor, para el enlace del email. */
   baseUrl: string;
   /** Reloj del agente (los tests lo fijan). Los límites y la sesión usan el de la base. */
   now?: () => Date;
@@ -207,11 +209,18 @@ export async function procesarMensajeWeb(
     try {
       const config = await loadBusinessConfig(deps.sql, { id: negocio.id });
       turno = await runAgentTurn(
-        { sql: deps.sql, model: deps.model, settings: deps.settings, onError, ...(deps.now ? { now: deps.now } : {}) },
+        {
+          sql: deps.sql,
+          model: deps.model,
+          settings: deps.settings,
+          onError,
+          ...(deps.now ? { now: deps.now } : {}),
+          enviarCodigo: enviadorDeCodigos({ sql: deps.sql, email: deps.email, onError }),
+        },
         { config, conversationId, mensaje: texto, externalId },
       );
 
-      // --- 7. Consumo y SMS (lo que falle aquí no cambia la respuesta) -------------
+      // --- 7. Consumo y emails (lo que falle aquí no cambia la respuesta) -------------
       const citas = citasDelTurno(turno);
       try {
         const userRow = await findUserMessage(deps.sql, negocio.id, conversationId, externalId);
@@ -226,10 +235,10 @@ export async function procesarMensajeWeb(
         onError(e);
       }
       for (const id of [...citas.nuevas, ...citas.movidas]) {
-        await enviarConfirmacion({ sql: deps.sql, sms: deps.sms, baseUrl: deps.baseUrl, onError }, config, id);
+        await enviarConfirmacion({ sql: deps.sql, email: deps.email, baseUrl: deps.baseUrl, onError }, config, id);
       }
       for (const id of citas.canceladas) {
-        await enviarCancelacion({ sql: deps.sql, sms: deps.sms, baseUrl: deps.baseUrl, onError }, config, id);
+        await enviarCancelacion({ sql: deps.sql, email: deps.email, baseUrl: deps.baseUrl, onError }, config, id);
       }
     } catch (e) {
       onError(e);
@@ -279,7 +288,7 @@ function llamadasDe(filas: Awaited<ReturnType<typeof filasDelTurno>>): LlamadaRe
  * Las citas que dejó confirmadas el turno, leídas de los resultados de las
  * herramientas: `nuevas` (reservas: cuentan como cita en el consumo) y
  * `movidas` (la cita en su hora nueva: es otra fila y necesita su propio
- * enlace). Las dos reciben SMS de confirmación. Y `canceladas` (PW-10): las
+ * enlace). Las dos reciben email de confirmación. Y `canceladas` (PW-10): las
  * que cancelar_reserva canceló en este turno (no las que ya lo estaban).
  */
 export function citasDelTurno(turno: Pick<TurnResult, 'herramientas'>): { nuevas: string[]; movidas: string[]; canceladas: string[] } {

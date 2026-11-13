@@ -22,7 +22,7 @@ import { crc32, deflateSync } from 'node:zlib';
 import { chromium, type Browser, type Page } from 'playwright-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { SmsDePrueba } from '../../src/adapters/sms/prueba.js';
+import { EmailDePrueba } from '../../src/adapters/email/prueba.js';
 import { AJUSTES_DE_SERIE } from '../../src/core/agent.js';
 import { localToUtc } from '../../src/core/time.js';
 import { createSql } from '../../src/db/client.js';
@@ -40,14 +40,14 @@ const PASSWORD = 'contraseña-del-e2e';
 const NOMBRE = `Peluquería E2E ${Date.now() % 100000}`;
 const telefono = telefonoDeTest();
 const auth = new AuthFalsa();
-const sms = new SmsDePrueba({ silencioso: true });
+const email = new EmailDePrueba({ silencioso: true });
 const ESPERA = { timeout: 30_000 };
 /** Capturas para revisar el aspecto a mano (no se comparan). */
 const CAPTURAS = process.env.PANEL_CAPTURAS ?? join(tmpdir(), 'recepcionista-panel-e2e');
 
 const modelo = new ModeloSimulado([
-  texto('El martes 15 tengo a las 10:00 con Nora. ¿Te la reservo? Dime tu nombre y tu teléfono.'),
-  herramientas({ name: 'identificar_cliente', input: { telefono, nombre: 'Clienta Panel' } }),
+  texto('El martes 15 tengo a las 10:00 con Nora. ¿Te la reservo? Dime tu nombre y tu email.'),
+  herramientas({ name: 'identificar_cliente', input: { email: null, telefono, nombre: 'Clienta Panel' } }),
   herramientas({ name: 'crear_reserva', input: { servicio: 'Corte', fecha: '2030-10-15', hora: '10:00', profesional: 'Nora' } }),
   texto('¡Hecho! Tienes cita el martes 15 de octubre a las 10:00 con Nora.'),
 ]);
@@ -88,7 +88,7 @@ beforeAll(async () => {
     sql,
     model: modelo,
     settings: { ...AJUSTES_DE_SERIE, limits: { maxVueltas: 4, maxTokensConversacion: 1_000_000 } },
-    sms,
+    email,
     apiPort: puerto,
     demoPort: puerto + 100,
     // Panel en 4100–4149: fuera de 4045, que Chrome bloquea (ERR_UNSAFE_PORT), y
@@ -269,6 +269,7 @@ describe('el panel en el navegador', () => {
     await panel.locator('input[type=date]').fill('2030-10-15');
     await expect.poll(() => panel.getByText('10:00–11:00').isVisible(), ESPERA).toBe(true);
     await panel.getByLabel(/^Hora/).fill('12:15');
+    await panel.getByLabel('Email de la clienta (opcional)').fill('clienta.local@example.com');
     await panel.getByLabel('Teléfono de la clienta').fill(telefonoDeTest());
     await panel.getByLabel('Nombre').fill('Clienta en el local');
     await panel.getByRole('button', { name: 'Cargar cita' }).click();
@@ -296,8 +297,8 @@ describe('el panel en el navegador', () => {
     await cartel.getByRole('button', { name: 'No guardar' }).click();
     expect(await fest.textContent()).toContain('No hay próximos');
 
-    // Ausencia de Nora de 12:00 a 13:30: solo la cita de las 12:15. Cancelarla manda el SMS.
-    const smsAntes = sms.enviados.length;
+    // Ausencia de Nora de 12:00 a 13:30: solo la cita de las 12:15. Cancelarla manda el email.
+    const antes = email.enviados.length;
     await fest.getByLabel('Quién').selectOption({ label: 'Nora' });
     await fest.getByLabel('Solo unas horas').check();
     await fest.getByLabel('Día').fill('2030-10-15');
@@ -307,9 +308,9 @@ describe('el panel en el navegador', () => {
     await cartel.waitFor(ESPERA);
     expect(await cartel.textContent()).toContain('Hay 1 cita afectada');
     await cartel.getByRole('button', { name: /Cancelarlas/ }).click();
-    await expect.poll(() => fest.getByRole('status').textContent(), ESPERA).toContain('cada clienta recibe un SMS');
+    await expect.poll(() => fest.getByRole('status').textContent(), ESPERA).toContain('cada clienta con email recibe un aviso');
     expect(await estados()).toEqual(['confirmada', 'cancelada']);
-    expect(sms.enviados.slice(smsAntes).some((s) => /cancelad/i.test(s.texto))).toBe(true);
+    expect(email.enviados.slice(antes).some((s) => s.para === 'clienta.local@example.com' && /cancelad/i.test(s.asunto))).toBe(true);
 
     // Festivo del local el 15 otra vez: queda la de las 10:00. Se deja.
     await fest.getByLabel('Quién').selectOption({ label: 'El local (festivo)' });

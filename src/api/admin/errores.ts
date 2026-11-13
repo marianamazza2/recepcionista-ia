@@ -13,7 +13,7 @@ import { BookingError } from '../../adapters/booking/errors.js';
 import { BusinessNotFoundError } from '../../config/business.js';
 import { InvalidLocalTimeError } from '../../core/time.js';
 import { CitasAfectadas, NoEncontrado, type LoQueFalta } from '../../db/negocios.js';
-import { TelefonoNoValido } from '../../citas/manual.js';
+import { EmailNoValido, TelefonoNoValido } from '../../citas/manual.js';
 
 /** Un error que el panel puede enseñar tal cual. */
 export class ErrorPanel extends Error {
@@ -94,6 +94,7 @@ export function aErrorPanel(e: unknown): ErrorPanel | null {
     return new ErrorPanel(409, `Hay ${n} cita${n > 1 ? 's' : ''} afectada${n > 1 ? 's' : ''}. De todos modos, ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?`, { error: 'citas_afectadas', citas: e.citas });
   }
   if (e instanceof TelefonoNoValido) return new ErrorPanel(400, 'El teléfono no es válido. Escríbelo con prefijo (+34…) o con sus 9 cifras.');
+  if (e instanceof EmailNoValido) return new ErrorPanel(400, 'El email no es válido. Revísalo (por ejemplo, nombre@gmail.com) o déjalo vacío.');
   if (e instanceof InvalidLocalTimeError) return new ErrorPanel(400, 'Esa fecha u hora no es válida (o no existe ese día por el cambio de hora).');
   if (e instanceof BusinessNotFoundError) return new ErrorPanel(409, 'El negocio está pausado: actívalo para cargar o cancelar citas desde el panel.');
   if (e instanceof BookingError) {

@@ -18,7 +18,7 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `_specs/` | Spec maestro, specs de fase y reglas de negocio | [`_specs/AGENTS.md`](_specs/AGENTS.md) |
 | `src/` | La aplicación (TypeScript, Node 22) | [`src/AGENTS.md`](src/AGENTS.md) |
 | `src/core/` | El núcleo del agente: igual para todos los negocios | [`src/core/AGENTS.md`](src/core/AGENTS.md) |
-| `src/adapters/` | Agenda, canales y SMS detrás de interfaces | [`src/adapters/AGENTS.md`](src/adapters/AGENTS.md) |
+| `src/adapters/` | Agenda, canales, email y SMS detrás de interfaces | [`src/adapters/AGENTS.md`](src/adapters/AGENTS.md) |
 | `src/db/` | Acceso a datos: tenant, clientas, conversaciones, consumo | [`src/db/AGENTS.md`](src/db/AGENTS.md) |
 | `src/api/` | Handlers HTTP públicos (widget, página de la cita) | [`src/api/AGENTS.md`](src/api/AGENTS.md) · [`README`](src/api/README.md) |
 | `supabase/` | Migraciones, seed y tests SQL | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
@@ -49,8 +49,8 @@ Consecuencias que se aplican siempre:
   conexión haga BYPASSRLS (T-03), y toda tabla nueva tiene RLS y política.
 - **Lo que no se puede romper va en la base o en el código, nunca solo en el
   prompt.** El solape de citas lo impide Postgres (`no_overlap`,
-  `no_overlap_cliente`); que una clienta solo toque sus citas (PA-08) lo
-  impide la herramienta. El prompt explica; el código y la base garantizan.
+  `no_overlap_cliente`); que una clienta solo toque sus citas (PA-08) y solo
+  con el código de su email (PA-16) lo impiden las herramientas. El prompt explica; el código y la base garantizan.
 
 El panel valida el formato del teléfono del local con la normalización común
 (`src/core/phone.ts`). Los tramos de horario del mismo día y del mismo local o
@@ -194,23 +194,23 @@ Postgres sin avisar.**
 - Al navegador no llega nada secreto. La clave del widget es pública por
   diseño; lo que protege es el dominio (PW-06), los límites (PW-05) y el token
   de sesión.
-- Tokens que dan acceso (sesión del widget, enlace del SMS): en la base **solo
-  su hash** (SHA-256).
+- Tokens que dan acceso (sesión del widget, enlace del email, código de
+  verificación de PA-16): en la base **solo su hash** (SHA-256).
 - El panel (Fase 4) ve todos los negocios: toda ruta `/api/admin/…` exige
   cuenta (token de Supabase Auth verificado + `panel.personas`, PI-01). La
   `SUPABASE_SERVICE_ROLE_KEY` solo la usa `npm run panel:cuenta` desde `.env`:
   nunca en Vercel, en el navegador ni en el chat.
 - Nada de desplegar (Vercel), contratar servicios ni conectar proveedores
-  reales (SMS) sin el visto bueno explícito de Mariana.
+  reales (email, SMS) sin el visto bueno explícito de Mariana.
 - Datos de salud: el RGPD está abierto (PD-11). No se añaden datos sensibles a
-  SMS, logs ni prompts más allá de lo que ya está decidido.
+  emails, SMS, logs ni prompts más allá de lo que ya está decidido.
 
 ## 7. Estilo común
 
 - **Idioma.** Documentación, comentarios, nombres de dominio y mensajes de
   error en **español**. La documentación para el equipo usa el registro de
   Mariana (voseo: "corré", "tenés"). Lo que lee la **clienta final** (prompt,
-  respuestas fijas, widget, SMS) va en **español de España, de tú**.
+  respuestas fijas, widget, emails, SMS) va en **español de España, de tú**.
   Identificadores técnicos que vienen del maestro (`BookingAdapter`,
   `getAvailability`, `businessId`) se quedan en inglés.
 - **Cabecera en cada archivo** de código y migración: un bloque
@@ -233,7 +233,7 @@ leer el `SKILL.md` y seguir los mismos pasos.
 |---|---|
 | `verificar` | Antes de dar por terminado cualquier cambio: tipos, tests TypeScript y SQL (local y, si se pide, nube) y documentación al día |
 | `migracion-nueva` | Cualquier cambio en el esquema o en las funciones de la base: nombre, cabecera, RLS, test SQL, aplicar sin Docker |
-| `consultar-base` | Ver qué pasó, solo leyendo: conversaciones, herramientas, citas, derivaciones, consumo, SMS |
+| `consultar-base` | Ver qué pasó, solo leyendo: conversaciones, herramientas, citas, derivaciones, consumo, emails y SMS |
 | `sync-research-desk` | Cada vez que cambia cómo se comporta el producto: actualizar el manual y los demás documentos de Research Desk |
 
 Se encadenan: `migracion-nueva` termina con `verificar`, y `verificar`
@@ -247,7 +247,7 @@ alguna de estas tres cosas, **hay que actualizar los `AGENTS.md`**, sin
 excepción:
 
 1. **Arquitectura:** capas, carpetas, dependencias entre módulos, interfaces
-   (`BookingAdapter`, `SmsProvider`, `runAgentTurn`), stack, cómo se guarda o
+   (`BookingAdapter`, `EmailProvider`, `SmsProvider`, `runAgentTurn`), stack, cómo se guarda o
    se protege un dato.
 2. **Reglas de negocio:** una regla PD/PR/PA/PW/PI nueva o cambiada, sobre todo
    si cambia dónde se aplica (código, base o prompt) o qué hay que testear.

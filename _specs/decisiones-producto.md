@@ -482,8 +482,8 @@ intentos o algo falla.
 | PA-13 | Lo que no puede dar, explicado | Si no puede dar lo que piden (el local cierra, la profesional no trabaja ese día…), **dice por qué** y ofrece alternativas; **nunca cambia de tratamiento ni de hora sin avisar**. Lo garantiza el código. Lo de "un servicio que necesita otro antes" **se aplaza** hasta que un negocio real lo pida | ✅ decidida 05/11/2026, construida 11/11/2026 (falta comprobarla con el modelo real) |
 | PA-14 | «Para Rodrigo» | Si la clienta pide cita «para» un nombre que es de alguien del equipo, entiende que quiere que la atienda esa persona («con Rodrigo»). Solo pregunta si el nombre no es de nadie del equipo | ✅ decidida 05/11/2026 |
 | PA-15 | Cómo se expresa | Frases completas y con conectores, como una persona de recepción; primero el porqué y después la alternativa; nada de respuestas de una línea. Con ejemplos aprobados por situación | ✅ decidida 05/11/2026, construida 11/11/2026 (comprobada con el modelo real el 12/11/2026) |
-| PA-16 | Ver, cancelar o mover desde el chat | Hace falta un **código de verificación** que el agente manda al email de la clienta. Sin código, el agente no enseña ni toca ninguna cita. Desde el enlace del email no hace falta: el enlace ya es la prueba | — | ✅ decidida 13/11/2026 (falta construirla) |
-| PA-17 | Cómo se identifica a la clienta | **Por su email**, no por su teléfono. El teléfono se sigue guardando para que el local pueda llamarla (si no se presenta, si hay que avisar de algo) | — | ✅ decidida 13/11/2026 (falta construirla) |
+| PA-16 | Ver, cancelar o mover desde el chat | Hace falta un **código de verificación** que el agente manda al email de la clienta. Sin código, el agente no enseña ni toca ninguna cita. Desde el enlace del email no hace falta: el enlace ya es la prueba | — | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
+| PA-17 | Cómo se identifica a la clienta | **Por su email**, no por su teléfono. El teléfono se sigue guardando para que el local pueda llamarla (si no se presenta, si hay que avisar de algo) | — | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
 
 ### PA-13 · Lo que no puede dar, explicado · ✅ decidida el 05/11/2026
 
@@ -875,7 +875,7 @@ cambia, se ajusta el código.
 | PW-15 | Cancelar desde la página del SMS | Pide un **"¿Seguro?"** antes de cancelar | — | ✅ decidida 28/10/2026 |
 | PW-17 | Logo del negocio en el widget | Un **círculo antes del nombre** en la cabecera del chat, con su logo o isotipo. Sin logo: la **inicial** del nombre | Sí (el logo) | ✅ decidida 28/10/2026, la inicial confirmada 13/11/2026 |
 | PW-16 | Comprobar que no es un bot | Todavía no: si se ven abusos, comprobación invisible (Cloudflare Turnstile) | — | ✅ decidida 28/10/2026 |
-| PW-18 | Confirmar la cita por **email**, no por SMS | Al cerrar la cita el agente pide el email y manda ahí la confirmación, con el enlace, la política de cancelación del negocio y un archivo para el calendario. Sin email, la cita vale igual. El SMS se guarda para los recordatorios (Fase 6) | Sí (email, SMS o los dos) | ✅ decidida 13/11/2026 (falta construirla) |
+| PW-18 | Confirmar la cita por **email**, no por SMS | Al cerrar la cita el agente pide el email y manda ahí la confirmación, con el enlace, la política de cancelación del negocio y un archivo para el calendario. Sin email, la cita vale igual. El SMS se guarda para los recordatorios (Fase 6) | Sí (email, SMS o los dos) | ✅ decidida 13/11/2026, construida 13/11/2026 (rama `email-y-codigo`) |
 
 ### PW-09 · SMS al mover una cita · ✅ decidida el 28/10/2026
 
@@ -1015,11 +1015,28 @@ el chat de la web, desde el enlace del email, o llamando al teléfono del local
 (que ya sale en todos los mensajes fijos). El plazo —24 h o lo que ponga cada
 negocio— no se escribe en el código: es el ajuste de PR-07.
 
-*Falta construirlo:* columna del email de la clienta (migración), el agente
-pidiéndolo al cerrar la cita, un `EmailProvider` como el `SmsProvider` (con
-proveedor de prueba primero), la plantilla con el archivo de calendario y sus
-tests. Es media fase, no un rato. **Va antes de la Fase 9:** sin esto, la
-clienta de un cliente real no recibe nada.
+**Construida el 13/11/2026** (rama `email-y-codigo`, junto con PA-16 y
+PA-17): un `EmailProvider` con proveedor de prueba (en local sale en la
+Terminal; en Vercel, en los logs), el email con el enlace, la política del
+negocio y el archivo `.ics`, el aviso de cancelación y sus tests. Falta
+**elegir y conectar el proveedor real** (Resend, Amazon SES…) y el remitente
+del dominio: es tuyo, como el SMS.
+
+⚠️ *Por confirmar (13/11/2026), dos detalles que salieron al construirla:*
+
+1. **¿El email dice el tratamiento?** Arriba pone que lleva "el servicio",
+   pero el punto 5 dice "sin datos de salud: ni el asunto ni el cuerpo dicen
+   qué tratamiento es" (en medicina estética, "toxina botulínica" es un dato
+   de salud). *Mientras se decide, va sin el tratamiento:* día, hora,
+   profesional, dirección, enlace, política y `.ics`. Quien quiera verlo lo
+   tiene en la página de la cita (el enlace).
+2. **¿Cuándo pide el email?** Aquí dice "después de confirmar la cita"
+   ("¡Listo! … dime tu correo"); PA-17, escrita después, dice "nombre y email
+   para reservar, y el teléfono a continuación". Como el email es lo que
+   identifica a la clienta, *se construyó como PA-17:* lo pide con el nombre
+   al elegir el horario, lo repite, pide el móvil, reserva y al final dice
+   "te llega la confirmación a tu correo, con el enlace…" (sin preguntar si
+   se la manda).
 
 ### PW-16 · Comprobar que no es un bot · ✅ decidida el 28/10/2026
 
@@ -1728,8 +1745,13 @@ nada a medias):
 - **Los recordatorios** de la Fase 6 nacerán por email. Si algún negocio los
   quiere por SMS, se enciende para él con su papeleo (PW-07).
 
-*Falta construirlo:* migración (email en la ficha, con su índice; tabla o
-columna para los códigos con su hash y su caducidad), `identificar_cliente`
-por email, la herramienta del código, el prompt, la cita a mano del panel y
-los tests. Va junto con PW-18 y **antes de la Fase 9**.
+**Construida el 13/11/2026** (rama `email-y-codigo`, con PA-16 y PW-18):
+migración `20261113120000_email_y_codigo` (email único por negocio; el
+teléfono, único solo entre las fichas sin email; los códigos con su hash),
+`identificar_cliente` por email (una ficha antigua sin email que da su email
+lo recibe), las herramientas `enviar_codigo` y `verificar_codigo`, que ver,
+cancelar o mover lo exijan en el código, el prompt, la cita a mano del panel
+con email y los tests. Detalle de implementación: sin el código, si pide una
+hora en que ya tiene cita (PR-08), el agente le dice que ya tiene una cita a
+esa hora pero **no cuál** (eso solo con el código).
 
