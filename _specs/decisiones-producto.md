@@ -1746,7 +1746,7 @@ nada a medias):
   quiere por SMS, se enciende para él con su papeleo (PW-07).
 
 **Construida el 13/11/2026** (rama `email-y-codigo`, con PA-16 y PW-18):
-migración `20261113120000_email_y_codigo` (email único por negocio; el
+migración `20261113120000_email_y_codigo`, aplicada también en la nube el 13/11/2026 (email único por negocio; el
 teléfono, único solo entre las fichas sin email; los códigos con su hash),
 `identificar_cliente` por email (una ficha antigua sin email que da su email
 lo recibe), las herramientas `enviar_codigo` y `verificar_codigo`, que ver,
