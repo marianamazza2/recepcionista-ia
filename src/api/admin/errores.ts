@@ -30,7 +30,8 @@ export class ErrorPanel extends Error {
 /** PI-03: lo que falta, en palabras ("Falta: horario del local · un dominio para el chat"). */
 export const TEXTO_LO_QUE_FALTA: Record<LoQueFalta, string> = {
   servicio: 'un servicio activo',
-  profesional: 'una profesional activa que haga algún servicio',
+  // PI-20 (13/11/2026): quien no trabaja ningún día no tiene huecos, así que no cuenta.
+  profesional: 'una profesional activa que haga algún servicio y trabaje algún día',
   horario: 'horario del local',
   telefono: 'teléfono del local',
   dominio: 'un dominio para el chat',

@@ -17,7 +17,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { api, ErrorApi, type CitaAfectada, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
-import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, type EstadoDia } from '../horario';
+import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, trabajaAlgunDia, type EstadoDia } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
 
@@ -415,6 +415,11 @@ function FilaProfesional({ negocio: n, poner, profesional: p }: Props & { profes
         ))}
         {n.servicios.length === 0 ? <span className="text-xs text-slate-500">Primero añade los servicios.</span> : null}
       </div>
+      {p && p.activo && !trabajaAlgunDia(n.horario, p.id, n.diasLibres.filter((d) => d.staffId === p.id).map((d) => d.weekday)) ? (
+        <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
+          {p.nombre} no trabaja ningún día, así que no tiene huecos. Si ya no trabaja aquí, desactívala; si vuelve, ponle sus días (en Horarios).
+        </p>
+      ) : null}
       <Aviso error={a.error} ok={a.ok} />
     </div>
   );

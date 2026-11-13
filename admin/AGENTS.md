@@ -26,7 +26,12 @@ Qué hace y cómo se usa: [`README.md`](README.md).
    `version` (PI-22): datos, reglas y chat guardan la de cuando se abrieron
    (sus formularios no se recargan solos) y la renuevan al guardar; las filas
    y el horario usan la de la ficha actual, porque se recargan con ella. Las cuentas de horarios son funciones puras en
-   `src/horario.ts`, testeadas desde `tests/panel-horario.test.ts`.
+   `src/horario.ts`, testeadas desde `tests/panel-horario.test.ts` y
+   `tests/borrado.test.ts` (`trabajaAlgunDia`, PI-20). Los avisos en **ámbar**
+   no impiden guardar, solo advierten: un servicio que no hace nadie, un
+   horario propio fuera del local (PI-18) y una profesional que no trabaja
+   ningún día (PI-20, 13/11/2026); esa última además hace que el negocio no se
+   pueda activar, y eso lo impide la base (PI-03).
 5. **Lo que se ve de una conversación se pinta como texto** (React escapa):
    nunca `dangerouslySetInnerHTML`. Lo escribe gente de fuera.
 6. **El logo se reduce en el navegador** (`src/logo.ts`, PI-10): el servidor

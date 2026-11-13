@@ -117,3 +117,20 @@ export function copiarLibres(libres: number[], origen: number, destinos: number[
   return (libres.includes(origen) ? [...quedan, ...otros] : quedan).sort();
 }
 
+
+/**
+ * PI-20 (Mariana, 13/11/2026): ¿esta profesional trabaja algún día? Trabaja si
+ * tiene tramos propios algún día (ese día manda su horario, PD-01) o si hereda
+ * el del local un día que el local abre y ella no tiene marcado "no trabaja"
+ * (PI-19). Si no trabaja ninguno, no tendrá ni un hueco: el panel la marca en
+ * ámbar y no cuenta para activar el negocio (lo garantiza la base,
+ * negocio_lo_que_falta).
+ */
+export function trabajaAlgunDia(
+  tramos: (TramoDia & { staffId: string | null })[],
+  staffId: string,
+  libres: number[],
+): boolean {
+  if (tramos.some((t) => t.staffId === staffId)) return true;
+  return tramos.some((t) => t.staffId === null && !libres.includes(t.weekday));
+}

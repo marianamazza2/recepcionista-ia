@@ -331,6 +331,44 @@ describe('el panel en el navegador', () => {
     await panel.screenshot({ path: join(CAPTURAS, '5-consumo.png'), fullPage: true });
   });
 
+  it('PI-20: una profesional sin ningún día sale en ámbar y el negocio deja de poder activarse', async () => {
+    const url = `${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`;
+    // Nora se queda sin un solo día: fuera su tramo propio del sábado y todos
+    // los días del local marcados "no trabaja" (PI-19).
+    const [nora] = await sql<{ id: string }[]>`select id from public.staff where business_id = ${negocioId} limit 1`;
+    await sql`delete from public.business_hours where business_id = ${negocioId} and staff_id is not null`;
+    await sql`
+      insert into public.staff_dias_libres (business_id, staff_id, weekday)
+      select ${negocioId}, ${nora!.id}, d from generate_series(0, 6) d
+      on conflict do nothing`;
+
+    await panel.goto(url);
+    await expect
+      .poll(() => seccion('profesionales').textContent(), ESPERA)
+      .toContain('no trabaja ningún día, así que no tiene huecos');
+    await expect
+      .poll(() => seccion('publicar').textContent(), ESPERA)
+      .toContain('profesional activa que haga algún servicio y trabaje algún día');
+    await seccion('profesionales').screenshot({ path: join(CAPTURAS, '6-pi20-ambar.png') });
+
+    // Y la base tampoco la deja activar, aunque alguien se salte el panel (PI-03).
+    await sql`update public.businesses set estado = 'pausado' where id = ${negocioId}`;
+    await expect(sql`update public.businesses set estado = 'activo' where id = ${negocioId}`).rejects.toThrow(/No se puede activar el negocio: falta profesional/);
+
+    // Se le devuelven sus días (y su sábado propio) y todo vuelve a su sitio.
+    await sql`delete from public.staff_dias_libres where business_id = ${negocioId} and staff_id = ${nora!.id}`;
+    await sql`
+      insert into public.staff_dias_libres (business_id, staff_id, weekday)
+      values (${negocioId}, ${nora!.id}, 5)`;
+    await sql`
+      insert into public.business_hours (business_id, staff_id, weekday, hora_apertura, hora_cierre)
+      values (${negocioId}, ${nora!.id}, 6, '15:00', '20:00')`;
+    await sql`update public.businesses set estado = 'activo' where id = ${negocioId}`;
+    await panel.reload();   // la misma URL con el mismo hash no recarga sola
+    await expect.poll(() => seccion('publicar').textContent(), ESPERA).toContain('Tiene lo mínimo para atender');
+    await expect.poll(() => seccion('profesionales').textContent(), ESPERA).not.toContain('no trabaja ningún día');
+  });
+
   it('PI-22: dos pestañas en la misma sección: gana la primera que guarda; la segunda avisa y no pisa', async () => {
     const url = `${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`;
     const otra = await panel.context().newPage();

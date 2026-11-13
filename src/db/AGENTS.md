@@ -14,6 +14,7 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
 | `negocios.ts` | Fase 4: alta y edición de un negocio por bloques (con los días que cada profesional no trabaja, PI-19), lo que falta (PI-03), activar/pausar, cambiar la clave (PI-09), citas afectadas por un festivo o un horario nuevo (PI-21) |
 | `visor.ts` | Fase 4: lista y detalle de conversaciones con sus herramientas (PI-06), derivaciones pendientes y resolverlas (PI-07) |
 | `personas.ts` | Fase 4: quién entra al panel (`panel.personas`, PI-01) |
+| `borrado.ts` | PD-13 (13/11/2026): retención del texto del chat (6 meses de serie) y borrar a una clienta que lo pide. El borrado real lo hacen dos funciones de Postgres; acá solo se llaman. `buscarClienta` por email o teléfono, para el comando `npm run borrado` |
 
 ## Reglas
 
