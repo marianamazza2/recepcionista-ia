@@ -1481,7 +1481,8 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
 | PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
 | PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
-| PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color y logo) y los **horarios de quien cambia cada semana** se cargan en el portal. El cierre del chat se lo recuerda | — | ✅ decidida 18/11/2026 |
+| PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color, logo, dominios y privacidad), los **horarios de quien cambia cada semana** y los **festivos y ausencias** se cargan en el portal; el **tono** y la **bienvenida** del agente y **cada cuánto se ofrecen horarios** (30 min) van de serie. El cierre del chat recuerda lo que falta | — | ✅ decidida 18/11/2026 |
+| PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1643,6 +1644,27 @@ chat se queda en lo imprescindible para que la recepcionista funcione
   pregunta si cada una tiene horario fijo; si no lo tiene, le explica que esos
   horarios se cambian en el portal, en la ficha de cada profesional.
 
+Y, aceptado por Mariana el mismo 18/11/2026 (eran propuestas mías para lo que
+no dictó):
+
+- **Los festivos y ausencias** tampoco se preguntan: al darse de alta casi
+  nadie los tiene a mano. El cierre le recuerda cargarlos.
+- **Los dominios de su web y el enlace a su política de privacidad** van en la
+  misma sección del portal que el color y el logo; Mariana también los puede
+  poner o corregir desde su panel (PC-05). Sin dominio, el chat no aparece en
+  su web (PW-06).
+- **El tono y el mensaje de bienvenida del agente** van de serie (la
+  bienvenida de PW-02) y se cambian en el portal.
+- **Cada cuánto se ofrecen horarios**: 30 minutos de serie; Mariana lo cambia
+  en su panel si hace falta.
+
+Lo que el chat **sí** pregunta, además de lo que dictó Mariana: qué servicios
+hace cada profesional (sin eso el negocio no se puede activar, PI-03), si
+todas trabajan en el horario del local, si la clienta elige con quién ir, qué
+pasa si cancela dentro del plazo (informar o bloquear, PR-07) y el texto de su
+política de cancelación. Cada sección termina con un resumen para confirmar
+(PC-03). El guion completo está en la nota «Guion del alta por chat».
+
 El cierre del chat se lo recuerda: *«Recuerda que, si quieres cargar preguntas
 frecuentes, puedes hacerlo en ese apartado dentro de tu portal. También, en la
 sección "El chat en tu web", recuerda seleccionar el color de tu marca y
@@ -1651,6 +1673,12 @@ chat.»*
 
 Cambia la idea del 5/11 de que **todo** el alta se hace por el chat (PC-03):
 lo imprescindible, por el chat; lo demás, en el portal.
+
+### PC-13 · Aviso cuando un cliente termina el alta · ✅ decidida el 18/11/2026
+
+Propuesta aceptada por Mariana el 18/11/2026: cuando un cliente termina el
+chat del alta, a Mariana le llega **un aviso en su panel interno** (no por
+email). Así sabe que tiene que revisar su configuración y activarlo.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
