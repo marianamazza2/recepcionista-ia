@@ -1483,9 +1483,9 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
 | PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color, logo, dominios y privacidad), los **horarios de quien cambia cada semana** y los **festivos y ausencias** se cargan en el portal; el **tono** y la **bienvenida** del agente y **cada cuánto se ofrecen horarios** (30 min) van de serie. El cierre del chat recuerda lo que falta | — | ✅ decidida 18/11/2026 |
 | PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
-| PC-14 | Quién paga la IA del chat del alta | *Propuesta:* no cuenta para el tope del negocio; se registra aparte, como coste de alta | — | ⚠️ por confirmar (18/11/2026) |
-| PC-15 | Proveedor de email antes del primer cliente | *Propuesta:* elegirlo antes de mandar el primer enlace a un cliente real (la cuenta se confirma con un código al email) | — | ⚠️ por confirmar (18/11/2026) |
-| PC-16 | La agenda en el portal | *Propuesta:* no en esta fase (no salió en el guion); el negocio ve su configuración, no sus citas | — | ⚠️ por confirmar (18/11/2026) |
+| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta | — | ✅ decidida 18/11/2026 |
+| PC-15 | Proveedor de email antes del primer cliente | Se elige y se conecta **antes de mandar el primer enlace a un cliente real** (la cuenta se confirma con un código al email) | — | ✅ decidida 18/11/2026 |
+| PC-16 | Dónde ve el negocio sus citas | *Propuesta:* una **agenda en el portal** (la misma de tu panel: ver el día y la semana, cargar y cancelar citas a mano), en esta fase. Su Google Calendar, en la Fase 7 | — | ⚠️ por confirmar (18/11/2026) |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1683,36 +1683,45 @@ Propuesta aceptada por Mariana el 18/11/2026: cuando un cliente termina el
 chat del alta, a Mariana le llega **un aviso en su panel interno** (no por
 email). Así sabe que tiene que revisar su configuración y activarlo.
 
-### PC-14 · Quién paga la IA del chat del alta · ⚠️ por confirmar
+### PC-14 · Quién paga la IA del chat del alta · ✅ decidida el 18/11/2026
 
 Apareció al escribir el spec de la Fase 9 (18/11/2026). El chat del alta usa
 la IA igual que el de las clientas: cada alta cuesta unos céntimos. El tope
 mensual de cada negocio (PW-04) está pensado para atender clientas.
 
-*Propuesta:* el chat del alta **no cuenta para el tope** del negocio. Se
+**Decidido (Mariana, 18/11/2026), tal como se proponía:** el chat del alta **no cuenta para el tope** del negocio. Se
 registra aparte, como coste de alta, y Mariana lo ve en el consumo. Así un
 cliente que tarda en darse de alta no se queda sin recepcionista el primer
 mes.
 
-### PC-15 · Proveedor de email antes del primer cliente real · ⚠️ por confirmar
+### PC-15 · Proveedor de email antes del primer cliente real · ✅ decidida el 18/11/2026
 
 Apareció al escribir el spec de la Fase 9 (18/11/2026). Para crear la cuenta
 del portal hay que confirmar el email con un código (PC-02), y hoy los emails
 son de prueba: salen en la Terminal o en los registros de Vercel (PW-18). En
 local y en los tests vale; con un cliente real, el código no le llegaría.
 
-*Propuesta:* elegir y conectar el proveedor de email (Resend o Amazon SES, con
-el remitente de nuestro dominio) **antes de mandar el primer enlace a un
-cliente real**. No bloquea construir la fase.
+**Decidido (Mariana, 18/11/2026), tal como se proponía:** elegir y conectar el
+proveedor de email (Resend o Amazon SES, con el remitente de nuestro dominio)
+**antes de mandar el primer enlace a un cliente real**. No bloquea construir
+la fase.
 
-### PC-16 · La agenda en el portal · ⚠️ por confirmar
+### PC-16 · Dónde ve el negocio sus citas · ⚠️ por confirmar
 
-Apareció al escribir el spec de la Fase 9 (18/11/2026). El guion del alta no
-habla de que el negocio vea sus citas ni cargue citas a mano desde el portal;
-hoy eso solo lo hace Mariana desde su panel (PI-14).
+Apareció al escribir el spec de la Fase 9 (18/11/2026). Hoy las citas que da
+la recepcionista solo las ve Mariana, en su panel (PI-14), y la clienta en su
+email. **El negocio no las ve en ningún sitio**: sin eso no puede trabajar.
 
-*Propuesta:* **no en esta fase.** El portal es para su configuración; la
-agenda en el portal se suma cuando un cliente la pida.
+Primera propuesta (18/11): no en esta fase. **Mariana no estuvo de acuerdo**:
+«las citas tendrían que ir en su calendario integrado: donde se agenden las
+citas, tiene que tener un calendario».
+
+*Propuesta nueva (18/11/2026):* una **agenda en el portal**, en esta fase,
+reutilizando la de tu panel: el día y la semana con cada cita (hora, servicio,
+profesional, clienta), cargar una cita a mano (la que llaman por teléfono) y
+cancelar. Las citas siguen viviendo en nuestra base (PD-02). Ver las citas
+**en su propio Google Calendar** es la Fase 7, para quien ya lo use; no hace
+falta para empezar.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 

@@ -47,11 +47,11 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 | PC-12 | Lo que el chat no pregunta | Preguntas frecuentes, el chat en su web, horarios que cambian cada semana y festivos, en el portal; tono, bienvenida e intervalo de horarios, de serie |
 | PC-13 | Aviso al terminar | Te llega un aviso en tu panel interno |
 
-**⚠️ Por confirmar, aparecieron al escribir este spec** (anotadas en `decisiones-producto.md` con su propuesta; no bloquean empezar):
+**Aparecieron al escribir este spec** (en `decisiones-producto.md` con el detalle):
 
-- **PC-14 · Quién paga la IA del chat del alta.** Cada alta cuesta unos céntimos de IA. *Propuesta:* no cuenta para el tope mensual del negocio (el tope es para atender clientas, PW-04): se registra aparte, como coste de alta, y lo ves en el consumo.
-- **PC-16 · La agenda en el portal.** *Propuesta:* no en esta fase (no salió en el guion).
-- **PC-15 · Antes del primer cliente real, un proveedor de email de verdad.** Para crear la cuenta hay que confirmar el email con un código (PC-02), y hoy los emails son de prueba (PW-18). En local y en los tests vale el de prueba; con un cliente real, no. *Propuesta:* elegirlo antes de mandar el primer enlace a un cliente.
+- **PC-14 · Quién paga la IA del chat del alta.** ✅ Decidida el 18/11/2026: no cuenta para el tope mensual del negocio (el tope es para atender clientas, PW-04); se registra aparte, como coste de alta, y lo ves en el consumo.
+- **PC-16 · Dónde ve el negocio sus citas.** *Propuesta:* una agenda en el portal en esta fase, reutilizando la de tu panel (ver el día y la semana, cargar y cancelar a mano). Su Google Calendar, en la Fase 7.
+- **PC-15 · Antes del primer cliente real, un proveedor de email de verdad.** ✅ Decidida el 18/11/2026. Para crear la cuenta hay que confirmar el email con un código (PC-02), y hoy los emails son de prueba (PW-18). En local y en los tests vale el de prueba; con un cliente real, no: se elige antes de mandar el primer enlace a un cliente.
 
 ---
 
@@ -124,7 +124,7 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - Leer la web del negocio para proponer servicios → más adelante (PC-07).
 - Un servicio que necesita otro antes (la revisión antes de la toxina) → cuando un negocio real lo pida (PA-13).
 - Varias personas del mismo negocio con su propia cuenta y permisos → cuando un cliente lo pida.
-- Que el negocio vea su agenda y cargue citas a mano desde el portal → PC-16 ⚠️ por confirmar: no salió en el guion; si lo querés en esta fase, lo sumamos.
+- Ver las citas en su propio Google Calendar → Fase 7 (PC-16). La agenda en el portal, si se confirma PC-16, entra en esta fase.
 - Conectar el proveedor de email real → es tuyo (PC-15), pero va antes del primer cliente real.
 
 ---
