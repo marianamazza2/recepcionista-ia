@@ -1480,7 +1480,8 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
 | PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
-| PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) aparece cuando ya hay algo que enseñar; antes, nada que pueda confundir ni dejar a medias | — | ✅ decidida 13/11/2026 (cuándo aparece, ⚠️ por confirmar) |
+| PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
+| PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color y logo) y los **horarios de quien cambia cada semana** se cargan en el portal. El cierre del chat se lo recuerda | — | ✅ decidida 18/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1537,9 +1538,9 @@ respuesta. Al terminar, el portal es suyo: ve toda la configuración de su
 recepcionista y la cambia **a mano** o **pidiéndoselo al chat** ("Núria no
 viene el jueves").
 
-**Matiz (PC-11, 13/11/2026):** al principio el portal **no está**. La primera
-vez que entra solo ve el chat; el portal aparece cuando ya hay datos que
-enseñar y desde ahí se va completando.
+**Matiz (PC-11, 13/11/2026; concretado el 18/11/2026):** al principio el
+portal **no está**. Mientras hace el alta solo ve el chat; el portal aparece
+**al terminar**, ya con los datos.
 
 ### PC-05 · La vista de Mariana · ✅ decidida el 05/11/2026
 
@@ -1605,10 +1606,14 @@ Mariana, 13/11/2026. El camino de un cliente nuevo, de principio a fin:
    edita a mano— **no están** hasta que haya datos: con el negocio vacío no
    habría más que huecos y botones que no llevan a nada, y el cliente se
    perdería antes de empezar.
-4. Según va contestando, el portal **aparece y se va completando** (PC-04), y
-   al terminar es suyo: lo ve todo y lo cambia a mano o pidiéndoselo al chat.
+4. **Al terminar el chat aparece el portal**, ya con lo que contestó (18/11/2026),
+   y es suyo: lo ve todo y lo cambia a mano o pidiéndoselo al chat.
 
-*⚠️ Por confirmar, y a propósito (Mariana, 13/11/2026):* **cuándo aparece el
+**Decidido (Mariana, 18/11/2026, al dictar el guion):** el portal **aparece
+al terminar el chat**: «¡Excelente!…» y se ve el portal con los datos. Mientras
+contesta, solo el chat; nada que la distraiga.
+
+*Lo que se pensó el 13/11/2026, antes del guion:* **cuándo aparece el
 portal se decide con el diseño de la pantalla, no antes.** Mariana no quiere
 que el portal distraiga al cliente mientras contesta el chat del alta.
 Primero escribe el guion; después se piensa la página entera (qué se ve
@@ -1624,6 +1629,28 @@ le recibe el chat por donde lo dejó.
 ve es el chat saludando con su negocio por delante: "¡Hola, buenos días!
 Bienvenida al portal de Clínica Olea". Qué negocio es lo sabe el código por el
 enlace (PC-02), no porque el cliente lo escriba.
+
+### PC-12 · Lo que el chat del alta no pregunta · ✅ decidida el 18/11/2026
+
+Mariana, al dictar el guion del alta (nota «Guion del alta por chat»): el
+chat se queda en lo imprescindible para que la recepcionista funcione
+(negocio, servicios, profesionales, horarios y reservas). Tres cosas van
+**al portal**, a mano:
+
+- **Las preguntas frecuentes.**
+- **El chat en su web:** el color de su marca y su logo.
+- **Los horarios de las profesionales que cambian cada semana.** El chat
+  pregunta si cada una tiene horario fijo; si no lo tiene, le explica que esos
+  horarios se cambian en el portal, en la ficha de cada profesional.
+
+El cierre del chat se lo recuerda: *«Recuerda que, si quieres cargar preguntas
+frecuentes, puedes hacerlo en ese apartado dentro de tu portal. También, en la
+sección "El chat en tu web", recuerda seleccionar el color de tu marca y
+añadir una imagen para que se muestre en la parte superior izquierda del
+chat.»*
+
+Cambia la idea del 5/11 de que **todo** el alta se hace por el chat (PC-03):
+lo imprescindible, por el chat; lo demás, en el portal.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
