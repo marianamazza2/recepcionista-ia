@@ -20,10 +20,11 @@ Los datos están en **un solo sitio** (PC-05): el portal, el chat del cliente y 
 6. **El portal**: el cliente ve y edita su configuración a mano, con las mismas secciones y reglas que tu panel (lo que falta para activar, el aviso de horario fuera del local, citas afectadas por un festivo…). No ve ni cambia el tope (PC-09), ni activa su negocio: eso lo hacés vos.
 7. **El chat del portal, después del alta**: cambia la configuración pidiéndolo («Núria no viene el jueves», «el lunes 16 cerramos»), y si un festivo cae encima de citas, avisa y pregunta (PC-10).
 8. **Turnos sueltos** (PC-06): una profesional trabaja un día concreto fuera de su horario; en un festivo del local, abre la agenda solo para ella y esas horas. Desde el portal y desde tu panel.
-9. **Tu vista** (PC-05): desde tu panel abrís el portal de cada cliente tal como lo ve él, y lo podés editar.
-10. **Aislamiento**: una cuenta no puede ver ni tocar otro negocio, aunque lo pida en el chat o cambie la dirección a mano. Lo decide el código.
-11. **Prueba de verdad**: un negocio inventado nuevo entra con su enlace, se da de alta entero por el chat, su portal muestra lo mismo que tu panel, lo activás, su widget le da una cita a una clienta, y después cambia algo por el chat y el agente de las clientas lo aplica.
-12. Todos los tests anteriores siguen pasando, en local y en Supabase, y `npm run agent:eval` en verde.
+9. **La agenda visual** (PC-16): en el portal, el día con una columna por profesional y la semana; pinchar un hueco carga una cita a mano y pinchar una cita la muestra y la cancela. La agenda de tu panel interno pasa a ser igual de visual.
+10. **Tu vista** (PC-05): desde tu panel abrís el portal de cada cliente tal como lo ve él, y lo podés editar.
+11. **Aislamiento**: una cuenta no puede ver ni tocar otro negocio, aunque lo pida en el chat o cambie la dirección a mano. Lo decide el código.
+12. **Prueba de verdad**: un negocio inventado nuevo entra con su enlace, se da de alta entero por el chat, su portal muestra lo mismo que tu panel, lo activás, su widget le da una cita a una clienta, **la ve en su agenda** y carga otra a mano, y después cambia algo por el chat y el agente de las clientas lo aplica.
+13. Todos los tests anteriores siguen pasando, en local y en Supabase, y `npm run agent:eval` en verde.
 
 ---
 
@@ -46,11 +47,14 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 | PC-11 | Lo primero que ve | Solo el chat; el portal aparece **al terminar**. Después entra con email y contraseña |
 | PC-12 | Lo que el chat no pregunta | Preguntas frecuentes, el chat en su web, horarios que cambian cada semana y festivos, en el portal; tono, bienvenida e intervalo de horarios, de serie |
 | PC-13 | Aviso al terminar | Te llega un aviso en tu panel interno |
+| PC-14 | La IA del alta | No cuenta para el tope del negocio; se ve aparte en el consumo |
+| PC-15 | Email de verdad | El proveedor real se conecta antes de mandar el primer enlace a un cliente real |
+| PC-16 | La agenda | Agenda visual en el portal (día por profesional y semana; cargar y cancelar) y la de tu panel igual de visual |
 
-**Aparecieron al escribir este spec** (en `decisiones-producto.md` con el detalle):
+**Aparecieron al escribir este spec, ✅ decididas el 18/11/2026** (en `decisiones-producto.md` con el detalle):
 
 - **PC-14 · Quién paga la IA del chat del alta.** ✅ Decidida el 18/11/2026: no cuenta para el tope mensual del negocio (el tope es para atender clientas, PW-04); se registra aparte, como coste de alta, y lo ves en el consumo.
-- **PC-16 · Dónde ve el negocio sus citas.** *Propuesta:* una agenda en el portal en esta fase, reutilizando la de tu panel (ver el día y la semana, cargar y cancelar a mano). Su Google Calendar, en la Fase 7.
+- **PC-16 · Dónde ve el negocio sus citas.** ✅ Decidida el 18/11/2026: una agenda visual en el portal (el día con una columna por profesional y la semana; pinchar un hueco para cargar una cita y una cita para verla o cancelarla), y la de tu panel igual de visual. Su Google Calendar, en la Fase 7.
 - **PC-15 · Antes del primer cliente real, un proveedor de email de verdad.** ✅ Decidida el 18/11/2026. Para crear la cuenta hay que confirmar el email con un código (PC-02), y hoy los emails son de prueba (PW-18). En local y en los tests vale el de prueba; con un cliente real, no: se elige antes de mandar el primer enlace a un cliente.
 
 ---
@@ -63,6 +67,7 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - **Lo que no se puede romper, en el código:** que una cuenta solo toque su negocio (el `business_id` sale de la sesión, nunca del chat ni de la URL); que una sección no se guarde sin que el cliente confirme el resumen; las validaciones de la base (horarios sin solape, formatos, lo que falta para activar).
 - **El resumen para confirmar** es un bloque visual (tabla de la semana, lista de servicios) que el chat devuelve junto al texto, con «¿está todo bien?». El portal lo dibuja; el modelo no inventa el formato.
 - **Turnos sueltos** (PC-06): un cambio en el motor (`app.tramos_efectivos` / `app.slot_es_valido`) con su migración y sus tests SQL: en un festivo del local, el turno suelto abre solo esa profesional y esas horas. Es la única parte que toca la regla de "hueco válido".
+- **La agenda visual** (PC-16): una vista de día con una columna por profesional y otra de semana, compartida por el portal y tu panel. ⚠️ **Decisión técnica a tomar al empezar (D-):** las librerías de calendario conocidas cobran la vista "por profesional" (por ejemplo, FullCalendar la tiene en su versión de pago) y las dependencias se mantienen mínimas (`src/AGENTS.md`). *Propuesta:* una rejilla propia con CSS (horas en filas, profesionales en columnas, la cita como un bloque), que es lo que hace falta sin arrastrar. Cargar y cancelar reutilizan `src/citas/manual.ts` (PI-14) y su email (PW-10).
 - **La web del portal**: React + Vite + Tailwind como el panel, en su propia carpeta (`portal/`) o como otra entrada del mismo proyecto de `admin/`, reutilizando sus componentes. Se decide al empezar (D-) con lo que menos duplique.
 - **Hosting**: el mismo proyecto de Vercel (como el panel, PI-02). Publicarlo, **solo con tu visto bueno**.
 
@@ -90,6 +95,14 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - Lo que falta para activar y el aviso de horario, igual que en tu panel. No ve el tope ni el botón de activar.
 - El chat a la vista, para pedir cambios después del alta (9.5).
 
+### 9.4b — La agenda visual (PC-16)
+- Vista de **día**: una columna por profesional, las horas del horario del negocio hacia abajo, cada cita como un bloque con hora, servicio y clienta; los huecos fuera de horario y los festivos, sombreados.
+- Vista de **semana**, y pasar de un día a otro.
+- **Pinchar un hueco** → cargar una cita a mano (servicio, profesional, hora, email opcional, teléfono y nombre), con las reglas de PI-14.
+- **Pinchar una cita** → ver el detalle y cancelarla (con su email de aviso, PW-10).
+- La **misma agenda** en tu panel interno, sustituyendo la lista de hoy.
+- Se ve bien en el móvil (en la recepción a veces se mira desde el teléfono).
+
 ### 9.5 — El chat del portal después del alta
 - Pedir cambios con palabras («Núria no viene el jueves», «el lunes 16 cerramos», «la limpieza ahora dura 75 minutos»), con resumen y confirmación antes de guardar.
 - Un festivo encima de citas: avisa y pregunta (PC-10, PI-21).
@@ -105,9 +118,10 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - Aislamiento: una cuenta no lee ni escribe otro negocio por la API, cambiando ids en la URL o pidiéndolo en el chat (modelo simulado).
 - El chat del alta (modelo simulado): cada sección guarda lo mismo que guardaría tu panel; sin confirmar no se guarda; un dato inválido no se guarda.
 - Turnos sueltos en el motor: festivo del local con turno suelto → solo esa profesional y esas horas.
+- La agenda del portal: solo las citas de su negocio; cargar a mano con las reglas de PI-14; cancelar manda el aviso; una cuenta no ve ni cancela citas de otro negocio.
 - Tu panel ve lo mismo que el portal.
 
-**Con el navegador (`npm run test:e2e`):** abrir el enlace, crear la cuenta, hacer el alta entera con el modelo simulado, ver aparecer el portal, editar algo a mano y verlo en tu panel.
+**Con el navegador (`npm run test:e2e`):** abrir el enlace, crear la cuenta, hacer el alta entera con el modelo simulado, ver aparecer el portal, editar algo a mano y verlo en tu panel; en la agenda, pinchar un hueco y cargar una cita, verla como bloque en su columna y cancelarla.
 
 **Con el modelo real:** escenarios nuevos del chat del alta (clientes que contestan raro: «abrimos por las mañanas», «una hora y pico», precios «según el caso») y del chat del portal («Núria no viene el jueves»), más los de siempre.
 
@@ -124,18 +138,20 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - Leer la web del negocio para proponer servicios → más adelante (PC-07).
 - Un servicio que necesita otro antes (la revisión antes de la toxina) → cuando un negocio real lo pida (PA-13).
 - Varias personas del mismo negocio con su propia cuenta y permisos → cuando un cliente lo pida.
-- Ver las citas en su propio Google Calendar → Fase 7 (PC-16). La agenda en el portal, si se confirma PC-16, entra en esta fase.
+- Ver las citas en su propio Google Calendar → Fase 7 (PC-16).
+- Mover una cita arrastrándola en la agenda → más adelante (se cancela y se carga otra).
+- Conectar el programa de gestión que ya tenga el cliente (Flowww, Koibox…) → cuando un cliente lo traiga (PC-16).
 - Conectar el proveedor de email real → es tuyo (PC-15), pero va antes del primer cliente real.
 
 ---
 
 ## ORDEN DE TRABAJO SUGERIDO PARA CLAUDE CODE
 
-1. Leer los documentos de "Depende de". Tomar y anotar las dos decisiones técnicas (cuentas del portal y dónde vive la web del portal).
+1. Leer los documentos de "Depende de". Tomar y anotar las tres decisiones técnicas (cuentas del portal, dónde vive la web del portal y cómo se dibuja la agenda).
 2. Migración, turnos sueltos en el motor y tests SQL (9.1). Verde.
 3. Invitación y cuenta, con tests, sin interfaz (9.2).
 4. El chat del alta con el modelo simulado y sus tests (9.3).
-5. La web del portal y el chat de después del alta (9.4, 9.5).
+5. La web del portal, la agenda visual y el chat de después del alta (9.4, 9.4b, 9.5).
 6. Tu vista y el aviso en tu panel (9.6).
 7. La prueba de verdad: un negocio inventado, de la invitación a la cita.
 8. `npm run agent:eval` con los escenarios nuevos y la verificación en Supabase (`./scripts/con-supabase.sh …`).
@@ -148,7 +164,7 @@ Trabajar contra el Postgres local (`recepcionista_dev`). No apagar ni reiniciar 
 
 ## PROMPT DE ARRANQUE (para pegar en Claude Code, sesión fresca en el repo)
 
-> Leé `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro), `_specs/decisiones-producto.md` (reglas de negocio, sobre todo PC-01 a PC-16), `_specs/fase-9-portal-cliente.md` (esta fase), `_specs/fase-4-panel-interno.md` y `docs/DECISIONES.md`. El guion del alta está en la nota «Guion del alta por chat» del space «mm - agente recepcionista» de Research Desk: leelo con la skill `research-desk`. Implementá la Fase 9 completa siguiendo el spec, en el orden sugerido. Antes de programar, anotá las dos decisiones técnicas que pide el spec y contámelas en una línea cada una. Reutilizá las funciones y validaciones del panel: no las dupliques. El agente de las clientas no cambia salvo los turnos sueltos en el motor. Las claves están en `.env`: no me las pidas ni las muestres. Trabajá contra el Postgres local `recepcionista_dev` y no lo apagues. Trabajá en la rama `fase-9-spec`: hacé push a esa rama y actualizá su PR al final (título y descripción en inglés, como los commits). No mergees ni publiques en Vercel sin preguntarme, y no toques la base de la nube sin mi visto bueno. Si aparece una decisión de producto que no está en `decisiones-producto.md`, no la inventes: anotala como propuesta por confirmar y avisame. Actualizá el manual «Cómo funciona el Recepcionista» y el Mapa de avance de Research Desk en cada paso. Las pruebas las hacés vos: ejecutá el plan de pruebas de la fase y publicá el informe. Explicame al final, en lenguaje simple, qué hiciste.
+> Leé `_specs/mazzmkt-recepcionista-ia-spec.md` (maestro), `_specs/decisiones-producto.md` (reglas de negocio, sobre todo PC-01 a PC-16), `_specs/fase-9-portal-cliente.md` (esta fase), `_specs/fase-4-panel-interno.md` y `docs/DECISIONES.md`. El guion del alta está en la nota «Guion del alta por chat» del space «mm - agente recepcionista» de Research Desk: leelo con la skill `research-desk`. Implementá la Fase 9 completa siguiendo el spec, en el orden sugerido. Antes de programar, anotá las tres decisiones técnicas que pide el spec y contámelas en una línea cada una. Reutilizá las funciones y validaciones del panel: no las dupliques. El agente de las clientas no cambia salvo los turnos sueltos en el motor. Las claves están en `.env`: no me las pidas ni las muestres. Trabajá contra el Postgres local `recepcionista_dev` y no lo apagues. Trabajá en la rama `fase-9-spec`: hacé push a esa rama y actualizá su PR al final (título y descripción en inglés, como los commits). No mergees ni publiques en Vercel sin preguntarme, y no toques la base de la nube sin mi visto bueno. Si aparece una decisión de producto que no está en `decisiones-producto.md`, no la inventes: anotala como propuesta por confirmar y avisame. Actualizá el manual «Cómo funciona el Recepcionista» y el Mapa de avance de Research Desk en cada paso. Las pruebas las hacés vos: ejecutá el plan de pruebas de la fase y publicá el informe. Explicame al final, en lenguaje simple, qué hiciste.
 
 ---
 

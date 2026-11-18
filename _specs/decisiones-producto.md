@@ -1485,7 +1485,7 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
 | PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta | — | ✅ decidida 18/11/2026 |
 | PC-15 | Proveedor de email antes del primer cliente | Se elige y se conecta **antes de mandar el primer enlace a un cliente real** (la cuenta se confirma con un código al email) | — | ✅ decidida 18/11/2026 |
-| PC-16 | Dónde ve el negocio sus citas | *Propuesta:* una **agenda en el portal** (la misma de tu panel: ver el día y la semana, cargar y cancelar citas a mano), en esta fase. Su Google Calendar, en la Fase 7 | — | ⚠️ por confirmar (18/11/2026) |
+| PC-16 | Dónde ve el negocio sus citas | Una **agenda visual en su portal**, en esta fase: el día con una columna por profesional y la semana; pinchar un hueco para cargar una cita y una cita para verla o cancelarla. La agenda del panel interno pasa a ser igual de visual. Su Google Calendar, en la Fase 7; su programa de gestión, cuando un cliente lo traiga | — | ✅ decidida 18/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1706,7 +1706,7 @@ proveedor de email (Resend o Amazon SES, con el remitente de nuestro dominio)
 **antes de mandar el primer enlace a un cliente real**. No bloquea construir
 la fase.
 
-### PC-16 · Dónde ve el negocio sus citas · ⚠️ por confirmar
+### PC-16 · Dónde ve el negocio sus citas · ✅ decidida el 18/11/2026
 
 Apareció al escribir el spec de la Fase 9 (18/11/2026). Hoy las citas que da
 la recepcionista solo las ve Mariana, en su panel (PI-14), y la clienta en su
@@ -1716,12 +1716,29 @@ Primera propuesta (18/11): no en esta fase. **Mariana no estuvo de acuerdo**:
 «las citas tendrían que ir en su calendario integrado: donde se agenden las
 citas, tiene que tener un calendario».
 
-*Propuesta nueva (18/11/2026):* una **agenda en el portal**, en esta fase,
-reutilizando la de tu panel: el día y la semana con cada cita (hora, servicio,
-profesional, clienta), cargar una cita a mano (la que llaman por teléfono) y
-cancelar. Las citas siguen viviendo en nuestra base (PD-02). Ver las citas
-**en su propio Google Calendar** es la Fase 7, para quien ya lo use; no hace
-falta para empezar.
+**Decidido (Mariana, 18/11/2026):** *«tenemos que desarrollarlo entonces… si
+tenemos que hacerla más visual, implementar un calendario»*. La clienta que
+llama al local para cancelar o para reservar, **la recepción la cancela o la
+carga desde su portal**; si no, la recepcionista IA podría dar ese hueco a
+otra.
+
+- **Agenda visual en el portal**, en esta fase, como la de los programas de
+  reservas del sector: el **día con una columna por profesional** y las horas
+  hacia abajo, con cada cita como un bloque (hora, servicio, clienta); y la
+  **semana**.
+- **Pinchar un hueco → cargar una cita a mano** (la que llama o entra al
+  local), con las mismas reglas que tu panel (PI-14: a cualquier hora, pero
+  nunca fuera de horario, en festivo ni pisando otra cita).
+- **Pinchar una cita → verla y cancelarla.** La clienta recibe su aviso por
+  email (PW-10).
+- **La agenda de tu panel interno** pasa a ser igual de visual (hoy es una
+  lista).
+- Las citas siguen en un solo sitio, nuestra base (PD-02): la recepcionista,
+  el portal y tu panel ven siempre lo mismo.
+- **Fuera de esta fase:** mover una cita arrastrándola (se cancela y se carga
+  otra), las citas **en su propio Google Calendar** (Fase 7) y conectar **su
+  programa de gestión** (Flowww, Koibox…) cuando un cliente lo traiga: es el
+  «si ya tienes una, la conectamos» de la frase de venta.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
