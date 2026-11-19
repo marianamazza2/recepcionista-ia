@@ -565,8 +565,15 @@ describe('citas a mano (PR-04, PI-14)', () => {
     expect(sinEmail.status).toBe(201);
     expect(sinEmail.body.email).toBeNull();
 
+    // PC-16: la agenda llega lista para dibujar (día o semana) con sus tramos.
     const agenda = await pedir(h, 'GET', `negocios/${n.id}/agenda?fecha=2030-10-16`);
-    expect(agenda.body.citas).toMatchObject([{ horaInicio: '10:15', horaFin: '11:15', origen: 'manual', servicio: 'Corte', profesional: 'Nora', estado: 'confirmada', clienta: { telefono: '+34999000222', email: 'manual@example.com' } }]);
+    expect(agenda.body.dias).toHaveLength(1);
+    expect(agenda.body.dias[0].citas).toMatchObject([{ horaInicio: '10:15', horaFin: '11:15', origen: 'manual', servicio: 'Corte', profesional: 'Nora', estado: 'confirmada', clienta: { telefono: '+34999000222', email: 'manual@example.com' } }]);
+    expect(agenda.body.dias[0].tramos.length).toBeGreaterThan(0);
+    expect(agenda.body.profesionales.map((p: { nombre: string }) => p.nombre)).toContain('Nora');
+    const semana = await pedir(h, 'GET', `negocios/${n.id}/agenda?fecha=2030-10-14&dias=7`);
+    expect(semana.body.dias.map((d: { fecha: string }) => d.fecha)).toEqual(['2030-10-14', '2030-10-15', '2030-10-16', '2030-10-17', '2030-10-18', '2030-10-19', '2030-10-20']);
+    expect((await pedir(h, 'GET', `negocios/${n.id}/agenda?fecha=2030-10-14&dias=30`)).status).toBe(400);
 
     const cancelar = await pedir(h, 'POST', `negocios/${n.id}/citas/${r.body.id}/cancelar`);
     expect(cancelar.body).toEqual({ cancelada: true });

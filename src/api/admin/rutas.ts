@@ -1,5 +1,5 @@
 // =============================================================================
-// Rutas del panel interno: /api/admin/… (Fase 4 · 4.2)
+// Rutas del panel interno: /api/admin/… (Fase 4 · 4.2; Fase 9 · 9.6)
 // =============================================================================
 // Handlers estándar (Request) => Response, como los del widget (D-61). El
 // contrato de cada ruta está en src/api/README.md.
@@ -12,62 +12,54 @@
 //   · Toda consulta va al negocio de la URL (inTenant + business_id, T-03).
 //   · Errores → una frase para el panel (errores.ts); el interno, a onError.
 //   · Los handlers son delgados: validan la forma (entrada.ts) y llaman a
-//     db/negocios, db/visor, citas/manual, db/usage o al canal web.
-//   · Aceptación 12: el teléfono del local se normaliza antes de guardar;
-//     las letras se rechazan sin modificar los demás datos.
-//   · PI-21: horario y festivos aceptan "citas" ('preguntar' de serie, 'dejar',
-//     'cancelar'). Con citas afectadas y sin decidir → 409 citas_afectadas con
-//     la lista, sin guardar nada. 'cancelar' las cancela con su email (PW-10).
+//     db/negocios, db/visor, db/portal, citas/manual, db/usage o al canal web.
+//
+// Fase 9 (PC-05): TODO lo que edita la configuración de un negocio
+// (negocios/:id/datos, servicios, horario, festivos, turnos sueltos, la
+// agenda…) vive en negocio.ts y lo comparten este panel y el portal del
+// cliente. Aquí quedan solo las rutas que son de Mariana:
+// activar/pausar, la clave del widget, probar el chat, el visor, las
+// derivaciones, el consumo, los enlaces de invitación (PC-02) y el aviso de
+// alta terminada (PC-13).
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
 
 import { procesarMensajeWeb, type WebChatDeps } from '../../adapters/channels/web-widget.js';
-import { cancelarCitaManual, cargarCitaManual, agendaDelDia } from '../../citas/manual.js';
-import { inicioDelDia, localToUtc, sumarDias, utcToLocal } from '../../core/time.js';
 import {
-  borrarFestivo,
-  borrarPregunta,
-  cambiarEstado,
-  crearFestivo,
-  type QueHacerConCitas,
-  crearNegocio,
-  crearPregunta,
-  crearProfesional,
-  crearServicio,
-  guardarChat,
-  guardarDatos,
-  guardarHorario,
-  guardarPregunta,
-  guardarProfesional,
-  guardarReglas,
-  guardarServicio,
-  leerNegocio,
-  listarNegocios,
-  rotarClave,
-  type ServicioPanel,
-  type ProfesionalPanel,
-  type PreguntaPanel,
-} from '../../db/negocios.js';
+  altasPendientesDeRevisar,
+  anularInvitaciones,
+  crearInvitacion,
+  invitacionDelNegocio,
+  marcarAltaRevisada,
+  estadoDelAlta,
+} from '../../db/portal.js';
+import { cambiarEstado, crearNegocio, leerNegocio, listarNegocios, rotarClave } from '../../db/negocios.js';
 import { personaPanel, type PersonaPanel } from '../../db/personas.js';
 import { informeConsumoTodos } from '../../db/usage.js';
 import { derivacionesPendientes, leerConversacion, listarConversaciones, resolverDerivacion, type FiltroConversaciones } from '../../db/visor.js';
 import { businessParaProbar } from '../../db/widget.js';
+import { enviarEmailInvitacion } from '../../portal/email.js';
 import { json, leerJson, PeticionNoValida } from '../http.js';
 import type { AuthPanel } from './auth.js';
-import { Entrada, horaDeTramo, normalizarDominio, UUID } from './entrada.js';
+import { Entrada, UUID } from './entrada.js';
 import { aErrorPanel, ErrorPanel, TEXTO_LO_QUE_FALTA } from './errores.js';
-import { comprobarVersion, versiones } from './versiones.js';
+import {
+  cuerpoDeNegocio,
+  despacharRutaDeNegocio,
+  detalleNegocio,
+  leerNegocioO404,
+  rutasDeNegocio,
+  zona,
+} from './negocio.js';
 
-/** El logo viaja en el cuerpo (hasta 200.000 caracteres): el panel admite más que el widget. */
-const MAX_CUERPO_PANEL = 512 * 1024;
-
-const ZONAS = new Set(Intl.supportedValuesOf('timeZone'));
 const TOKEN_SESION = /^[A-Za-z0-9_-]{20,128}$/;
 
 export interface AdminDeps extends WebChatDeps {
   /** Sin proveedor de cuentas el panel no responde (503): no se abre sin login. */
   auth?: AuthPanel | null;
+  /** PC-02: a dónde apunta el enlace de invitación (la web del portal). De serie, baseUrl. */
+  portalUrl?: string;
 }
 
 export interface ContextoAdmin {
@@ -84,358 +76,82 @@ interface Ruta {
 
 const ID = '([0-9a-fA-F-]{36})';
 
+/** PC-02: el enlace que se le pasa al cliente. */
+export function enlaceDeInvitacion(portalUrl: string, token: string): string {
+  return `${portalUrl.replace(/\/+$/, '')}/portal/#/invitacion/${token}`;
+}
+
 export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdmin) => Promise<Response> {
   const onError = deps.onError ?? (() => {});
-  const cuerpo = async (req: Request) => new Entrada(await leerJson(req, MAX_CUERPO_PANEL));
+  const portalUrl = deps.portalUrl ?? deps.baseUrl;
+  // PC-05: las mismas rutas de configuración que usa el portal del cliente.
+  const deNegocio = rutasDeNegocio(deps, 'panel');
 
-  /** El negocio de la URL tiene que existir (404 si no). */
-  const negocio = async (id: string) => {
-    const n = await leerNegocio(deps.sql, id);
-    if (!n) throw new ErrorPanel(404, 'Ese negocio no existe.');
-    return n;
-  };
-
-  const detalle = async (id: string) => {
-    const n = await negocio(id);
-    return json({
-      ...n,
-      festivos: n.festivos.map((f) => ({ ...f, ...festivoLocal(f.desde, f.hasta, n.timezone) })),
-      loQueFalta: n.loQueFalta.map((codigo) => ({ codigo, texto: TEXTO_LO_QUE_FALTA[codigo] })),
-      widgetJs: `${deps.baseUrl.replace(/\/+$/, '')}/widget.js`,
-      // PI-22: la huella de cada sección, para que la segunda que guarde no pise a la primera.
-      versiones: versiones(n),
-    });
-  };
-
-  /** PI-22: la versión de ahora de una sección (404 si el negocio no existe). */
-  const versionDe = async (id: string, seccion: (v: ReturnType<typeof versiones>) => string | undefined) =>
-    seccion(versiones(await negocio(id)));
-
-  const rutas: Ruta[] = [
-    { metodo: 'GET', patron: /^yo$/, handler: async ({ persona }) => json({ email: persona.email }) },
-
-    // --- Negocios -------------------------------------------------------------
+  /** Rutas del panel que cuelgan de un negocio pero NO son del portal. */
+  const soloDelPanel: { metodo: string; patron: RegExp; handler: (p: { req: Request; businessId: string; params: string[]; url: URL; ctx: ContextoAdmin }) => Promise<Response> }[] = [
     {
-      metodo: 'GET',
-      patron: /^negocios$/,
-      handler: async () => {
-        const lista = await listarNegocios(deps.sql);
-        return json(lista.map((n) => ({ ...n, loQueFalta: n.loQueFalta.map((codigo) => ({ codigo, texto: TEXTO_LO_QUE_FALTA[codigo] })) })));
+      metodo: 'POST',
+      patron: /^(activar|pausar)$/,
+      handler: async ({ businessId, params }) => {
+        await leerNegocioO404(deps, businessId);
+        await cambiarEstado(deps.sql, businessId, params[0] === 'activar' ? 'activo' : 'pausado');
+        return detalleNegocio(deps, businessId, 'panel');
       },
     },
     {
       metodo: 'POST',
-      patron: /^negocios$/,
-      handler: async ({ req }) => {
-        const e = await cuerpo(req);
-        const r = await crearNegocio(deps.sql, {
-          nombre: e.texto('nombre', 'el nombre del negocio', 120),
-          sector: e.textoOpcional('sector', 'el sector', 120),
-          timezone: zona(e),
-        });
-        return json(r, 201);
-      },
-    },
-    { metodo: 'GET', patron: new RegExp(`^negocios/${ID}$`), handler: async ({ params }) => detalle(params[0]!) },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/datos$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.datos));
-        await guardarDatos(deps.sql, params[0]!, {
-          nombre: e.texto('nombre', 'el nombre del negocio', 120),
-          sector: e.textoOpcional('sector', 'el sector', 120),
-          timezone: zona(e),
-          direccion: e.textoOpcional('direccion', 'la dirección', 300),
-          telefonoHumano: e.telefonoOpcional('telefonoHumano', 'teléfono del local'),
-          tonoDeVoz: e.textoOpcional('tonoDeVoz', 'el tono de voz', 500),
-          mensajeBienvenida: e.textoOpcional('mensajeBienvenida', 'el mensaje de bienvenida', 500),
-        });
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/reglas$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.reglas));
-        await guardarReglas(deps.sql, params[0]!, {
-          antelacionMinHoras: e.entero('antelacionMinHoras', 'la antelación mínima', 0, 720),
-          intervaloHuecosMin: e.entero('intervaloHuecosMin', 'cada cuánto se ofrecen horarios', 1, 240),
-          margenDentroHorario: e.booleano('margenDentroHorario', 'si el margen cuenta dentro del horario'),
-          asignacionProfesional: e.opcion('asignacionProfesional', 'cómo se elige profesional', ['preguntar', 'automatica'] as const),
-          politicaCancelacion: e.textoOpcional('politicaCancelacion', 'la política de cancelación', 1000),
-          cancelacionModo: e.opcion('cancelacionModo', 'el modo de cancelación', ['informar', 'bloquear'] as const),
-          cancelacionPlazoHoras: e.entero('cancelacionPlazoHoras', 'el plazo de cancelación', 0, 720),
-        });
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/chat$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.chat));
-        const crudos = e.valor('dominios');
-        if (!Array.isArray(crudos) || crudos.length > 20 || crudos.some((d) => typeof d !== 'string')) throw new ErrorPanel(400, 'Los dominios tienen que ser una lista (como mucho 20).');
-        const dominios: string[] = [];
-        for (const d of crudos as string[]) {
-          if (d.trim() === '') continue;
-          const n = normalizarDominio(d);
-          if (!n) throw new ErrorPanel(400, `"${d}" no es un dominio (por ejemplo, www.esteticaaurora.es).`);
-          if (!dominios.includes(n)) dominios.push(n);
-        }
-        const logo = e.textoOpcional('logo', 'el logo', 200_000);
-        await guardarChat(deps.sql, params[0]!, {
-          dominios,
-          color: e.texto('color', 'el color', 7),
-          logo,
-          privacidadUrl: e.textoOpcional('privacidadUrl', 'la política de privacidad', 500),
-          topeMensualUsd: e.numero('topeMensualUsd', 'el tope mensual', 0, 100_000),
-        });
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/(activar|pausar)$`),
-      handler: async ({ params }) => {
-        await negocio(params[0]!);
-        await cambiarEstado(deps.sql, params[0]!, params[1] === 'activar' ? 'activo' : 'pausado');
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/clave$`),
-      handler: async ({ params }) => {
-        await rotarClave(deps.sql, params[0]!);
-        return detalle(params[0]!);
-      },
-    },
-
-    // --- Servicios y profesionales (PI-04) ------------------------------------------
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/servicios$`),
-      handler: async ({ req, params }) => {
-        await negocio(params[0]!);
-        await crearServicio(deps.sql, params[0]!, servicio(await cuerpo(req)));
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/servicios/${ID}$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.servicios[params[1]!]));
-        await guardarServicio(deps.sql, params[0]!, params[1]!, servicio(e));
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/profesionales$`),
-      handler: async ({ req, params }) => {
-        await negocio(params[0]!);
-        await crearProfesional(deps.sql, params[0]!, profesional(await cuerpo(req)));
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/profesionales/${ID}$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.profesionales[params[1]!]));
-        await guardarProfesional(deps.sql, params[0]!, params[1]!, profesional(e));
-        return detalle(params[0]!);
-      },
-    },
-
-    // --- Horario (PD-01), festivos (PI-12) y preguntas (PI-08) --------------------
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/horario$`),
-      handler: async ({ req, params }) => {
-        await negocio(params[0]!);
-        const e = await cuerpo(req);
-        const staffId = e.uuidOpcional('staffId', 'la profesional');
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.horario[staffId ?? 'local']));
-        const tramos = e.lista('tramos', 'los tramos', 42, (t) => ({
-          weekday: t.entero('weekday', 'el día de la semana', 0, 6),
-          apertura: t.hora('apertura', 'la apertura'),
-          cierre: horaDeTramo(t, 'cierre', 'el cierre'),
-        }));
-        // PI-19: los días que la profesional no trabaja (solo en un horario propio).
-        const crudos = e.valor('diasLibres') ?? [];
-        if (!Array.isArray(crudos) || crudos.some((w) => !Number.isInteger(w) || (w as number) < 0 || (w as number) > 6)) {
-          throw new ErrorPanel(400, 'Los días que no trabaja tienen que ser días de la semana (0 = domingo … 6 = sábado).');
-        }
-        const diasLibres = [...new Set(crudos as number[])].sort();
-        if (staffId === null && diasLibres.length > 0) throw new ErrorPanel(400, 'El local no tiene días "no trabaja": un día sin tramos es un día cerrado.');
-        const choca = diasLibres.find((w) => tramos.some((t) => t.weekday === w));
-        if (choca !== undefined) {
-          throw new ErrorPanel(400, `El ${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][choca]} no puede tener horas propias y "no trabaja" a la vez.`);
-        }
-        const cancelar = await guardarHorario(deps.sql, params[0]!, staffId, tramos, diasLibres, queHacerConCitas(e));
-        await cancelarAfectadas(params[0]!, cancelar);
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/festivos$`),
-      handler: async ({ req, params }) => {
-        const n = await negocio(params[0]!);
-        const e = await cuerpo(req);
-        const staffId = e.uuidOpcional('staffId', 'la profesional');
-        const fechaDesde = e.fecha('fechaDesde', 'el día');
-        const horaDesde = e.valor('horaDesde') ? e.hora('horaDesde', 'la hora de inicio') : null;
-        const horaHasta = e.valor('horaHasta') ? horaDeTramo(e, 'horaHasta', 'la hora de fin') : null;
-        let desde: Date;
-        let hasta: Date;
-        if (horaDesde || horaHasta) {
-          // PI-12: unas horas de un día.
-          if (!horaDesde || !horaHasta) throw new ErrorPanel(400, 'Para unas horas, indica la hora de inicio y la de fin.');
-          desde = localToUtc(fechaDesde, horaDesde, n.timezone);
-          hasta = horaHasta === '24:00' ? inicioDelDia(sumarDias(fechaDesde, 1), n.timezone) : localToUtc(fechaDesde, horaHasta, n.timezone);
-        } else {
-          // Días enteros, de fechaDesde a fechaHasta incluidos.
-          const fechaHasta = e.valor('fechaHasta') ? e.fecha('fechaHasta', 'el último día') : fechaDesde;
-          if (fechaHasta < fechaDesde) throw new ErrorPanel(400, 'El último día tiene que ser igual o posterior al primero.');
-          desde = inicioDelDia(fechaDesde, n.timezone);
-          hasta = inicioDelDia(sumarDias(fechaHasta, 1), n.timezone);
-        }
-        const { cancelar } = await crearFestivo(deps.sql, params[0]!, { staffId, desde, hasta, motivo: e.textoOpcional('motivo', 'el motivo', 200) }, queHacerConCitas(e));
-        await cancelarAfectadas(params[0]!, cancelar);
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'DELETE',
-      patron: new RegExp(`^negocios/${ID}/festivos/${ID}$`),
-      handler: async ({ params }) => {
-        await borrarFestivo(deps.sql, params[0]!, params[1]!);
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/preguntas$`),
-      handler: async ({ req, params }) => {
-        await negocio(params[0]!);
-        await crearPregunta(deps.sql, params[0]!, pregunta(await cuerpo(req)));
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'PUT',
-      patron: new RegExp(`^negocios/${ID}/preguntas/${ID}$`),
-      handler: async ({ req, params }) => {
-        const e = await cuerpo(req);
-        comprobarVersion(e, await versionDe(params[0]!, (v) => v.preguntas[params[1]!]));
-        await guardarPregunta(deps.sql, params[0]!, params[1]!, pregunta(e));
-        return detalle(params[0]!);
-      },
-    },
-    {
-      metodo: 'DELETE',
-      patron: new RegExp(`^negocios/${ID}/preguntas/${ID}$`),
-      handler: async ({ params }) => {
-        await borrarPregunta(deps.sql, params[0]!, params[1]!);
-        return detalle(params[0]!);
+      patron: /^clave$/,
+      handler: async ({ businessId }) => {
+        await rotarClave(deps.sql, businessId);
+        return detalleNegocio(deps, businessId, 'panel');
       },
     },
 
     // --- Conversaciones y derivaciones (PI-06, PI-07) ------------------------------------
     {
       metodo: 'GET',
-      patron: new RegExp(`^negocios/${ID}/conversaciones$`),
-      handler: async ({ params, url }) => {
-        await negocio(params[0]!);
+      patron: /^conversaciones$/,
+      handler: async ({ businessId, url }) => {
+        await leerNegocioO404(deps, businessId);
         const f = url.searchParams.get('filtro') ?? 'todas';
         if (!['todas', 'derivadas', 'pruebas'].includes(f)) throw new ErrorPanel(400, 'Filtro no válido.');
-        return json(await listarConversaciones(deps.sql, params[0]!, f as FiltroConversaciones));
+        return json(await listarConversaciones(deps.sql, businessId, f as FiltroConversaciones));
       },
     },
     {
       metodo: 'GET',
-      patron: new RegExp(`^negocios/${ID}/conversaciones/${ID}$`),
-      handler: async ({ params }) => {
-        const c = await leerConversacion(deps.sql, params[0]!, params[1]!);
+      patron: new RegExp(`^conversaciones/${ID}$`),
+      handler: async ({ businessId, params }) => {
+        const c = await leerConversacion(deps.sql, businessId, params[0]!);
         if (!c) throw new ErrorPanel(404, 'Esa conversación no existe en este negocio.');
         return json(c);
       },
     },
     {
       metodo: 'GET',
-      patron: new RegExp(`^negocios/${ID}/derivaciones$`),
-      handler: async ({ params }) => {
-        await negocio(params[0]!);
-        return json(await derivacionesPendientes(deps.sql, params[0]!));
+      patron: /^derivaciones$/,
+      handler: async ({ businessId }) => {
+        await leerNegocioO404(deps, businessId);
+        return json(await derivacionesPendientes(deps.sql, businessId));
       },
     },
     {
       metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/derivaciones/${ID}/resolver$`),
-      handler: async ({ params }) => {
-        if (!(await resolverDerivacion(deps.sql, params[0]!, params[1]!))) throw new ErrorPanel(404, 'Esa derivación no existe en este negocio.');
-        return json(await derivacionesPendientes(deps.sql, params[0]!));
-      },
-    },
-
-    // --- Agenda y citas a mano (PR-04, PI-14) -------------------------------------------
-    {
-      metodo: 'GET',
-      patron: new RegExp(`^negocios/${ID}/agenda$`),
-      handler: async ({ params, url }) => {
-        const n = await negocio(params[0]!);
-        const fecha = url.searchParams.get('fecha') ?? utcToLocal(new Date(), n.timezone).fecha;
-        const e = new Entrada({ fecha });
-        return json({ fecha: e.fecha('fecha', 'el día'), citas: await agendaDelDia(deps.sql, params[0]!, fecha) });
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/citas$`),
-      handler: async ({ req, params }) => {
-        await negocio(params[0]!);
-        const e = await cuerpo(req);
-        const r = await cargarCitaManual(citasDeps(), params[0]!, {
-          serviceId: e.uuid('serviceId', 'el servicio'),
-          staffId: e.uuid('staffId', 'la profesional'),
-          fecha: e.fecha('fecha', 'el día'),
-          hora: e.hora('hora', 'la hora'),
-          telefono: e.texto('telefono', 'el teléfono de la clienta', 30),
-          nombre: e.texto('nombre', 'el nombre de la clienta', 120),
-          email: e.textoOpcional('email', 'el email de la clienta', 254),
-          notas: e.textoOpcional('notas', 'las notas', 500),
-        });
-        return json({ id: r.cita.id, email: r.email?.estado ?? null }, 201);
-      },
-    },
-    {
-      metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/citas/${ID}/cancelar$`),
-      handler: async ({ params }) => {
-        await negocio(params[0]!);
-        return json({ cancelada: await cancelarCitaManual(citasDeps(), params[0]!, params[1]!) });
+      patron: new RegExp(`^derivaciones/${ID}/resolver$`),
+      handler: async ({ businessId, params }) => {
+        if (!(await resolverDerivacion(deps.sql, businessId, params[0]!))) throw new ErrorPanel(404, 'Esa derivación no existe en este negocio.');
+        return json(await derivacionesPendientes(deps.sql, businessId));
       },
     },
 
     // --- Probar el chat (PI-13) ------------------------------------------------------------
     {
       metodo: 'POST',
-      patron: new RegExp(`^negocios/${ID}/probar$`),
-      handler: async ({ req, params, ctx }) => {
-        const n = await businessParaProbar(deps.sql, params[0]!);
+      patron: /^probar$/,
+      handler: async ({ req, businessId, ctx }) => {
+        const n = await businessParaProbar(deps.sql, businessId);
         if (!n) throw new ErrorPanel(409, 'El negocio no existe o está pausado: actívalo para probar el chat.');
-        const e = await cuerpo(req);
+        const e = await cuerpoDeNegocio(req);
         const token = e.valor('sessionToken');
         if (token !== undefined && token !== null && (typeof token !== 'string' || !TOKEN_SESION.test(token))) throw new ErrorPanel(400, 'Sesión de prueba no válida.');
         const r = await procesarMensajeWeb(deps, n, {
@@ -449,6 +165,92 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       },
     },
 
+    // --- El enlace de invitación del portal (PC-02) -------------------------------------
+    {
+      metodo: 'GET',
+      patron: /^invitacion$/,
+      handler: async ({ businessId }) => json(await estadoDeInvitacion(businessId)),
+    },
+    {
+      metodo: 'POST',
+      patron: /^invitacion$/,
+      handler: async ({ req, businessId }) => {
+        const n = await leerNegocioO404(deps, businessId);
+        const e = await cuerpoDeNegocio(req);
+        const email = (e.textoOpcional('email', 'el email del contacto', 254) ?? '').toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ErrorPanel(400, 'Escribe el email del contacto (por ejemplo, nombre@clinicaolea.es).');
+        const { token } = await crearInvitacion(deps.sql, businessId, email, deps.now?.());
+        const enlace = enlaceDeInvitacion(portalUrl, token);
+        // El email es un extra: el enlace se enseña igual, para dárselo a mano.
+        let email_estado: string | null = null;
+        try {
+          email_estado = await enviarEmailInvitacion({ sql: deps.sql, email: deps.email, onError }, { id: n.id, nombre: n.nombre }, email, enlace);
+        } catch (err) {
+          onError(err);
+          email_estado = 'fallido';
+        }
+        return json({ ...(await estadoDeInvitacion(businessId)), enlace, emailEstado: email_estado }, 201);
+      },
+    },
+    {
+      metodo: 'DELETE',
+      patron: /^invitacion$/,
+      handler: async ({ businessId }) => {
+        await anularInvitaciones(deps.sql, businessId, deps.now?.());
+        return json(await estadoDeInvitacion(businessId));
+      },
+    },
+
+    // --- PC-13: el alta terminada, revisada --------------------------------------------
+    {
+      metodo: 'POST',
+      patron: /^alta\/revisada$/,
+      handler: async ({ businessId }) => {
+        await marcarAltaRevisada(deps.sql, businessId, deps.now?.());
+        return json(await altasPendientesDeRevisar(deps.sql));
+      },
+    },
+  ];
+
+  /** PC-02: lo que el panel enseña del enlace (nunca el token: ya no se puede). */
+  async function estadoDeInvitacion(businessId: string) {
+    const inv = await invitacionDelNegocio(deps.sql, businessId);
+    const alta = await estadoDelAlta(deps.sql, businessId);
+    return {
+      invitacion: inv ? { email: inv.email, expiraAt: inv.expiraAt, creadaAt: inv.createdAt } : null,
+      alta: { seccion: alta.seccion, terminadaAt: alta.terminadaAt, revisadaAt: alta.revisadaAt },
+    };
+  }
+
+  /** Rutas que no cuelgan de un negocio. */
+  const rutas: Ruta[] = [
+    { metodo: 'GET', patron: /^yo$/, handler: async ({ persona }) => json({ email: persona.email }) },
+
+    {
+      metodo: 'GET',
+      patron: /^negocios$/,
+      handler: async () => {
+        const lista = await listarNegocios(deps.sql);
+        return json(lista.map((n) => ({ ...n, loQueFalta: n.loQueFalta.map((codigo) => ({ codigo, texto: TEXTO_LO_QUE_FALTA[codigo] })) })));
+      },
+    },
+    {
+      metodo: 'POST',
+      patron: /^negocios$/,
+      handler: async ({ req }) => {
+        const e = await cuerpoDeNegocio(req);
+        const r = await crearNegocio(deps.sql, {
+          nombre: e.texto('nombre', 'el nombre del negocio', 120),
+          sector: e.textoOpcional('sector', 'el sector', 120),
+          timezone: zona(e),
+        });
+        return json(r, 201);
+      },
+    },
+
+    // --- PC-13: las altas terminadas que faltan por revisar -----------------------------
+    { metodo: 'GET', patron: /^altas$/, handler: async () => json(await altasPendientesDeRevisar(deps.sql)) },
+
     // --- Consumo (PI-11) --------------------------------------------------------------------
     {
       metodo: 'GET',
@@ -461,20 +263,6 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
     },
   ];
 
-  function citasDeps() {
-    return { sql: deps.sql, email: deps.email, baseUrl: deps.baseUrl, onError };
-  }
-
-  /** PI-21: lo que se decidió con las citas afectadas (de serie, preguntar). */
-  function queHacerConCitas(e: Entrada): QueHacerConCitas {
-    return e.valor('citas') === undefined ? 'preguntar' : e.opcion('citas', 'qué hacer con las citas', ['preguntar', 'dejar', 'cancelar'] as const);
-  }
-
-  /** PI-21: se cancelan una a una, como desde la agenda: cada clienta con email recibe su aviso. */
-  async function cancelarAfectadas(businessId: string, ids: string[]): Promise<void> {
-    for (const citaId of ids) await cancelarCitaManual(citasDeps(), businessId, citaId);
-  }
-
   return async (req, ctx) => {
     const url = new URL(req.url);
     const ruta = url.pathname.replace(/^\/api\/admin\/?/, '').replace(/\/+$/, '');
@@ -484,7 +272,7 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       // --- Entrar y renovar (sin cuenta todavía) --------------------------------------
       if (ruta === 'sesion' || ruta === 'sesion/renovar') {
         if (req.method !== 'POST') return json({ error: 'metodo_no_permitido' }, 405);
-        const e = await cuerpo(req);
+        const e = await cuerpoDeNegocio(req);
         const sesion =
           ruta === 'sesion'
             ? await deps.auth.entrar(e.texto('email', 'el email', 200).toLowerCase(), e.texto('password', 'la contraseña', 200))
@@ -499,6 +287,27 @@ export function createAdminApi(deps: AdminDeps): (req: Request, ctx: ContextoAdm
       // --- Todo lo demás: con cuenta ----------------------------------------------------
       const persona = await autenticar(deps, req);
       if (!persona) return json({ error: 'no_autorizado', mensaje: 'Tu sesión no es válida o ha caducado. Vuelve a entrar.' }, 401);
+
+      // --- Un negocio concreto: lo compartido con el portal y lo del panel --------------
+      const deUnNegocio = new RegExp(`^negocios/${ID}(?:/(.*))?$`).exec(ruta);
+      if (deUnNegocio) {
+        const businessId = deUnNegocio[1]!.toLowerCase();
+        if (!UUID.test(businessId)) return json({ error: 'no_encontrado' }, 404);
+        const sub = deUnNegocio[2] ?? '';
+        const propia = soloDelPanel.filter((r) => r.patron.test(sub));
+        if (propia.length > 0) {
+          const r = propia.find((x) => x.metodo === req.method);
+          if (!r) return json({ error: 'metodo_no_permitido' }, 405);
+          const params = (r.patron.exec(sub) ?? []).slice(1).map((p) => p.toLowerCase());
+          if (params.some((p) => p.length === 36 && !UUID.test(p))) return json({ error: 'no_encontrado' }, 404);
+          return await r.handler({ req, businessId, params, url, ctx });
+        }
+        if (/[0-9a-fA-F-]{36}/.test(sub) && !sub.split('/').every((p) => p.length !== 36 || UUID.test(p))) {
+          return json({ error: 'no_encontrado' }, 404);
+        }
+        const r = await despacharRutaDeNegocio(deNegocio, sub, { req, businessId, url });
+        return r ?? json({ error: 'no_encontrado' }, 404);
+      }
 
       const coinciden = rutas.filter((r) => r.patron.test(ruta));
       if (coinciden.length === 0) return json({ error: 'no_encontrado' }, 404);
@@ -525,53 +334,5 @@ async function autenticar(deps: AdminDeps, req: Request): Promise<PersonaPanel |
   return usuario ? personaPanel(deps.sql, usuario.id) : null;
 }
 
-// -----------------------------------------------------------------------------
-
-function zona(e: Entrada): string {
-  const tz = e.textoOpcional('timezone', 'la zona horaria', 64) ?? 'Europe/Madrid';
-  if (!ZONAS.has(tz)) throw new ErrorPanel(400, `"${tz}" no es una zona horaria (por ejemplo, Europe/Madrid).`);
-  return tz;
-}
-
-function servicio(e: Entrada): ServicioPanel {
-  return {
-    nombre: e.texto('nombre', 'el nombre del servicio', 120),
-    descripcion: e.textoOpcional('descripcion', 'la descripción', 1000),
-    duracionMin: e.entero('duracionMin', 'la duración', 1, 720),
-    bufferMin: e.entero('bufferMin', 'el margen', 0, 240),
-    precio: e.numeroOpcional('precio', 'el precio', 0, 100_000),
-    precioVisible: e.booleano('precioVisible', 'si el precio se dice'),
-    activo: e.booleano('activo', 'si está activo'),
-  };
-}
-
-function profesional(e: Entrada): ProfesionalPanel {
-  return {
-    nombre: e.texto('nombre', 'el nombre de la profesional', 120),
-    activo: e.booleano('activo', 'si está activa'),
-    servicioIds: e.listaDeUuid('servicioIds', 'los servicios'),
-  };
-}
-
-function pregunta(e: Entrada): PreguntaPanel {
-  return {
-    pregunta: e.texto('pregunta', 'la pregunta', 200),
-    respuesta: e.texto('respuesta', 'la respuesta', 1000),
-    orden: e.valor('orden') === undefined ? 0 : e.entero('orden', 'el orden', 0, 1000),
-  };
-}
-
-/** PI-12: un festivo en hora del negocio, para enseñarlo sin hacer cuentas en el navegador. */
-function festivoLocal(desde: Date, hasta: Date, tz: string) {
-  const d = utcToLocal(desde, tz);
-  const h = utcToLocal(hasta, tz);
-  const diaEntero = d.hora === '00:00' && h.hora === '00:00';
-  return {
-    fechaDesde: d.fecha,
-    horaDesde: diaEntero ? null : d.hora,
-    // Un día entero termina a las 00:00 del día siguiente: se enseña el último día incluido.
-    fechaHasta: diaEntero ? sumarDias(h.fecha, -1) : h.fecha,
-    horaHasta: diaEntero ? null : h.hora === '00:00' ? '24:00' : h.hora,
-    diaEntero,
-  };
-}
+/** Lo usa src/api/app.ts para saber si una ruta existe sin repetir la lista. */
+export { leerNegocio };
