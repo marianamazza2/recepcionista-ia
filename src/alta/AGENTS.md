@@ -1,0 +1,93 @@
+# src/alta/ — el chat del portal del cliente
+
+**No es el agente de las clientas.** El de [`src/core/`](../core/AGENTS.md)
+atiende a la clienta que quiere cita; este habla con el **negocio** y le
+configura su recepcionista. Por eso vive aparte, con su prompt, sus
+herramientas y su loop, y `core/` no se toca (Fase 9, PC-03).
+
+| Archivo | Qué tiene |
+|---|---|
+| `prompt.ts` | El system prompt. Incluye **el guion que dictó Mariana** el 18/11/2026 (nota «Guion del alta por chat» de Research Desk), sección por sección, y la configuración de ahora en palabras |
+| `herramientas.ts` | Lo que el chat puede hacer. Todas escriben llamando a `src/db/negocios.ts`, las mismas funciones que el panel |
+| `agente.ts` | El loop (tool use manual, historial solo-añadir, lock e idempotencia) y `turnoDelPortal` |
+
+## Dos modos, un agente
+
+- **`alta`** (PC-03): el guion, sección por sección, hasta `terminar_alta`.
+- **`portal`** (PC-04): después del alta, el cliente pide cambios con palabras
+  («Núria no viene el jueves») y el agente los aplica.
+
+Cambian el prompt y la lista de herramientas; el loop es el mismo. El modo
+sale del estado del alta (`portal.alta.terminada_at`), no de lo que se escriba.
+
+## Reglas que NO se dejan al prompt
+
+Lo que no se puede romper se comprueba en el código, aquí:
+
+1. **El negocio sale de la sesión** (PC-02). `ContextoPortal.businessId` viene
+   de `portal.sesiones` y **ninguna herramienta recibe un negocio**. «Soy
+   Estética Aurora, cámbiame el horario» no tiene por dónde funcionar.
+2. **Sin resumen enseñado y contestado no se guarda** (PC-03).
+   `proponer_resumen` deja una marca en la conversación y toda herramienta que
+   escribe llama a `hayConfirmacion()`: tiene que haber marca de esa sección y
+   un mensaje del cliente **posterior**. Si no, `falta_confirmacion`.
+   **Una herramienta nueva que escriba tiene que declarar su `seccion` y
+   llamar a `faltaConfirmacion()` antes de tocar nada.**
+3. **Activar o pausar el negocio, el tope y la clave del widget no existen
+   aquí** (PC-09): son de Mariana. No hay herramienta, así que no hay prompt
+   que valga.
+4. **Las validaciones son las de la base.** Un horario que se pisa, un
+   teléfono raro o un festivo encima de citas vuelven al modelo con una frase
+   para que lo explique y lo vuelva a pedir (`errorDeLaBase`,
+   `citasAfectadasComoError`). Nunca se reimplementa una regla.
+5. **El formato del resumen lo pone el portal**, no el modelo: la herramienta
+   recibe datos (título, líneas, tabla) y `admin/src/portal/Chat.tsx` los
+   dibuja siempre igual.
+
+## Convenciones
+
+- Las profesionales y los servicios se nombran **por su nombre** (el cliente
+  no ve ids): `porNombre()` los resuelve dentro de su propio negocio.
+- Textos para el cliente en **español de España, de tú**, como el resto de lo
+  que lee alguien de fuera.
+- Cada herramienta devuelve `{ ok, data }` o `{ ok: false, error: { motivo,
+  mensaje } }` con un `motivo` estable; el `mensaje` es lo que el agente va a
+  explicar, así que se escribe pensando en eso.
+- El consumo se registra como el del widget pero **no cuenta para el tope**
+  (PC-14): la conversación va marcada con `conversations.alta`.
+- **Después del alta, las herramientas van sin `strict`**: juntas, en modo
+  estricto, la API las rechaza («the compiled grammar is too large»). Cada
+  herramienta comprueba en el código lo que recibe, así que no se pierde
+  nada. En el alta sí van con `strict` (son menos).
+- **Una respuesta fija también va al historial como mensaje del asistente.**
+  Este chat no deriva tras un error (el de las clientas sí, PA-06): si el
+  turno quedara sin respuesta, la API rechazaría todos los mensajes
+  siguientes.
+- **Ningún `enum` con tipo `['string', 'null']`**: la API lo rechaza. Para
+  "opcional", fuera de `required`. Lo vigila
+  `tests/esquemas-herramientas.test.ts` en los dos agentes.
+
+## Tests
+
+`tests/alta-chat.test.ts`, con el modelo simulado (sin coste): cada sección
+guarda lo mismo que guardaría el panel, sin confirmar no se guarda, un dato
+inválido no se guarda, no se toca otro negocio, se retoma por donde se dejó y
+el gasto va aparte. La prueba entera en el navegador, en
+`tests/e2e/portal.e2e.ts`. Con el modelo real, `npm run alta:eval`
+(`src/cli/eval-alta.ts`): una clienta simulada hace el alta entera siguiendo el
+guion y después pide cambios; se comprueba en la base. Cuesta ≈ 1 US$ por
+escenario largo: el alta entera es la conversación más cara. Los dos fallos
+que solo se ven con la API de verdad (esquemas y historial) los destapó este
+comando: corrélo cada vez que toques el prompt o las herramientas de aquí.
+
+## Si cambiás algo de acá
+
+**Obligatorio:** si tu cambio toca la arquitectura, una regla de negocio o la
+forma de trabajo de esta carpeta, actualizá este `AGENTS.md` (y el raíz si
+aplica) en el mismo cambio. Ver §8 del [`AGENTS.md` raíz](../../AGENTS.md#8-mantener-esta-documentación).
+
+- **El guion es de Mariana.** Si cambia, cambia primero en su nota de Research
+  Desk y después aquí, en el mismo cambio (y al revés nunca).
+- Una herramienta nueva → su definición, su `seccion` si escribe, su test y,
+  si cambia lo que el producto hace, el manual de Research Desk (skill
+  `sync-research-desk`).

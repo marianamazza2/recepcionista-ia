@@ -10,6 +10,8 @@
 // (PC-02). Por eso los caminos de aquí son 'negocio/…', sin ningún id.
 // =============================================================================
 
+import { ErrorApi } from '../error-api';
+
 export interface SesionPortal {
   sessionToken: string;
   email: string;
@@ -52,16 +54,9 @@ export function guardarSesion(s: SesionPortal | null): void {
   for (const f of oyentes) f(s);
 }
 
-/** Un error que la API explicó con palabras. */
-export class ErrorApi extends Error {
-  constructor(
-    readonly status: number,
-    mensaje: string,
-    readonly datos: Record<string, unknown> = {},
-  ) {
-    super(mensaje);
-  }
-}
+// La MISMA clase que el panel (admin/src/error-api.ts): así `mensajeDe()`
+// reconoce el error y se enseña la frase que mandó la API, no la genérica.
+export { ErrorApi } from '../error-api';
 
 async function crudo(metodo: string, ruta: string, body?: unknown, token?: string): Promise<Response> {
   const headers: Record<string, string> = {};

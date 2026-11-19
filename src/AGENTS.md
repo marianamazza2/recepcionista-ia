@@ -5,15 +5,17 @@ TypeScript sobre Node 22, ESM, sin framework. Las cuatro capas del maestro
 
 ```
 src/
-├── api/              CANAL (HTTP)   handlers (Request) => Response: widget, chat, página de la cita y el panel (admin/)
+├── api/              CANAL (HTTP)   handlers (Request) => Response: widget, chat, página de la cita, el panel (admin/) y el portal del cliente
 ├── adapters/
 │   ├── channels/     CANAL          lo que pasa con un mensaje de cada canal (web-widget.ts)
 │   ├── booking/      ADAPTADORES    la agenda detrás de BookingAdapter (SupabaseAdapter)
 │   ├── email/        ADAPTADORES    el envío de emails detrás de EmailProvider (PW-18)
 │   └── sms/          ADAPTADORES    el envío de SMS detrás de SmsProvider (apagado desde PW-18)
-├── core/             NÚCLEO         el loop del agente, prompt, herramientas, guardrails. Igual para todos
+├── core/             NÚCLEO         el loop del agente de las clientas, prompt, herramientas, guardrails. Igual para todos
+├── alta/             NÚCLEO         el OTRO agente: el chat del portal (el alta por chat y los cambios), con su prompt y sus herramientas (Fase 9)
+├── portal/           cuentas        contraseña (scrypt), sesión y emails del portal del cliente (PC-02, PC-11)
 ├── config/           CONFIGURACIÓN  lo que el agente sabe de UN negocio, leído de la base
-├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget, borrado (PD-13)
+├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget, borrado (PD-13), portal (Fase 9)
 ├── citas/            emails de confirmación, cancelación y código (con su .ics), página del enlace, agenda y citas a mano (PW-18, PA-16, PW-10, PI-14)
 ├── cli/              comandos de npm (chat, eval, consumo, build del widget, cuenta del panel)
 ├── dev/              servidor local de la demo y del panel, y la compilación del widget y del panel
@@ -25,14 +27,20 @@ src/
 ```
 api → adapters/channels → core → config, db, adapters/booking
                        ↘ citas → core (time, tools/common, tools/reservas → plazo de PR-07), adapters/email, db
-api/admin → db (negocios, visor, personas, usage), citas (manual), adapters/channels (probar el chat)
+api/admin → db (negocios, visor, personas, usage, portal), citas (manual), adapters/channels (probar el chat), portal (emails)
+api/portal → api/admin/negocio (LAS MISMAS rutas de configuración, PC-05), db/portal, portal, alta
+alta → db (negocios, portal, conversations, widget, usage), citas (manual), core (solo agent: tipos y BETA_FALLBACKS)
 citas/manual → adapters/booking (con manual: true), config, core (time, phone), db
 cli, dev, vercel → cualquiera
 ```
 
 - **`core/` nunca importa** de `api/`, `adapters/channels/`, `adapters/email/`, `adapters/sms/`,
-  `citas/`, `cli/` ni `dev/`. Un canal nuevo (WhatsApp, Fase 8) se enchufa
-  encima sin tocar el núcleo.
+  `citas/`, `cli/`, `dev/` ni `alta/`. Un canal nuevo (WhatsApp, Fase 8) se
+  enchufa encima sin tocar el núcleo.
+- **`alta/` no es `core/`** (Fase 9): es el agente que habla con el NEGOCIO,
+  no con la clienta. Tiene su prompt (el guion de Mariana), sus herramientas y
+  su loop; de `core/` solo usa tipos y el reloj. Ver
+  [`src/alta/AGENTS.md`](alta/AGENTS.md).
 - `core/` habla con la agenda **solo** a través de la interfaz
   `BookingAdapter` (`adapters/booking/types.ts`), nunca con SQL de citas.
 - `db/` no conoce el agente (la única excepción es `db/usage.ts`, que usa la
@@ -86,6 +94,16 @@ cli, dev, vercel → cualquiera
   para la prueba en el navegador). Desde la Fase 4 hay un tercer origen, el
   panel (:4312, `PANEL_PORT`): `dev/panel-build.ts` compila `admin/` con Vite
   (devDependency, también) y lo vuelve a compilar al cambiar un archivo.
+
+## Un solo sitio para los datos (PC-05)
+
+Las rutas que editan la configuración de un negocio viven en
+`api/admin/negocio.ts` y las montan **los dos** routers: el panel bajo
+`/api/admin/negocios/:id/…` (el negocio sale de la URL) y el portal bajo
+`/api/portal/negocio/…` (sale de la **sesión**, PC-02). Lo único que cambia es
+`ver`: con `'portal'` no se ve ni se cambia el tope (PC-09). El chat del alta
+llama a las mismas funciones de `db/negocios.ts`. **Una regla nueva se escribe
+una vez.**
 
 ## Validaciones del panel
 

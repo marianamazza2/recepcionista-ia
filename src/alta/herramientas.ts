@@ -613,7 +613,9 @@ const cerrarDia: HerramientaPortal = {
         desde_hora: { type: ['string', 'null'], description: 'HH:MM si son solo unas horas.' },
         hasta_hora: { type: ['string', 'null'] },
         motivo: { type: ['string', 'null'] },
-        citas: { type: ['string', 'null'], enum: ['preguntar', 'dejar', 'cancelar', null], description: 'Qué hacer con las citas de ese día. La primera vez, "preguntar".' },
+        // Sin null: la API rechaza un enum con tipo ['string', 'null'] y el chat
+        // entero dejaba de responder (alta:eval, 19/11/2026). Omitirlo = "preguntar".
+        citas: { type: 'string', enum: ['preguntar', 'dejar', 'cancelar'], description: 'Qué hacer con las citas de ese día. La primera vez, "preguntar" (o no lo pongas).' },
       },
       required: ['fecha'],
       additionalProperties: false,
@@ -840,7 +842,13 @@ export function herramientasDe(modo: 'alta' | 'portal'): readonly HerramientaPor
 }
 
 export function definiciones(modo: 'alta' | 'portal'): Anthropic.Beta.BetaTool[] {
-  return herramientasDe(modo).map((h) => h.definicion);
+  const defs = herramientasDe(modo).map((h) => h.definicion);
+  // Después del alta van casi todas las herramientas juntas y, en modo
+  // estricto, la API las rechaza: «the compiled grammar is too large»
+  // (alta:eval, 19/11/2026). Ahí van sin `strict`: cada herramienta ya
+  // comprueba en el código lo que recibe (fechas, horas, nombres), que es lo
+  // que de verdad protege los datos (§1 del AGENTS.md raíz).
+  return modo === 'portal' ? defs.map(({ strict: _strict, ...d }) => d) : defs;
 }
 
 export interface EjecucionHerramienta {

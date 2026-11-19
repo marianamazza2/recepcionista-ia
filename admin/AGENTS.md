@@ -1,17 +1,49 @@
-# admin/ — reglas del panel interno
+# admin/ — el panel interno y el portal del cliente
 
-Es **la herramienta de Mariana** (Fase 4), no la del cliente (Fase 9). Ve
-todos los negocios, sus conversaciones y teléfonos: tiene que estar cerrada.
-Qué hace y cómo se usa: [`README.md`](README.md).
+**Dos apps, un proyecto.** Desde la Fase 9, `admin/` tiene dos entradas:
+
+| Entrada | Quién | Dónde | Habla con |
+|---|---|---|---|
+| `index.html` → `src/main.tsx` | **Mariana** (Fase 4) | `/panel/` | `/api/admin/…` |
+| `portal.html` → `src/portal/main.tsx` | **el cliente** (Fase 9) | `/portal/` | `/api/portal/…` |
+
+Están juntas a propósito (D-88): así el portal reutiliza **tal cual** la
+ficha, la agenda, los estilos y las piezas comunes, en vez de duplicarlas y,
+con ellas, las reglas (PC-05). Cada una tiene su config de Vite
+(`vite.config.ts` y `vite.portal.config.ts`) y su carpeta de salida (`dist` y
+`dist-portal`).
+
+El panel ve todos los negocios, sus conversaciones y teléfonos: tiene que
+estar cerrado. El portal ve **solo el suyo**. Qué hace cada uno y cómo se
+usan: [`README.md`](README.md).
+
+## Pantallas compartidas: `negocio-api.tsx`
+
+La ficha (`src/paginas/Ficha.tsx`) y la agenda (`src/paginas/Agenda.tsx`) son
+las mismas en los dos sitios. No llaman a una API concreta: piden la de su
+contexto con `useApiNegocio()` y usan caminos **relativos al negocio**
+(`datos`, `servicios/:id`, `agenda`). Cada app pone el suyo con
+`<ProveedorNegocio>`.
+
+`ver` ('panel' | 'portal') es lo **único** que cambia: con `'portal'` no se
+ven el tope mensual, activar/pausar, la clave del widget ni el código para
+pegar en la web (PC-09). **No cambia ninguna validación.** Si hace falta algo
+que solo vale en un sitio, va detrás de `ver`, nunca en una copia de la
+pantalla.
 
 ## Reglas
 
-1. **Solo habla con nuestra API** (`/api/admin/…`, mismo origen), nunca con
-   Supabase directamente: ni `supabase-js`, ni claves en el navegador. El
-   login también pasa por la API (`POST /api/admin/sesion`).
+1. **Solo habla con nuestra API** (`/api/admin/…` el panel, `/api/portal/…`
+   el portal; mismo origen), nunca con Supabase directamente: ni
+   `supabase-js`, ni claves en el navegador. El login también pasa por la API
+   (`POST /api/admin/sesion`, `POST /api/portal/sesion`).
 2. **La sesión, en `sessionStorage`** (se pierde al cerrar la pestaña), en
    `try/catch`. El token va en `Authorization`; nada de cookies. Un 401 se
-   intenta renovar una vez y, si no, vuelta a "Entrar" (`src/api.ts`).
+   intenta renovar una vez y, si no, vuelta a "Entrar" (`src/api.ts`). El
+   portal tiene su propia sesión y su propia clave de almacenamiento
+   (`src/portal/api.ts`): son dos mundos y un token de uno no vale en el otro.
+   `ErrorApi` sí es **la misma clase** para los dos (`src/error-api.ts`), para
+   que `mensajeDe()` enseñe la frase que mandó la API.
 3. **Las reglas de negocio no se repiten aquí.** El panel no valida horarios,
    solapes, colores ni límites: los valida la base y la API devuelve el error
    con palabras, que se enseña tal cual (`Aviso`). Aquí solo hay ayudas de
@@ -43,14 +75,27 @@ Qué hace y cómo se usa: [`README.md`](README.md).
 8. **Sin router ni librería de estado**: rutas por hash (`#/negocios/…`,
    `useRuta`) y `useCarga`/`useAccion` en `src/ui.tsx`. Dependencias solo de
    desarrollo (React, Vite, Tailwind): lo publicado son estáticos.
-9. `dist/` es generado (lo compilan `npm run dev`, `npm run build:panel` y
-   `npm run build:vercel`); no se edita a mano.
+9. `dist/` y `dist-portal/` son generados (los compilan `npm run dev`,
+   `npm run build:panel`, `npm run build:portal` y `npm run build:vercel`); no
+   se editan a mano.
+10. **La agenda es visual** (PC-16) y la dibuja una rejilla propia con CSS, sin
+    librería de calendario (D-89). **Qué horas están abiertas no se calcula
+    aquí**: viene de la API (`app.tramos_efectivos`), así que lo sombreado es
+    exactamente lo que el motor considera cerrado.
+11. **El portal, durante el alta, es solo el chat** (PC-11): las secciones
+    aparecen al terminar. El resumen para confirmar lo dibuja
+    `src/portal/Chat.tsx` con los datos que manda el agente: **el formato no
+    lo inventa el modelo**.
 
 ## Tests
 
-`npm run test:e2e` incluye `tests/e2e/panel.e2e.ts` (Chrome, cuentas falsas,
-modelo simulado). La API que hay debajo la cubre `tests/admin-api.test.ts`.
-`npm run typecheck` comprueba también `admin/` (`tsc -p admin`).
+`npm run test:e2e` incluye `tests/e2e/panel.e2e.ts` y
+`tests/e2e/portal.e2e.ts` (Chrome, cuentas falsas, modelo simulado): el
+segundo hace el camino entero, de la invitación a la cita, y deja capturas de
+cada pantalla en ordenador y en móvil (`PORTAL_CAPTURAS`). La API que hay
+debajo la cubren `tests/admin-api.test.ts`, `tests/portal-api.test.ts` y
+`tests/alta-chat.test.ts`. `npm run typecheck` comprueba también `admin/`
+(`tsc -p admin`), las dos apps.
 
 ## Si cambiás algo de acá
 

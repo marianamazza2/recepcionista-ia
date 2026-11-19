@@ -389,4 +389,27 @@ describe('el chat del portal después del alta (PC-04, PC-10, PC-06)', () => {
     expect(herramientasDelModo).not.toContain('activar_negocio');
     expect(herramientasDelModo).not.toContain('cambiar_tope');
   });
+
+  // alta:eval, 19/11/2026: un fallo de la API dejaba el turno sin respuesta en
+  // el historial y la API rechazaba TODOS los mensajes siguientes.
+  it('después de un fallo, el chat sigue: el historial queda válido', async () => {
+    const { id } = await listo(`Portal Fallo ${randomUUID().slice(0, 6)}`);
+    const r1 = await hablar(id, new ModeloSimulado([new Error('400: grammar too large')]), 'La limpieza ahora dura 75 minutos');
+    expect(r1.respuesta).toContain('problema');
+    const m = new ModeloSimulado([texto('Vale, dime otra vez qué quieres cambiar.')]);
+    const r2 = await hablar(id, m, 'Te lo repito: la limpieza dura 75 minutos');
+    expect(r2.respuesta).toBe('Vale, dime otra vez qué quieres cambiar.');
+    // Un mensaje de sistema solo puede ir justo antes del asistente o al final.
+    const msgs = m.peticiones[0]!.messages;
+    msgs.forEach((x, i) => {
+      if (x.role === 'system' && i < msgs.length - 1) expect(msgs[i + 1]!.role, `mensaje ${i}`).toBe('assistant');
+    });
+  });
+
+  it('después del alta las herramientas van sin modo estricto (la gramática sería demasiado grande)', async () => {
+    const { definiciones } = await import('../src/alta/herramientas.js');
+    expect(definiciones('portal').every((d) => !('strict' in d))).toBe(true);
+    expect(definiciones('alta').every((d) => d.strict === true)).toBe(true);
+  });
 });
+

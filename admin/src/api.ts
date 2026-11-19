@@ -8,6 +8,8 @@
 // sesión caducó y el email ya puesto (aceptación Fase 4, caso 74).
 // =============================================================================
 
+import { ErrorApi } from './error-api';
+
 export interface Sesion {
   accessToken: string;
   refreshToken: string;
@@ -50,16 +52,8 @@ export function alCambiarSesion(f: (s: Sesion | null) => void): () => void {
   return () => oyentes.delete(f);
 }
 
-/** Un error que la API explicó con palabras. */
-export class ErrorApi extends Error {
-  constructor(
-    readonly status: number,
-    mensaje: string,
-    readonly datos: Record<string, unknown> = {},
-  ) {
-    super(mensaje);
-  }
-}
+// Lo comparten el panel y el portal (admin/src/error-api.ts).
+export { ErrorApi } from './error-api';
 
 async function crudo(metodo: string, ruta: string, body?: unknown, token?: string): Promise<Response> {
   const headers: Record<string, string> = {};

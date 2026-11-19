@@ -203,7 +203,14 @@ async function ejecutarTurno(
   const yaGastado = total(await usageAcumulado(sql, businessId, conversationId));
 
   const fija = async (texto: string, motivo: string): Promise<RespuestaPortal> => {
-    await appendMessages(sql, businessId, conversationId, [{ rol: 'assistant', contenido: texto, mensajes: [], extra: { respuesta_fija: motivo } }]);
+    // A diferencia del agente de las clientas (que tras un error deriva y no
+    // vuelve a llamar al modelo, PA-06), este chat sigue. La respuesta fija va
+    // también al historial como mensaje del asistente: si no, el turno queda
+    // con el mensaje del cliente y el contexto sin respuesta y la API rechaza
+    // TODOS los mensajes siguientes (alta:eval, 19/11/2026).
+    const ultimo = mensajes.at(-1);
+    const delAsistente: MessageParam[] = ultimo?.role === 'assistant' ? [] : [{ role: 'assistant', content: [{ type: 'text', text: texto }] }];
+    await appendMessages(sql, businessId, conversationId, [{ rol: 'assistant', contenido: texto, mensajes: delAsistente, extra: { respuesta_fija: motivo } }]);
     await registrar(deps, businessId, conversationId, p.externalId, motivo);
     const estado = await estadoDelAlta(sql, businessId);
     return { respuesta: texto, resumen: ctx.resumen ?? null, altaTerminada: estado.terminadaAt !== null, seccion: estado.seccion, modo, aviso: 'error' };

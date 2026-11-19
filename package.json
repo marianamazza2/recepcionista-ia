@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p widget && tsc --noEmit -p admin",
     "chat": "tsx src/cli/chat.ts",
     "agent:eval": "tsx src/cli/eval.ts",
+    "alta:eval": "tsx src/cli/eval-alta.ts",
     "dev": "tsx src/dev/server.ts",
     "consumo": "tsx src/cli/consumo.ts",
     "build:widget": "tsx src/cli/build-widget.ts",

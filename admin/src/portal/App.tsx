@@ -24,16 +24,22 @@ import type { Negocio } from '../api';
 import { ProveedorNegocio } from '../negocio-api';
 import { Agenda } from '../paginas/Agenda';
 import { Ficha } from '../paginas/Ficha';
-import { Aviso, Cargando, useCarga, useRuta } from '../ui';
+import { Aviso, Cargando, ir, useCarga, useRuta } from '../ui';
 
 export function App() {
   const [sesion, setSesion] = useState<SesionPortal | null>(sesionGuardada());
   useEffect(() => alCambiarSesion(setSesion), []);
   const ruta = useRuta();
 
+  // Con la cuenta ya creada, el enlace deja de llevar a ninguna parte.
+  useEffect(() => {
+    if (sesion && ruta[0] === 'invitacion') ir('');
+  }, [sesion, ruta]);
+
   // PC-02: la única puerta para crear la cuenta.
-  if (ruta[0] === 'invitacion' && ruta[1]) return <CrearCuenta token={ruta[1]} />;
+  if (ruta[0] === 'invitacion' && ruta[1] && !sesion) return <CrearCuenta token={ruta[1]} />;
   if (!sesion) return <Entrar />;
+  if (ruta[0] === 'invitacion') return <Cargando />;
   return <Dentro sesion={sesion} ruta={ruta} />;
 }
 
