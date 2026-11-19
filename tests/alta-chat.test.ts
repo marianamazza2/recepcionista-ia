@@ -293,6 +293,31 @@ describe('el alta por chat (PC-03)', () => {
   });
 });
 
+describe('una conversación del alta muy larga (alta:eval, 19/11/2026)', () => {
+  it('antes de llenarse, sigue en otra nueva sin perder lo guardado ni volver a empezar', async () => {
+    const id = await negocioNuevo(`Alta Larga ${randomUUID().slice(0, 6)}`);
+    await hablar(id, new ModeloSimulado([texto('¿Empezamos?')]), 'Hola');
+    const antes = await estadoDelAlta(sql, id);
+    // La conversación ya gastó casi todo su tope (un cliente que habló mucho).
+    await sql`
+      insert into public.messages (business_id, conversation_id, rol, contenido, tool_calls)
+      values (${id}, ${antes.conversationId}, 'assistant', null,
+              ${sql.json({ mensajes: [], usage: { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 590000, cache_creation_input_tokens: 0 } })})`;
+    const m = new ModeloSimulado([texto('Seguimos: ¿cuál es el teléfono del local?')]);
+    const r = await hablar(id, m, 'La dirección es Calle Mayor 12, 28013 Madrid');
+    expect(r.respuesta).toBe('Seguimos: ¿cuál es el teléfono del local?');
+    const despues = await estadoDelAlta(sql, id);
+    expect(despues.conversationId).not.toBe(antes.conversationId);
+    // La nueva empieza limpia: solo el mensaje de ahora y el aviso de que es continuación.
+    const msgs = m.peticiones[0]!.messages;
+    expect(msgs).toHaveLength(2);
+    expect(JSON.stringify(msgs[1])).toContain('sigue a otra que se hizo muy larga');
+    // Y la nueva también va aparte del tope (PC-14).
+    const [c] = await sql<{ alta: boolean }[]>`select alta from public.conversations where id = ${despues.conversationId}`;
+    expect(c!.alta).toBe(true);
+  });
+});
+
 describe('el chat del portal después del alta (PC-04, PC-10, PC-06)', () => {
   /** Un negocio ya dado de alta y con el alta terminada. */
   async function listo(nombre: string): Promise<{ id: string }> {

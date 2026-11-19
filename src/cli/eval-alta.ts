@@ -106,6 +106,7 @@ function contestar(r: RespuestaPortal, estado: { servicios: number; profesionale
     estado.servicios++;
     return estado.servicios === 1 ? 'Limpieza facial.' : 'Peeling químico.';
   }
+  if (/seguido|partido|por la tarde|a qu[eé] hora (abr|empie|cierr)/.test(t)) return 'Partido: de 10 a 14 y de 15 a 18, de lunes a viernes. El fin de semana, cerrado.';
   if (/d[ií]as y entre qu[eé] horarios|est[aá] abierto|horario del local|qu[eé] horario/.test(t)) return 'De lunes a viernes de 9 a 18, y los sábados de 10 a 14. Domingo cerrado.';
   if (/antelaci[oó]n/.test(t)) return 'Sí, con 2 horas de antelación.';
   if (/dentro del plazo|menos de/.test(t)) return 'Cancélala igual y recuérdale la política.';
@@ -228,6 +229,98 @@ const ESCENARIOS: Escenario[] = [
       return {
         ok: d === 75 && m?.b === 10 && n > 0,
         detalle: `duración de la limpieza: ${d ?? '(sin cambiar)'}; margen: ${m?.b}; ausencias guardadas: ${n}; mensajes después del alta: ${charla.respuestas.length}`,
+        charla,
+      };
+    },
+  },
+  {
+    titulo: 'Todavía no quiere empezar → se despide sin seguir preguntando (plan F-37)',
+    async correr(e) {
+      const id = await negocioNuevo(e, 'Todavia no');
+      const charla: Charla = { respuestas: [], texto: '' };
+      await decir(e, id, 'Hola', charla);
+      const r = await decir(e, id, 'Todavía no, ahora no puedo. Lo hago otro día.', charla);
+      const sigue = /sector|direcci[oó]n|servicio/i.test(r.respuesta);
+      const [b] = await e.sql<{ sector: string | null }[]>`select sector from public.businesses where id = ${id}`;
+      return { ok: !sigue && b!.sector === null, detalle: `sigue preguntando: ${sigue}; guardó algo: ${b!.sector !== null}`, charla };
+    },
+  },
+  {
+    titulo: 'Un alta con un cliente difícil (plan E-27 a E-35) y después un festivo encima de citas por el chat (I-50)',
+    async correr(e) {
+      const id = await negocioNuevo(e, 'Dificil');
+      const charla: Charla = { respuestas: [], texto: '' };
+      const estado = { servicios: 0, profesionales: 0 };
+      // Cada trampa salta una vez, cuando la última pregunta encaja, y se juzga
+      // con la respuesta siguiente del chat.
+      const trampas: { n: string; cuando: (r: RespuestaPortal) => boolean; dice: string; juzga: (r: RespuestaPortal) => boolean; usada?: boolean; ok?: boolean; vista?: string }[] = [
+        { n: '27 dirección sin código postal', cuando: (r) => /direcci[oó]n/i.test(r.respuesta) && !r.resumen, dice: 'Calle Mayor 12, Madrid.', juzga: (r) => /c[oó]digo postal|CP\b/i.test(r.respuesta) },
+        { n: '28 teléfono con letras', cuando: (r) => /tel[eé]fono/i.test(r.respuesta) && !r.resumen, dice: '91O OOO OOO', juzga: (r) => /tel[eé]fono|n[uú]mero|\d{3} \d{3} \d{3}/i.test(r.respuesta) && r.respuesta.includes('?') },
+        { n: '33 pregunta fuera de tema', cuando: (r) => /tel[eé]fono|n[uú]mero/i.test(r.respuesta) && !r.resumen, dice: 'Oye, ¿y esto cuánto me va a costar al mes?', juzga: (r) => !/\d+\s?(€|euros)/i.test(r.respuesta) && r.respuesta.includes('?') },
+        { n: '31 dos cosas en un mensaje', cuando: (r) => /servicio que quieres|cu[aá]l es el servicio|primer servicio/i.test(r.respuesta), dice: 'Limpieza facial: dura 60 minutos y cuesta 55 euros.', juzga: (r) => !/cu[aá]nto dura|duraci[oó]n|valor|precio/i.test(r.respuesta) },
+        { n: '35 se pasa al inglés', cuando: (r) => /margen|recoger|minutos antes/i.test(r.respuesta), dice: 'Sorry, I prefer English: 10 minutes after each one.', juzga: (r) => !/problema/i.test(r.respuesta) && r.respuesta.length > 20 },
+        { n: '32 cambia de idea en el resumen', cuando: (r) => !!r.resumen && /servicio/i.test(r.resumen.titulo) && estado.servicios >= 2, dice: 'Quita el peeling, al final no lo vamos a hacer.', juzga: (r) => !/peeling químico,/i.test(r.respuesta) || /quit|sin el peeling|solo.*limpieza/i.test(r.respuesta) },
+        { n: '30 profesional sin servicios', cuando: (r) => /qu[eé] servicios hace|qu[eé] tratamientos hace|\bhace (la|el|los|las)\b/i.test(r.respuesta), dice: 'Ninguno por ahora, está aprendiendo.', juzga: (r) => r.respuesta.includes('?') && /servicio|limpieza|activar|hueco/i.test(r.respuesta) },
+        { n: '29 tramos que se pisan', cuando: (r) => /d[ií]as y entre qu[eé] horarios|est[aá] abierto/i.test(r.respuesta), dice: 'De lunes a viernes de 10 a 14 y de 13 a 18.', juzga: (r) => /pisa|solap|coinciden|13|14/i.test(r.respuesta) && r.respuesta.includes('?') },
+      ];
+      let r = await decir(e, id, 'Hola', charla);
+      let pendiente: (typeof trampas)[number] | null = null;
+      for (let i = 0; i < 60 && !r.altaTerminada; i++) {
+        if (pendiente) {
+          pendiente.ok = pendiente.juzga(r);
+          pendiente.vista = r.respuesta.replace(/\s+/g, ' ').slice(0, 160);
+          pendiente = null;
+        }
+        const t = trampas.find((x) => !x.usada && x.cuando(r));
+        let msg: string;
+        if (t) {
+          t.usada = true;
+          pendiente = t;
+          msg = t.dice;
+          if (t.n.startsWith('31')) estado.servicios++;
+        } else msg = contestar(r, estado);
+        r = await decir(e, id, msg, charla);
+      }
+      const servicios = await e.sql<{ nombre: string }[]>`select nombre from public.services where business_id = ${id} and activo`;
+      const [b] = await e.sql<{ direccion: string | null; telefono_humano: string | null }[]>`select direccion, telefono_humano from public.businesses where id = ${id}`;
+      const tramos = await e.sql<{ a: string; c: string }[]>`
+        select to_char(hora_apertura, 'HH24:MI') a, to_char(hora_cierre, 'HH24:MI') c from public.business_hours where business_id = ${id} and staff_id is null and weekday = 1 order by 1`;
+
+      // I-50: después del alta, un cierre encima de una cita, por el chat.
+      let festivo = 'no se probó (el alta no terminó)';
+      let festivoOk = false;
+      if (r.altaTerminada) {
+        const [n] = await e.sql<{ id: string }[]>`select id from public.staff where business_id = ${id} limit 1`;
+        const [sv] = await e.sql<{ id: string }[]>`select id from public.services where business_id = ${id} and activo limit 1`;
+        const [c] = await e.sql<{ id: string }[]>`insert into public.customers (business_id, telefono, nombre) values (${id}, '+34611999001', 'Ana Prueba') returning id`;
+        const hoy = new Date();
+        const d = new Date(hoy.getTime() + ((8 - hoy.getDay()) % 7 || 7) * 86400000); // el próximo lunes
+        const fecha = d.toISOString().slice(0, 10);
+        await e.sql`select public.book_appointment(${id}::uuid, ${sv!.id}::uuid, ${n!.id}::uuid, ${c!.id}::uuid, ${fecha + 'T09:00:00Z'}::timestamptz)`;
+        const ch: Charla = { respuestas: [], texto: '' };
+        const a = await decir(e, id, `El lunes ${d.getDate()} cerramos todo el día.`, ch);
+        let r2 = a;
+        for (let i = 0; i < 2 && !/ana|cita/i.test(r2.respuesta); i++) r2 = await decir(e, id, 'Sí.', ch);
+        const [antes] = await e.sql<{ n: number }[]>`select count(*)::int as n from public.time_off where business_id = ${id}`;
+        const avisa = /ana|cita/i.test(r2.respuesta);
+        r2 = await decir(e, id, 'Déjala programada, que ya la llamamos nosotras.', ch);
+        for (let i = 0; i < 2; i++) {
+          const [x] = await e.sql<{ n: number }[]>`select count(*)::int as n from public.time_off where business_id = ${id}`;
+          if (x!.n > 0) break;
+          r2 = await decir(e, id, 'Sí.', ch);
+        }
+        const [desp] = await e.sql<{ n: number }[]>`select count(*)::int as n from public.time_off where business_id = ${id}`;
+        const [cita] = await e.sql<{ estado: string }[]>`select estado from public.appointments where business_id = ${id}`;
+        festivoOk = avisa && antes!.n === 0 && desp!.n === 1 && cita!.estado === 'confirmada';
+        festivo = `avisa de la cita antes de guardar: ${avisa}; guardado sin decidir: ${antes!.n > 0}; guardado al decidir: ${desp!.n === 1}; la cita sigue: ${cita!.estado}`;
+        charla.respuestas.push(...ch.respuestas);
+      }
+      const det = trampas.map((t) => `${t.ok ? '✓' : '✗'} ${t.n}${t.usada ? '' : ' (no salió)'}${t.ok ? '' : ` → «${t.vista ?? ''}»`}`).join(' | ');
+      const okTrampas = trampas.every((t) => t.ok);
+      const okDatos = servicios.length === 1 && !!b?.direccion?.includes('28') && b?.telefono_humano === '+34910000000' && tramos.length >= 1;
+      return {
+        ok: r.altaTerminada && okTrampas && okDatos && festivoOk,
+        detalle: `alta terminada: ${r.altaTerminada}; ${det}; servicios: ${servicios.map((x) => x.nombre).join(', ')}; dirección: ${b?.direccion}; teléfono: ${b?.telefono_humano}; lunes: ${tramos.map((t) => `${t.a}–${t.c}`).join(' y ')}; I-50: ${festivo}`,
         charla,
       };
     },

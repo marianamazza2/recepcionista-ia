@@ -620,7 +620,8 @@ const ESCENARIOS: Escenario[] = [
         e,
         null,
         [
-          `[eval] Hola, quiero una limpieza facial profunda el ${comoLoDiria(martes)} a las 17:00, me da igual quién. Me llamo Ada Prueba.`,
+          // A las 11:00: el escenario 1 reserva ese martes a las 17:00 y se pisaban.
+          `[eval] Hola, quiero una limpieza facial profunda el ${comoLoDiria(martes)} a las 11:00, me da igual quién. Me llamo Ada Prueba.`,
           `No uso email, prefiero no darlo. Mi móvil es ${tel}.`,
           'Sí, resérvala.',
           'Sí, confirmo.',

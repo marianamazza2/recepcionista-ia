@@ -56,7 +56,12 @@ function lunesDe(fecha: string): string {
 }
 
 function diaLargo(fecha: string): string {
-  return new Date(`${fecha}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  return mayuscula(new Date(`${fecha}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }));
+}
+
+/** Solo la primera letra: «Martes, 15 de octubre», no «Martes, 15 De Octubre» (que es lo que hace `capitalize` de CSS). */
+function mayuscula(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function diaCorto(fecha: string): string {
@@ -141,7 +146,7 @@ export function Agenda({ negocio: n }: { negocio: Negocio }) {
         </div>
       </div>
 
-      <p className="text-sm capitalize text-slate-600">
+      <p className="text-sm text-slate-600">
         {vista === 'dia' ? diaLargo(actual) : `Semana del ${fechaCorta(lunesDe(actual))} al ${fechaCorta(moverDia(lunesDe(actual), 6))}`}
       </p>
 
@@ -204,6 +209,37 @@ function Lineas({ desde, hasta }: { desde: number; hasta: number }) {
  * citas encima. Los tramos vienen de la base, así que el sombreado es
  * exactamente lo que el motor considera cerrado.
  */
+/**
+ * Las citas que coinciden en el tiempo se reparten la columna en carriles,
+ * una al lado de otra (en la semana, varias profesionales a la misma hora).
+ * Sin esto se tapaban unas a otras (aceptación Fase 9, caso 74).
+ */
+export function carriles(citas: { id: string; horaInicio: string; horaFin: string }[]): Map<string, { carril: number; de: number }> {
+  const orden = [...citas].sort((a, b) => minutos(a.horaInicio) - minutos(b.horaInicio) || minutos(b.horaFin) - minutos(a.horaFin));
+  const out = new Map<string, { carril: number; de: number }>();
+  let grupo: { id: string; carril: number }[] = [];
+  let finDelGrupo = -1;
+  let finPorCarril: number[] = [];
+  const cerrar = () => {
+    const de = finPorCarril.length;
+    for (const g of grupo) out.set(g.id, { carril: g.carril, de });
+    grupo = [];
+    finPorCarril = [];
+  };
+  for (const c of orden) {
+    const ini = minutos(c.horaInicio);
+    const fin = minutos(c.horaFin);
+    if (ini >= finDelGrupo) cerrar();
+    let carril = finPorCarril.findIndex((f) => f <= ini);
+    if (carril === -1) carril = finPorCarril.push(fin) - 1;
+    else finPorCarril[carril] = fin;
+    grupo.push({ id: c.id, carril });
+    finDelGrupo = Math.max(finDelGrupo, fin);
+  }
+  cerrar();
+  return out;
+}
+
 function Columna({
   tramos,
   citas,
@@ -223,6 +259,7 @@ function Columna({
   onCita: (c: CitaAgenda) => void;
   etiquetaProfesional?: boolean;
 }) {
+  let lugar: Map<string, { carril: number; de: number }> | undefined;
   /** Pinchar en el hueco: la hora sale de dónde se pinchó, redondeada a 5 min. */
   const alPinchar = (e: React.MouseEvent<HTMLDivElement>) => {
     const caja = e.currentTarget.getBoundingClientRect();
@@ -249,7 +286,8 @@ function Columna({
         );
       })}
       <Lineas desde={desde} hasta={hasta} />
-      {citas.map((c) => {
+      {citas.map((c, _i, todas) => {
+        const pos = (lugar ??= carriles(todas)).get(c.id) ?? { carril: 0, de: 1 };
         const d = Math.max(desde, minutos(c.horaInicio));
         const h = Math.min(hasta, minutos(c.horaFin));
         const cancelada = c.estado === 'cancelada';
@@ -257,10 +295,15 @@ function Columna({
           <button
             key={c.id}
             type="button"
-            className={`absolute inset-x-0.5 overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${
+            className={`absolute overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm ${
               cancelada ? 'border-slate-200 bg-slate-100 text-slate-400 line-through' : 'border-slate-900/10 bg-emerald-100 text-emerald-950 hover:bg-emerald-200'
             }`}
-            style={{ top: (d - desde) * PX_POR_MINUTO, height: Math.max(18, (h - d) * PX_POR_MINUTO - 2) }}
+            style={{
+              top: (d - desde) * PX_POR_MINUTO,
+              height: Math.max(18, (h - d) * PX_POR_MINUTO - 2),
+              left: `calc(${(pos.carril / pos.de) * 100}% + 2px)`,
+              width: `calc(${100 / pos.de}% - 4px)`,
+            }}
             onClick={() => onCita(c)}
           >
             <span className="font-medium">{c.horaInicio}</span> {c.clienta.nombre ?? c.clienta.telefono}
@@ -342,8 +385,8 @@ function RejillaSemana({
         <div className="flex border-b border-slate-200 text-sm">
           <div className="w-12 flex-none" />
           {dias.map((d) => (
-            <div key={d.fecha} className={`min-w-0 flex-1 truncate border-l border-slate-200 px-2 py-2 capitalize ${d.fecha === hoy ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
-              {diaCorto(d.fecha)}
+            <div key={d.fecha} className={`min-w-0 flex-1 truncate border-l border-slate-200 px-2 py-2 ${d.fecha === hoy ? 'font-semibold text-slate-900' : 'text-slate-600'}`}>
+              {mayuscula(diaCorto(d.fecha))}
             </div>
           ))}
         </div>

@@ -34,6 +34,9 @@ import { utcToLocal } from '../core/time.js';
 
 type MessageParam = Anthropic.Beta.BetaMessageParam;
 
+/** A partir de esta fracción del tope de tokens, el turno siguiente empieza otra conversación. */
+const UMBRAL_NUEVA_CONVERSACION = 0.75;
+
 /** Tope de vueltas y de tokens de una conversación del portal. */
 export const LIMITES_PORTAL = {
   maxVueltas: 12,
@@ -177,7 +180,21 @@ async function ejecutarTurno(
   },
 ): Promise<RespuestaPortal> {
   const { sql, model, settings } = deps;
-  const { businessId, conversationId, modo, now, onError } = p;
+  const { businessId, modo, now, onError } = p;
+  let conversationId = p.conversationId;
+
+  // Una conversación muy larga se cambia por otra nueva ANTES de que se
+  // llene (alta:eval, 19/11/2026: con un cliente que habla mucho, el alta
+  // llegaba al límite casi al final y se quedaba bloqueada para siempre). Lo
+  // confirmado ya está guardado sección a sección y `portal.alta` sabe por
+  // dónde va: la nueva sigue desde ahí, sin repetir nada.
+  let continuacion = false;
+  if (total(await usageAcumulado(sql, businessId, conversationId)) >= LIMITES_PORTAL.maxTokensConversacion * UMBRAL_NUEVA_CONVERSACION) {
+    const nueva = await createConversation(sql, businessId, null, 'web', { alta: true });
+    await guardarEstadoDelAlta(sql, businessId, { conversationId: nueva.id });
+    conversationId = nueva.id;
+    continuacion = true;
+  }
 
   const ctx: ContextoPortal = {
     sql,
@@ -194,7 +211,19 @@ async function ejecutarTurno(
   const historial = await loadHistory(sql, businessId, conversationId);
   const turno: MessageParam[] = [
     { role: 'user', content: [{ type: 'text', text: p.texto }] },
-    { role: 'system', content: [{ type: 'text', text: contextoDelDia(p.ficha, now()) }] },
+    {
+      role: 'system',
+      content: [
+        {
+          type: 'text',
+          text:
+            contextoDelDia(p.ficha, now()) +
+            (continuacion
+              ? '\nEsta conversación sigue a otra que se hizo muy larga. Lo que el cliente ya confirmó está guardado: míralo con ver_configuracion si lo necesitas. No vuelvas a saludar ni a preguntar lo ya guardado: contesta a su mensaje y sigue por la sección en la que vas.'
+              : ''),
+        },
+      ],
+    },
   ];
   await appendMessages(sql, businessId, conversationId, [{ rol: 'user', contenido: p.texto, mensajes: turno, externalId: p.externalId }]);
   const mensajes = [...historial, ...turno];
