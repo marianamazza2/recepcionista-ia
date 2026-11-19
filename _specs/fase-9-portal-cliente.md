@@ -69,6 +69,7 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 - **Turnos sueltos** (PC-06): un cambio en el motor (`app.tramos_efectivos` / `app.slot_es_valido`) con su migración y sus tests SQL: en un festivo del local, el turno suelto abre solo esa profesional y esas horas. Es la única parte que toca la regla de "hueco válido".
 - **La agenda visual** (PC-16): una vista de día con una columna por profesional y otra de semana, compartida por el portal y tu panel. ⚠️ **Decisión técnica a tomar al empezar (D-):** las librerías de calendario conocidas cobran la vista "por profesional" (por ejemplo, FullCalendar la tiene en su versión de pago) y las dependencias se mantienen mínimas (`src/AGENTS.md`). *Propuesta:* una rejilla propia con CSS (horas en filas, profesionales en columnas, la cita como un bloque), que es lo que hace falta sin arrastrar. Cargar y cancelar reutilizan `src/citas/manual.ts` (PI-14) y su email (PW-10).
 - **La web del portal**: React + Vite + Tailwind como el panel, en su propia carpeta (`portal/`) o como otra entrada del mismo proyecto de `admin/`, reutilizando sus componentes. Se decide al empezar (D-) con lo que menos duplique.
+- **Primero que funcione; el aspecto se ajusta después** (Mariana, 19/11/2026). Nadie sabe todavía cómo tiene que lucir el portal (si lleva menú lateral, una sección de cuenta, cómo se reparte la pantalla entre el chat y lo demás): se construye con los componentes y el estilo que ya tiene el panel, que es lo que menos decisiones inventa, y una vez que esté entero y funcionando Mariana lo mira y se retoca la interfaz con ella. **No se para la fase a esperar una decisión de aspecto**: si aparece una, se elige lo más parecido al panel, se sigue y se anota para el repaso.
 - **Hosting**: el mismo proyecto de Vercel (como el panel, PI-02). Publicarlo, **solo con tu visto bueno**.
 
 ## TAREAS
@@ -154,6 +155,7 @@ Todas en `decisiones-producto.md`, con el detalle. Si alguna cambia, manda `deci
 5. La web del portal, la agenda visual y el chat de después del alta (9.4, 9.4b, 9.5).
 6. Tu vista y el aviso en tu panel (9.6).
 7. La prueba de verdad: un negocio inventado, de la invitación a la cita.
+7b. Enseñarle el portal entero a Mariana (capturas de cada pantalla, en ordenador y en móvil) y retocar la interfaz con lo que diga. El aspecto se repasa aquí, no antes.
 8. `npm run agent:eval` con los escenarios nuevos y la verificación en Supabase (`./scripts/con-supabase.sh …`).
 9. Ejecutar el plan de pruebas y publicar el informe.
 10. Documentación (9.8). Publicar el portal en Vercel **solo si Mariana lo confirma**.
