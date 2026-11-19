@@ -1480,7 +1480,12 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-08 | Zona horaria | No se pregunta: Europe/Madrid de serie; si un negocio está en otra, la cambia Mariana desde el panel interno | — | ✅ decidida 05/11/2026 |
 | PC-09 | El tope mensual de la IA | El cliente no lo ve ni lo pregunta el chat: lo pone Mariana según el plan | — | ✅ decidida 05/11/2026 |
 | PC-10 | Un festivo encima de citas, por el chat del portal | El chat avisa de las citas de ese día y pregunta si se dejan o se cancelan, como el panel (PI-21) | — | ✅ decidida 05/11/2026 |
-| PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) aparece cuando ya hay algo que enseñar; antes, nada que pueda confundir ni dejar a medias | — | ✅ decidida 13/11/2026 (cuándo aparece, ⚠️ por confirmar) |
+| PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
+| PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color, logo, dominios y privacidad), los **horarios de quien cambia cada semana** y los **festivos y ausencias** se cargan en el portal; el **tono** y la **bienvenida** del agente y **cada cuánto se ofrecen horarios** (30 min) van de serie. El cierre del chat recuerda lo que falta | — | ✅ decidida 18/11/2026 |
+| PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
+| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta | — | ✅ decidida 18/11/2026 |
+| PC-15 | Proveedor de email antes del primer cliente | Se elige y se conecta **antes de mandar el primer enlace a un cliente real** (la cuenta se confirma con un código al email) | — | ✅ decidida 18/11/2026 |
+| PC-16 | Dónde ve el negocio sus citas | Una **agenda visual en su portal**, en esta fase: el día con una columna por profesional y la semana; pinchar un hueco para cargar una cita y una cita para verla o cancelarla. La agenda del panel interno pasa a ser igual de visual. Su Google Calendar, en la Fase 7; su programa de gestión, cuando un cliente lo traiga | — | ✅ decidida 18/11/2026 |
 
 ### PC-01 · Dos altas distintas · ✅ decidida el 05/11/2026
 
@@ -1537,9 +1542,9 @@ respuesta. Al terminar, el portal es suyo: ve toda la configuración de su
 recepcionista y la cambia **a mano** o **pidiéndoselo al chat** ("Núria no
 viene el jueves").
 
-**Matiz (PC-11, 13/11/2026):** al principio el portal **no está**. La primera
-vez que entra solo ve el chat; el portal aparece cuando ya hay datos que
-enseñar y desde ahí se va completando.
+**Matiz (PC-11, 13/11/2026; concretado el 18/11/2026):** al principio el
+portal **no está**. Mientras hace el alta solo ve el chat; el portal aparece
+**al terminar**, ya con los datos.
 
 ### PC-05 · La vista de Mariana · ✅ decidida el 05/11/2026
 
@@ -1605,10 +1610,14 @@ Mariana, 13/11/2026. El camino de un cliente nuevo, de principio a fin:
    edita a mano— **no están** hasta que haya datos: con el negocio vacío no
    habría más que huecos y botones que no llevan a nada, y el cliente se
    perdería antes de empezar.
-4. Según va contestando, el portal **aparece y se va completando** (PC-04), y
-   al terminar es suyo: lo ve todo y lo cambia a mano o pidiéndoselo al chat.
+4. **Al terminar el chat aparece el portal**, ya con lo que contestó (18/11/2026),
+   y es suyo: lo ve todo y lo cambia a mano o pidiéndoselo al chat.
 
-*⚠️ Por confirmar, y a propósito (Mariana, 13/11/2026):* **cuándo aparece el
+**Decidido (Mariana, 18/11/2026, al dictar el guion):** el portal **aparece
+al terminar el chat**: «¡Excelente!…» y se ve el portal con los datos. Mientras
+contesta, solo el chat; nada que la distraiga.
+
+*Lo que se pensó el 13/11/2026, antes del guion:* **cuándo aparece el
 portal se decide con el diseño de la pantalla, no antes.** Mariana no quiere
 que el portal distraiga al cliente mientras contesta el chat del alta.
 Primero escribe el guion; después se piensa la página entera (qué se ve
@@ -1624,6 +1633,112 @@ le recibe el chat por donde lo dejó.
 ve es el chat saludando con su negocio por delante: "¡Hola, buenos días!
 Bienvenida al portal de Clínica Olea". Qué negocio es lo sabe el código por el
 enlace (PC-02), no porque el cliente lo escriba.
+
+### PC-12 · Lo que el chat del alta no pregunta · ✅ decidida el 18/11/2026
+
+Mariana, al dictar el guion del alta (nota «Guion del alta por chat»): el
+chat se queda en lo imprescindible para que la recepcionista funcione
+(negocio, servicios, profesionales, horarios y reservas). Tres cosas van
+**al portal**, a mano:
+
+- **Las preguntas frecuentes.**
+- **El chat en su web:** el color de su marca y su logo.
+- **Los horarios de las profesionales que cambian cada semana.** El chat
+  pregunta si cada una tiene horario fijo; si no lo tiene, le explica que esos
+  horarios se cambian en el portal, en la ficha de cada profesional.
+
+Y, aceptado por Mariana el mismo 18/11/2026 (eran propuestas mías para lo que
+no dictó):
+
+- **Los festivos y ausencias** tampoco se preguntan: al darse de alta casi
+  nadie los tiene a mano. El cierre le recuerda cargarlos.
+- **Los dominios de su web y el enlace a su política de privacidad** van en la
+  misma sección del portal que el color y el logo; Mariana también los puede
+  poner o corregir desde su panel (PC-05). Sin dominio, el chat no aparece en
+  su web (PW-06).
+- **El tono y el mensaje de bienvenida del agente** van de serie (la
+  bienvenida de PW-02) y se cambian en el portal.
+- **Cada cuánto se ofrecen horarios**: 30 minutos de serie; Mariana lo cambia
+  en su panel si hace falta.
+
+Lo que el chat **sí** pregunta, además de lo que dictó Mariana: qué servicios
+hace cada profesional (sin eso el negocio no se puede activar, PI-03), si
+todas trabajan en el horario del local, si la clienta elige con quién ir, qué
+pasa si cancela dentro del plazo (informar o bloquear, PR-07) y el texto de su
+política de cancelación. Cada sección termina con un resumen para confirmar
+(PC-03). El guion completo está en la nota «Guion del alta por chat».
+
+El cierre del chat se lo recuerda: *«Recuerda que, si quieres cargar preguntas
+frecuentes, puedes hacerlo en ese apartado dentro de tu portal. También, en la
+sección "El chat en tu web", recuerda seleccionar el color de tu marca y
+añadir una imagen para que se muestre en la parte superior izquierda del
+chat.»*
+
+Cambia la idea del 5/11 de que **todo** el alta se hace por el chat (PC-03):
+lo imprescindible, por el chat; lo demás, en el portal.
+
+### PC-13 · Aviso cuando un cliente termina el alta · ✅ decidida el 18/11/2026
+
+Propuesta aceptada por Mariana el 18/11/2026: cuando un cliente termina el
+chat del alta, a Mariana le llega **un aviso en su panel interno** (no por
+email). Así sabe que tiene que revisar su configuración y activarlo.
+
+### PC-14 · Quién paga la IA del chat del alta · ✅ decidida el 18/11/2026
+
+Apareció al escribir el spec de la Fase 9 (18/11/2026). El chat del alta usa
+la IA igual que el de las clientas: cada alta cuesta unos céntimos. El tope
+mensual de cada negocio (PW-04) está pensado para atender clientas.
+
+**Decidido (Mariana, 18/11/2026), tal como se proponía:** el chat del alta **no cuenta para el tope** del negocio. Se
+registra aparte, como coste de alta, y Mariana lo ve en el consumo. Así un
+cliente que tarda en darse de alta no se queda sin recepcionista el primer
+mes.
+
+### PC-15 · Proveedor de email antes del primer cliente real · ✅ decidida el 18/11/2026
+
+Apareció al escribir el spec de la Fase 9 (18/11/2026). Para crear la cuenta
+del portal hay que confirmar el email con un código (PC-02), y hoy los emails
+son de prueba: salen en la Terminal o en los registros de Vercel (PW-18). En
+local y en los tests vale; con un cliente real, el código no le llegaría.
+
+**Decidido (Mariana, 18/11/2026), tal como se proponía:** elegir y conectar el
+proveedor de email (Resend o Amazon SES, con el remitente de nuestro dominio)
+**antes de mandar el primer enlace a un cliente real**. No bloquea construir
+la fase.
+
+### PC-16 · Dónde ve el negocio sus citas · ✅ decidida el 18/11/2026
+
+Apareció al escribir el spec de la Fase 9 (18/11/2026). Hoy las citas que da
+la recepcionista solo las ve Mariana, en su panel (PI-14), y la clienta en su
+email. **El negocio no las ve en ningún sitio**: sin eso no puede trabajar.
+
+Primera propuesta (18/11): no en esta fase. **Mariana no estuvo de acuerdo**:
+«las citas tendrían que ir en su calendario integrado: donde se agenden las
+citas, tiene que tener un calendario».
+
+**Decidido (Mariana, 18/11/2026):** *«tenemos que desarrollarlo entonces… si
+tenemos que hacerla más visual, implementar un calendario»*. La clienta que
+llama al local para cancelar o para reservar, **la recepción la cancela o la
+carga desde su portal**; si no, la recepcionista IA podría dar ese hueco a
+otra.
+
+- **Agenda visual en el portal**, en esta fase, como la de los programas de
+  reservas del sector: el **día con una columna por profesional** y las horas
+  hacia abajo, con cada cita como un bloque (hora, servicio, clienta); y la
+  **semana**.
+- **Pinchar un hueco → cargar una cita a mano** (la que llama o entra al
+  local), con las mismas reglas que tu panel (PI-14: a cualquier hora, pero
+  nunca fuera de horario, en festivo ni pisando otra cita).
+- **Pinchar una cita → verla y cancelarla.** La clienta recibe su aviso por
+  email (PW-10).
+- **La agenda de tu panel interno** pasa a ser igual de visual (hoy es una
+  lista).
+- Las citas siguen en un solo sitio, nuestra base (PD-02): la recepcionista,
+  el portal y tu panel ven siempre lo mismo.
+- **Fuera de esta fase:** mover una cita arrastrándola (se cancela y se carga
+  otra), las citas **en su propio Google Calendar** (Fase 7) y conectar **su
+  programa de gestión** (Flowww, Koibox…) cuando un cliente lo traiga: es el
+  «si ya tienes una, la conectamos» de la frase de venta.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
