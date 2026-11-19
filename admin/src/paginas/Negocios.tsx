@@ -1,12 +1,21 @@
 // Lista de negocios con su estado y lo que falta (PI-03), y alta de uno nuevo.
+// PC-13 (Fase 9): arriba, los clientes que acaban de terminar su alta por
+// chat y todavía no has revisado.
 
 import { useState, type FormEvent } from 'react';
 
 import { api, type NegocioResumen } from '../api';
-import { Aviso, Cargando, EtiquetaEstado, ir, useAccion, useCarga } from '../ui';
+import { Aviso, Cargando, EtiquetaEstado, fechaHora, ir, useAccion, useCarga } from '../ui';
+
+interface AltaTerminada {
+  businessId: string;
+  negocio: string;
+  terminadaAt: string;
+}
 
 export function Negocios() {
   const { datos, error } = useCarga(() => api<NegocioResumen[]>('GET', 'negocios'), []);
+  const altas = useCarga(() => api<AltaTerminada[]>('GET', 'altas'), []);
   const [nombre, setNombre] = useState('');
   const a = useAccion();
 
@@ -24,6 +33,20 @@ export function Negocios() {
         <h1 className="text-xl font-semibold">Negocios</h1>
         <p className="text-sm text-slate-500">Un negocio nuevo empieza en prueba y sin dominios: su chat no aparece en ninguna web hasta que lo actives.</p>
       </div>
+      {altas.datos && altas.datos.length > 0 ? (
+        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <p className="font-semibold">{altas.datos.length === 1 ? 'Un cliente ha terminado su alta' : `${altas.datos.length} clientes han terminado su alta`}</p>
+          <ul className="mt-2 space-y-1">
+            {altas.datos.map((x) => (
+              <li key={x.businessId}>
+                <a className="underline hover:no-underline" href={`#/negocios/${x.businessId}/portal`}>{x.negocio}</a>
+                <span className="ml-2 text-emerald-700">terminó el {fechaHora(x.terminadaAt)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-emerald-700">Revisa su configuración y actívalo.</p>
+        </div>
+      ) : null}
       <form onSubmit={crear} className="tarjeta flex flex-wrap items-end gap-3">
         <div className="min-w-64 flex-1">
           <label className="etiqueta" htmlFor="nuevo">Dar de alta un negocio</label>

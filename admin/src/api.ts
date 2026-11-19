@@ -184,6 +184,16 @@ export interface Festivo {
   diaEntero: boolean;
 }
 
+/** PC-06: una profesional trabaja un día concreto fuera de su horario. */
+export interface TurnoSuelto {
+  id: string;
+  staffId: string;
+  fecha: string;
+  apertura: string;
+  cierre: string;
+  motivo: string | null;
+}
+
 export interface Pregunta {
   id: string;
   pregunta: string;
@@ -213,13 +223,16 @@ export interface Negocio {
     cancelacionModo: 'informar' | 'bloquear';
     cancelacionPlazoHoras: number;
   };
-  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd: number };
+  /** PC-09: `topeMensualUsd` solo llega en el panel; en el portal no viene. */
+  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd?: number };
   servicios: Servicio[];
   profesionales: Profesional[];
   horario: Tramo[];
   /** PI-19: los días de la semana que cada profesional no trabaja. */
   diasLibres: { staffId: string; weekday: number }[];
   festivos: Festivo[];
+  /** PC-06: los de hoy en adelante. */
+  turnosSueltos: TurnoSuelto[];
   preguntas: Pregunta[];
   loQueFalta: Falta[];
   /** PI-22: la huella de cada sección; se manda al guardarla para no pisar lo que guardó otra persona. */
@@ -286,6 +299,29 @@ export interface CitaAgenda {
   staffId: string;
   clienta: Clienta;
   notas: string | null;
+}
+
+/** PC-16: un tramo trabajado ese día, para dibujar la columna. */
+export interface TramoAgenda {
+  staffId: string;
+  desde: string;
+  hasta: string;
+  /** Sale de un turno suelto (PC-06). */
+  suelto: boolean;
+}
+
+export interface DiaAgenda {
+  fecha: string;
+  tramos: TramoAgenda[];
+  citas: CitaAgenda[];
+}
+
+export interface Agenda {
+  desde: string;
+  dias: DiaAgenda[];
+  profesionales: { id: string; nombre: string }[];
+  hoy: string;
+  timezone: string;
 }
 
 export interface InformeConsumo {

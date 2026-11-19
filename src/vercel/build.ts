@@ -6,6 +6,7 @@
 //   static/index.html, privacidad.html   la web de la demo, apuntando a PUBLIC_API_URL
 //   static/widget.js                     el widget minificado
 //   static/panel/                        el panel interno (Fase 4, PI-02), compilado con Vite
+//   static/portal/                       el portal del cliente (Fase 9, PC-02), la otra entrada de admin/
 //   functions/api.func/                  src/vercel/handler.ts en un solo archivo
 //   config.json                          rutas: /api/… y /cita/… → la función
 //
@@ -18,6 +19,8 @@
 // El panel va en el mismo proyecto (PI-02) bajo /panel/ y habla con /api/admin
 // del mismo dominio. Con PANEL_HOST (el dominio propio del panel, p. ej.
 // recepcionista-ia-panel.vercel.app), la raíz de ese dominio lleva a /panel/.
+// El portal del cliente (Fase 9) va al lado, bajo /portal/, y habla con
+// /api/portal del mismo dominio: el enlace de invitación apunta ahí (PC-02).
 //
 // Región fra1 (Frankfurt): la misma que la base de Supabase.
 // =============================================================================
@@ -28,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 
 import { build } from 'esbuild';
 
-import { construirPanel } from '../dev/panel-build.js';
+import { construirPanel, construirPortal } from '../dev/panel-build.js';
 import { construirWidget } from '../dev/widget-build.js';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
@@ -36,7 +39,7 @@ const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 /** maxDuration: un turno puede tardar ~3 × 60 s (D-48) y un mensaje espera hasta 200 s al anterior (LIMITES_WIDGET). 300 s es el máximo del plan Hobby. */
 export const DURACION_MAXIMA_S = 300;
 
-/** CSP del panel: solo lo suyo; el logo llega como data URL (PI-10) y React pone estilos en línea. */
+/** CSP del panel y del portal: solo lo suyo; el logo llega como data URL (PI-10) y React pone estilos en línea. */
 export const CSP_PANEL =
   "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
@@ -54,6 +57,7 @@ export async function construirVercel(o: { apiUrl: string; outDir?: string; pane
   copyFileSync(join(RAIZ, 'demo/privacidad.html'), join(estaticos, 'privacidad.html'));
   writeFileSync(join(estaticos, 'widget.js'), await construirWidget({ minify: true }));
   await construirPanel({ outDir: join(estaticos, 'panel') });
+  await construirPortal({ outDir: join(estaticos, 'portal') });
 
   // --- La función ----------------------------------------------------------------
   const func = join(out, 'functions/api.func');
@@ -97,8 +101,12 @@ export async function construirVercel(o: { apiUrl: string; outDir?: string; pane
           { src: '^/widget\\.js$', headers: { 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=300' }, continue: true },
           ...(o.panelHost ? [{ src: '^/$', has: [{ type: 'host', value: o.panelHost }], status: 302, headers: { location: '/panel/' } }] : []),
           { src: '^/panel$', status: 308, headers: { location: '/panel/' } },
+          { src: '^/portal$', status: 308, headers: { location: '/portal/' } },
+          // El portal es otra entrada del mismo proyecto de React: index.html
+          // se llama portal.html, así que /portal/ sirve ese archivo.
+          { src: '^/portal/$', dest: '/portal/portal.html', continue: true },
           {
-            src: '^/panel/.*$',
+            src: '^/(panel|portal)/.*$',
             headers: { 'content-security-policy': CSP_PANEL, 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' },
             continue: true,
           },

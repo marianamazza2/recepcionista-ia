@@ -5,9 +5,10 @@
 //   · http://localhost:4311 — "nuestro" servidor: widget.js, /api/… y /cita/…
 //   · http://localhost:4310 — "la web del negocio": demo/ (Clínica Olea, A6) y
 //     prueba.html?key=wk_… (cualquier negocio, Fase 4)
-//   · http://localhost:4312 — el panel interno (PI-02): admin/ compilado en
-//     /panel/ y la misma API en /api/…, del mismo origen (sin CORS). Se
-//     recompila solo al cambiar un archivo de admin/.
+//   · http://localhost:4312 — el panel interno (PI-02) en /panel/, el portal
+//     del cliente (Fase 9, PC-02) en /portal/ y la misma API en /api/…, del
+//     mismo origen (sin CORS). Los dos se recompilan solos al cambiar un
+//     archivo de admin/.
 // Puertos poco habituales a propósito: el 3000 lo suelen ocupar otros
 // proyectos, y si otro programa escucha en el mismo puerto por IPv6, el
 // navegador (que prueba primero ::1 para "localhost") acaba en él.
@@ -42,6 +43,7 @@ import { construirWidget } from './widget-build.js';
 
 const DEMO_DIR = fileURLToPath(new URL('../../demo/', import.meta.url));
 const PANEL_DIR = fileURLToPath(new URL('../../admin/dist/', import.meta.url));
+const PORTAL_DIR = fileURLToPath(new URL('../../admin/dist-portal/', import.meta.url));
 const TIPOS: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -59,7 +61,7 @@ export interface OpcionesServidores {
   email: EmailProvider;
   apiPort: number;
   demoPort: number;
-  /** El panel interno (Fase 4). Sin él, no se levanta. Sirve admin/dist ya compilado. */
+  /** El panel interno (Fase 4) y el portal del cliente (Fase 9). Sin él, no se levantan. */
   panelPort?: number;
   /** PI-01: el proveedor de cuentas del panel. */
   auth?: AuthPanel | null;
@@ -108,6 +110,9 @@ export async function iniciarServidores(
     settings: o.settings,
     email: o.email,
     baseUrl: apiUrl,
+    // PC-02: el enlace de invitación apunta al portal, que en local vive con
+    // el panel (mismo origen que /api/portal/…).
+    ...(panelUrl ? { portalUrl: panelUrl } : {}),
     ...(o.now ? { now: o.now } : {}),
     ...(o.onError ? { onError: o.onError } : {}),
   });
@@ -175,16 +180,19 @@ export async function iniciarServidores(
       }
       return;
     }
-    if (!ruta.startsWith('/panel/')) {
+    // Fase 9: /portal/ es la otra entrada de admin/ (portal.html).
+    const esPortal = ruta.startsWith('/portal/');
+    if (!ruta.startsWith('/panel/') && !esPortal) {
       res.writeHead(302, { location: '/panel/' });
       res.end();
       return;
     }
-    const relativa = ruta.slice('/panel/'.length);
-    const archivo = normalize(join(PANEL_DIR, relativa === '' ? 'index.html' : relativa));
-    if (!archivo.startsWith(PANEL_DIR) || !existsSync(archivo) || !TIPOS[extname(archivo)]) {
+    const raiz = esPortal ? PORTAL_DIR : PANEL_DIR;
+    const relativa = ruta.slice((esPortal ? '/portal/' : '/panel/').length);
+    const archivo = normalize(join(raiz, relativa === '' ? (esPortal ? 'portal.html' : 'index.html') : relativa));
+    if (!archivo.startsWith(raiz) || !existsSync(archivo) || !TIPOS[extname(archivo)]) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end(existsSync(PANEL_DIR) ? 'No encontrado' : 'El panel no está compilado (admin/dist).');
+      res.end(existsSync(raiz) ? 'No encontrado' : `${esPortal ? 'El portal' : 'El panel'} no está compilado (admin/${esPortal ? 'dist-portal' : 'dist'}).`);
       log(inicio, req, 404);
       return;
     }
@@ -225,7 +233,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const { anthropicModelClient, settingsFromEnv } = await import('../core/agent.js');
   const { EmailDePrueba } = await import('../adapters/email/prueba.js');
   const { authPanelDesdeEnv } = await import('../api/admin/auth.js');
-  const { construirPanel } = await import('./panel-build.js');
+  const { construirPanel, construirPortal } = await import('./panel-build.js');
   if (existsSync('.env')) process.loadEnvFile('.env');
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error('Falta ANTHROPIC_API_KEY en .env');
@@ -233,8 +241,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   }
   const settings = settingsFromEnv();
   const sql = createSql();
-  // El panel se compila una vez al arrancar y se recompila al cambiar admin/.
+  // El panel y el portal se compilan al arrancar y se recompilan al cambiar admin/.
   const vigia = await construirPanel({ watch: true });
+  const vigiaPortal = await construirPortal({ watch: true });
   const auth = authPanelDesdeEnv();
   const s = await iniciarServidores({
     sql,
@@ -251,9 +260,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   console.log(`\nDemo de Clínica Olea: ${s.demoUrl}`);
   console.log(`Servidor del widget:     ${s.apiUrl}  (modelo ${settings.model}, esfuerzo ${settings.effort})`);
   console.log(`Panel interno:           ${s.panelUrl}/panel/${auth ? '' : '  (⚠️ sin cuentas: faltan SUPABASE_PROJECT_REF y SUPABASE_ANON_KEY en .env)'}`);
+  console.log(`Portal del cliente:      ${s.panelUrl}/portal/  (se entra con el enlace de invitación que generas en el panel)`);
   console.log('Los emails (confirmaciones y códigos) salen aquí (proveedor de prueba). Ctrl+C para parar.\n');
   const parar = async () => {
     await vigia?.close();
+    await vigiaPortal?.close();
     await s.cerrar();
     await sql.end();
     process.exit(0);

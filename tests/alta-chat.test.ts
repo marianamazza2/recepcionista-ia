@@ -385,7 +385,7 @@ describe('el chat del portal después del alta (PC-04, PC-10, PC-06)', () => {
     const [b] = await sql<{ estado: string }[]>`select estado from public.businesses where id = ${id}`;
     expect(b!.estado).toBe('trial');
     // Y el tope sigue siendo el de Mariana.
-    const herramientasDelModo = m.peticiones[0]!.tools!.map((t) => t.name);
+    const herramientasDelModo = m.peticiones[0]!.tools!.map((t) => ('name' in t ? t.name : ''));
     expect(herramientasDelModo).not.toContain('activar_negocio');
     expect(herramientasDelModo).not.toContain('cambiar_tope');
   });
