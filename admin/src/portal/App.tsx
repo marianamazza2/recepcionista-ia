@@ -16,9 +16,10 @@
 //     email debajo como datos (los dos en gris), «Ajustes» (engranaje) y
 //     Cerrar sesión. Nada abre ventanas ni páginas aparte (Mariana,
 //     20/11/2026): de momento no hay más que enseñar.
-//   · En el móvil, como ChatGPT (Mariana, 20/11/2026): ☰ a la izquierda, el
-//     lápiz de nuevo chat a la derecha (el círculo no se ve), y el menú ☰
-//     con la cuenta arriba, el historial y «Nuevo chat» abajo del todo.
+//   · En el móvil, como ChatGPT (Mariana, 20/11/2026): ☰ a la izquierda y el
+//     círculo a la derecha, sin selector arriba. El menú ☰: el nombre del
+//     negocio en negrita, su email y la lupa para buscar chats; Agente y
+//     Portal; la raya; el historial; y «Nuevo chat» abajo del todo.
 //
 //   #/invitacion/:token   crear la cuenta con el enlace (PC-02)
 //   #/                    un chat nuevo: el saludo y las sugerencias
@@ -175,7 +176,7 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
         <div className="fixed inset-0 z-30 md:hidden">
           <button type="button" aria-label="Cerrar el menú" className="absolute inset-0 bg-black/30" onClick={() => setMenuMovil(false)} />
           <aside aria-label="Menú" className="relative flex h-full w-72 max-w-[85%] flex-col bg-[#f3f3f3] shadow-xl">
-            <BarraLateral {...propsBarra} sesion={sesion} nuevoChat={() => { setMenuMovil(false); nuevoChat(); }} />
+            <BarraLateral {...propsBarra} sesion={sesion} cerrar={() => setMenuMovil(false)} nuevoChat={() => { setMenuMovil(false); nuevoChat(); }} />
           </aside>
         </div>
       ) : null}
@@ -187,15 +188,13 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
               <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M3 6h14M3 10h14M3 14h14" /></svg>
             </button>
           </div>
-          <div className="flex flex-1 justify-center">
+          {/* En el móvil, «Agente | Portal» va dentro del menú ☰ (Mariana, 20/11/2026). */}
+          <div className="hidden flex-1 justify-center md:flex">
             <Selector vista={vista} />
           </div>
+          <div className="flex-1 md:hidden" />
           <div className="flex w-24 justify-end">
-            {/* En el móvil la cuenta va dentro del menú ☰ y aquí, como en ChatGPT, «Nuevo chat». */}
-            <div className="hidden md:block"><MenuPerfil sesion={sesion} /></div>
-            <button type="button" aria-label="Nuevo chat" className="rounded-lg p-2 text-slate-600 hover:bg-slate-200/60 md:hidden" onClick={nuevoChat}>
-              <IconoNuevoChat />
-            </button>
+            <MenuPerfil sesion={sesion} />
           </div>
         </header>
         <main className={`min-h-0 flex-1 ${vista === 'agente' ? '' : 'overflow-y-auto'}`}>
@@ -298,8 +297,8 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
 /**
  * «Cuenta» (el nombre y el email como datos: no se pinchan ni abren nada) y
  * «Ajustes» (todavía no hay ninguno, así que no abre nada; se decide qué
- * lleva más adelante). Las mismas filas en el desplegable del círculo y
- * arriba del menú ☰ del móvil (PC-17, Mariana, 20/11/2026).
+ * lleva más adelante). En el desplegable del círculo, en el ordenador y en el
+ * móvil (PC-17, Mariana, 20/11/2026).
  */
 function CuentaYAjustes({ sesion }: { sesion: SesionPortal }) {
   return (
@@ -326,6 +325,7 @@ function BarraLateral({
   nuevoChat,
   recargar,
   sesion,
+  cerrar,
 }: {
   vista: 'agente' | 'portal';
   pantalla: string;
@@ -333,9 +333,16 @@ function BarraLateral({
   chats: ChatResumido[];
   nuevoChat: () => void;
   recargar: () => void;
-  /** Solo en el menú ☰ del móvil: la cuenta va arriba y «Nuevo chat» abajo, como en ChatGPT (Mariana, 20/11/2026). */
+  /**
+   * Solo en el menú ☰ del móvil, como ChatGPT (Mariana, 20/11/2026): arriba el
+   * nombre del negocio, su email y la lupa para buscar chats; luego Agente y
+   * Portal; la raya; el historial; y «Nuevo chat» abajo del todo.
+   */
   sesion?: SesionPortal;
+  cerrar?: () => void;
 }) {
+  const [buscando, setBuscando] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const fila = (activo: boolean) => `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${activo ? 'bg-slate-200/80 text-slate-900' : 'text-slate-700 hover:bg-slate-200/50'}`;
   const botonNuevo = (
     <button type="button" className={`${fila(false)} font-medium ${sesion ? '' : 'mt-1'}`} onClick={nuevoChat}>
@@ -343,38 +350,85 @@ function BarraLateral({
       Nuevo chat
     </button>
   );
+  // La lupa busca por el título del chat, sin mirar mayúsculas ni tildes.
+  const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const buscado = plano(busqueda.trim());
+  const visibles = buscando && buscado ? chats.filter((c) => plano(c.titulo).includes(buscado)) : chats;
+  const secciones = (
+    [
+      ['portal', 'Inicio'],
+      ['agenda', 'Agenda'],
+      ['configuracion', 'Configuración'],
+    ] as const
+  ).map(([clave, texto]) => (
+    <a key={clave} href={`#/${clave}`} className={`${fila(pantalla === clave)} ${sesion ? 'pl-7' : ''}`} onClick={cerrar}>{texto}</a>
+  ));
   return (
     <div className="flex h-full flex-col p-2">
       {sesion ? (
         <div className="pt-1">
-          <CuentaYAjustes sesion={sesion} />
-          <button type="button" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-200/50" onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
+          <div className="flex items-start gap-2 pl-3 pt-1">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-900">{sesion.negocio.nombre}</p>
+              <p className="truncate text-xs text-slate-500">{sesion.email}</p>
+            </div>
+            <button
+              type="button"
+              aria-label={buscando ? 'Dejar de buscar' : 'Buscar chats'}
+              aria-pressed={buscando}
+              className="-mt-1 rounded-lg p-2 text-slate-600 hover:bg-slate-200/60"
+              onClick={() => { setBuscando((b) => !b); setBusqueda(''); }}
+            >
+              <IconoBuscar />
+            </button>
+          </div>
+          {buscando ? (
+            <input
+              type="search"
+              aria-label="Buscar en tus chats"
+              placeholder="Buscar chats"
+              autoFocus
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') { setBuscando(false); setBusqueda(''); } }}
+              className="mx-1 mt-2 w-[calc(100%-0.5rem)] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-slate-300 focus:outline-none"
+            />
+          ) : null}
+          <nav className="mt-3" aria-label="Ir a">
+            <a href="#/" className={fila(vista === 'agente')} onClick={cerrar}>Agente</a>
+            <a href="#/portal" className={fila(vista === 'portal' && pantalla === 'portal')} onClick={cerrar}>Portal</a>
+            {vista === 'portal' ? secciones.slice(1) : null}
+          </nav>
           <div className="mx-3 mt-2 border-t border-slate-200" />
         </div>
       ) : (
         botonNuevo
       )}
-      {vista === 'portal' ? (
+      {vista === 'portal' && !sesion ? (
         <nav className="mt-4" aria-label="Secciones del portal">
           <p className="px-3 pb-1 text-xs font-medium text-slate-400">Portal</p>
-          {[
-            ['portal', 'Inicio'],
-            ['agenda', 'Agenda'],
-            ['configuracion', 'Configuración'],
-          ].map(([clave, texto]) => (
-            <a key={clave} href={`#/${clave}`} className={fila(pantalla === clave)}>{texto}</a>
-          ))}
+          {secciones}
         </nav>
       ) : null}
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
         <p className="px-3 pb-1 text-xs font-medium text-slate-400">Chats</p>
         {chats.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Todavía no hay ninguno.</p> : null}
+        {chats.length > 0 && visibles.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Ningún chat con «{busqueda.trim()}».</p> : null}
         <ul aria-label="Tus chats">
-          {chats.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
+          {visibles.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
         </ul>
       </div>
       {sesion ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
     </div>
+  );
+}
+
+function IconoBuscar() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <circle cx="8.75" cy="8.75" r="5.25" />
+      <path d="M12.75 12.75L16.5 16.5" />
+    </svg>
   );
 }
 

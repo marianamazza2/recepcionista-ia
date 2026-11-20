@@ -441,24 +441,38 @@ describe('de la invitación a la primera cita', () => {
     await movil.getByRole('button', { name: 'Entrar' }).click();
     await expect.poll(() => movil.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1-portada.png'), fullPage: true });
-    // Como ChatGPT en el móvil (Mariana, 20/11/2026): sin saludo, la caja abajo
-    // del todo, y arriba a la derecha «Nuevo chat» en vez del círculo.
+    // Como ChatGPT en el móvil (Mariana, 20/11/2026): sin saludo y la caja
+    // abajo del todo; arriba, ☰ a la izquierda y el círculo a la derecha, sin
+    // «Agente | Portal» (va dentro del menú).
     expect(await movil.getByRole('heading', { level: 1 }).count()).toBe(0);
     const caja = (await movil.getByLabel('Escribe tu mensaje').boundingBox())!;
     expect(caja.y).toBeGreaterThan(844 - 140);
-    expect(await movil.getByLabel('Tu perfil').isVisible()).toBe(false);
-    expect(await movil.getByRole('banner').getByRole('button', { name: 'Nuevo chat' }).isVisible()).toBe(true);
-    // El menú ☰: la cuenta arriba (Cuenta, Ajustes, Cerrar sesión), la raya, el historial y «Nuevo chat» abajo del todo.
+    expect(await movil.getByLabel('Tu perfil').isVisible()).toBe(true);
+    expect(await movil.getByRole('navigation', { name: 'Agente o portal' }).isVisible()).toBe(false);
+    // El círculo: el mismo desplegable que en el ordenador.
+    await movil.getByLabel('Tu perfil').click();
+    expect(await movil.getByRole('region', { name: 'Cuenta' }).innerText()).toContain(EMAIL_CLIENTE);
+    await movil.keyboard.press('Escape');
+    // El menú ☰: el nombre en negrita, el email y la lupa; Agente y Portal; la raya; el historial; «Nuevo chat» abajo del todo.
     await movil.getByRole('button', { name: 'Abrir el menú' }).click();
     await expect.poll(() => movil.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
     const menu = movil.getByRole('complementary', { name: 'Menú' });
-    expect(await menu.getByRole('region', { name: 'Cuenta' }).innerText()).toContain(EMAIL_CLIENTE);
     const texto = await menu.innerText();
-    const orden = ['Cuenta', 'Ajustes', 'Cerrar sesión', 'Chats', 'Nuevo chat'].map((t) => texto.indexOf(t));
+    const orden = ['Clínica Portal', EMAIL_CLIENTE, 'Agente', 'Portal\n', 'Chats', 'Nuevo chat'].map((t) => texto.indexOf(t));
     expect(orden.every((x) => x >= 0)).toBe(true);
     expect([...orden].sort((x, y) => x - y)).toEqual(orden);
+    expect(texto).not.toContain('Cerrar sesión');
     const nuevo = (await menu.getByRole('button', { name: 'Nuevo chat' }).boundingBox())!;
     expect(nuevo.y).toBeGreaterThan(844 - 100);
+    // La lupa busca en el historial por el título, sin mirar tildes ni mayúsculas.
+    await menu.getByRole('button', { name: 'Buscar chats' }).click();
+    await menu.getByLabel('Buscar en tus chats').fill('LIMPIEZA');
+    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(1);
+    await movil.screenshot({ path: join(CAPTURAS, 'movil-1c-buscar.png') });
+    await menu.getByLabel('Buscar en tus chats').fill('zzz');
+    await expect.poll(() => menu.getByText('Ningún chat con «zzz».').isVisible(), ESPERA).toBe(true);
+    await menu.getByRole('button', { name: 'Dejar de buscar' }).click();
+    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1b-historial.png') });
     // Se cierra tocando fuera, a la derecha del menú.
     await movil.getByRole('button', { name: 'Cerrar el menú' }).click({ position: { x: 370, y: 400 } });

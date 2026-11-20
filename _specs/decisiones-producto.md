@@ -1791,12 +1791,15 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
 - **En el móvil, como ChatGPT** (Mariana, 20/11/2026):
   - Un chat vacío **no lleva saludo**: la caja para escribir va abajo del
     todo y las sugerencias justo encima.
-  - Arriba: ☰ a la izquierda, «Agente | Portal» en el centro y, a la
-    derecha, el botón de **nuevo chat** (el lápiz) en vez del círculo.
-  - El menú ☰ se abre desde la izquierda: **arriba, la cuenta** (Cuenta con
-    el nombre y el email, Ajustes y Cerrar sesión), una raya, las secciones
-    del portal si se está en él, **el historial** y, **abajo del todo, «Nuevo
-    chat»**, con el mismo aspecto que en el ordenador (nada de botón azul).
+  - Arriba: ☰ a la izquierda y **el círculo del perfil a la derecha**, el
+    mismo desplegable que en el ordenador (Cuenta, Ajustes, Cerrar sesión).
+    **Sin «Agente | Portal» arriba**: va dentro del menú.
+  - El menú ☰ se abre desde la izquierda: arriba, **el nombre del negocio en
+    negrita** y **su email** debajo, y a la derecha **la lupa**, que busca en
+    el historial por el título del chat. Luego **Agente** y **Portal** (con
+    Agenda y Configuración debajo si se está en el portal), una raya, **el
+    historial** y, **abajo del todo, «Nuevo chat»**, con el mismo aspecto que
+    en el ordenador (nada de botón azul).
   - En el ordenador no cambia nada.
 - **En Agenda y en Configuración, arriba, «⌂ Inicio › Agenda»** (Mariana,
   20/11/2026): la vuelta al inicio del portal a la vista, con una casita, y
