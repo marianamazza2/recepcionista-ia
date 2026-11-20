@@ -17,22 +17,30 @@
 //     la agenda) son LAS MISMAS rutas del panel (admin/negocio.ts) montadas
 //     bajo `negocio/…` con el business_id de la sesión: PC-05 se cumple solo.
 //   · PC-09: el tope no se ve ni se cambia desde aquí (lo quita `ver: portal`).
+//   · Los chats (PC-17, Fase 9b): un chat de otro negocio, o borrado, da 404
+//     igual que uno que no existe.
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
 
-import { turnoDelPortal, conversacionDelPortal, type PortalChatDeps } from '../../alta/agente.js';
+import { ChatNoEncontrado, turnoDelPortal, type PortalChatDeps } from '../../alta/agente.js';
+import { saludoDelPortal } from '../../alta/prompt.js';
+import { utcToLocal } from '../../core/time.js';
 import { normalizarEmail } from '../../core/email.js';
 import { filasParaHistorial } from '../../db/widget.js';
 import {
   abrirSesion,
+  cadenaDelChat,
   cerrarSesion,
+  chatsDelPortal,
   comprobarCodigoPortal,
   crearCuentaConInvitacion,
   cuentaPorEmail,
   estadoDelAlta,
   guardarCodigoPortal,
   invitacionPorToken,
+  ocultarChat,
+  renombrarChat,
   sesionPorToken,
   type SesionPortal,
 } from '../../db/portal.js';
@@ -71,6 +79,7 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
     email: deps.email,
     baseUrl: deps.baseUrl,
     ...(deps.now ? { now: deps.now } : {}),
+    ...(deps.titulador ? { titulador: deps.titulador } : {}),
     onError,
   };
   // PC-05: las mismas rutas de configuración que el panel, con `ver: portal`.
@@ -84,8 +93,8 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
     return {
       email: sesion.email,
       negocio: { id: n.id, nombre: n.nombre, estado: n.estado },
-      // PC-11: mientras el alta no esté terminada, el portal no se enseña.
-      alta: { seccion: alta.seccion, terminada: alta.terminadaAt !== null },
+      // PC-19 (Fase 9b): el portal se ve siempre; esto le dice qué falta del alta.
+      alta: { seccion: alta.seccion, terminada: alta.terminadaAt !== null, hechas: alta.seccionesHechas, faltan: alta.faltan },
     };
   }
 
@@ -171,24 +180,60 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
         return json(await yo(sesion));
       }
 
-      // --- El chat del alta y del portal (PC-03, PC-04) ---------------------------------
-      if (ruta === 'chat') {
+      // --- Los chats del portal (PC-17, PC-19) ------------------------------------------
+      if (ruta === 'chats') {
+        if (req.method !== 'GET') return json({ error: 'metodo_no_permitido' }, 405);
+        const n = await leerNegocio(deps.sql, sesion.businessId);
+        if (!n) throw new ErrorPanel(404, 'Ese negocio ya no existe. Habla con MAZZMKT.');
+        const hora = utcToLocal(deps.now?.() ?? new Date(), n.timezone).hora;
+        const chats = await chatsDelPortal(deps.sql, sesion.businessId);
+        return json({ chats, saludo: saludoDelPortal(n.nombre, hora), ...(await yo(sesion)) });
+      }
+
+      const deChat = /^chats\/([0-9a-f-]{36})$/.exec(ruta);
+      if (deChat) {
+        const chatId = deChat[1]!;
         if (req.method === 'GET') {
-          const { conversationId } = await conversacionDelPortal(deps.sql, sesion.businessId);
-          const filas = await filasParaHistorial(deps.sql, sesion.businessId, conversationId);
-          const mensajes = filas
-            .filter((f) => (f.rol === 'user' || f.rol === 'assistant') && f.contenido)
-            .map((f) => ({ rol: f.rol === 'user' ? ('cliente' as const) : ('asistente' as const), texto: f.contenido! }));
-          return json({ mensajes, ...(await yo(sesion)) });
+          const cadena = await cadenaDelChat(deps.sql, sesion.businessId, chatId);
+          if (cadena.length === 0) return json({ error: 'no_encontrado', mensaje: 'Ese chat no existe.' }, 404);
+          const mensajes: { rol: 'cliente' | 'asistente'; texto: string }[] = [];
+          for (const id of cadena) {
+            for (const f of await filasParaHistorial(deps.sql, sesion.businessId, id)) {
+              if ((f.rol === 'user' || f.rol === 'assistant') && f.contenido) mensajes.push({ rol: f.rol === 'user' ? 'cliente' : 'asistente', texto: f.contenido });
+            }
+          }
+          return json({ mensajes });
         }
+        if (req.method === 'PUT') {
+          const e = new Entrada(await leerJson(req));
+          const titulo = e.texto('titulo', 'el título', 200);
+          if (!titulo.trim()) return json({ error: 'no_valido', mensaje: 'Escribe un título.' }, 400);
+          const ok = await renombrarChat(deps.sql, sesion.businessId, chatId, titulo);
+          return ok ? json({ renombrado: true }) : json({ error: 'no_encontrado', mensaje: 'Ese chat no existe.' }, 404);
+        }
+        if (req.method === 'DELETE') {
+          const ok = await ocultarChat(deps.sql, sesion.businessId, chatId, deps.now?.());
+          return ok ? json({ borrado: true }) : json({ error: 'no_encontrado', mensaje: 'Ese chat no existe.' }, 404);
+        }
+        return json({ error: 'metodo_no_permitido' }, 405);
+      }
+
+      // --- Un mensaje al chat (PC-03, PC-04, PC-17) --------------------------------------
+      if (ruta === 'chat') {
         if (req.method !== 'POST') return json({ error: 'metodo_no_permitido' }, 405);
         const e = new Entrada(await leerJson(req));
-        const r = await turnoDelPortal(chatDeps, {
-          businessId: sesion.businessId,
-          texto: e.texto('texto', 'el mensaje', 5000),
-          clientMessageId: e.valor('clientMessageId') === undefined ? randomUUID() : e.uuid('clientMessageId', 'el id del mensaje'),
-        });
-        return json(r);
+        try {
+          const r = await turnoDelPortal(chatDeps, {
+            businessId: sesion.businessId,
+            texto: e.texto('texto', 'el mensaje', 5000),
+            clientMessageId: e.valor('clientMessageId') === undefined ? randomUUID() : e.uuid('clientMessageId', 'el id del mensaje'),
+            chatId: e.uuidOpcional('chatId', 'el chat'),
+          });
+          return json(r);
+        } catch (err) {
+          if (err instanceof ChatNoEncontrado) return json({ error: 'no_encontrado', mensaje: 'Ese chat ya no existe. Abre uno nuevo.' }, 404);
+          throw err;
+        }
       }
 
       // --- Su configuración: las mismas rutas del panel (PC-05) -------------------------

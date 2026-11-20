@@ -29,6 +29,11 @@ export interface ApiNegocio {
   ver: VerNegocio;
   /** `camino` es relativo al negocio: '' es la ficha, 'datos', 'servicios/:id'… */
   pedir<T>(metodo: 'GET' | 'POST' | 'PUT' | 'DELETE', camino: string, body?: unknown): Promise<T>;
+  /**
+   * PC-19 (Fase 9b), solo en el portal: lo vacío ofrece «Pídeselo al agente»,
+   * que abre un chat nuevo con el mensaje de esa sección ya enviado.
+   */
+  pedirAlAgente?: (seccion: 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'festivo') => void;
 }
 
 const Contexto = createContext<ApiNegocio | null>(null);

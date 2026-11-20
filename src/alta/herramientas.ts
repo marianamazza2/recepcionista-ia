@@ -42,7 +42,8 @@ import {
   leerNegocio,
   type NegocioPanel,
 } from '../db/negocios.js';
-import { guardarEstadoDelAlta, hayConfirmacion } from '../db/portal.js';
+import { momentoDelDia } from './prompt.js';
+import { estadoDelAlta, guardarEstadoDelAlta, hayConfirmacion, marcarSeccionHecha, SECCIONES_DEL_ALTA, type SeccionDelAlta } from '../db/portal.js';
 
 export interface ContextoPortal {
   sql: Sql;
@@ -753,45 +754,29 @@ const turnoSuelto: HerramientaPortal = {
   },
 };
 
-const avanzarSeccion: HerramientaPortal = {
-  name: 'avanzar_seccion',
-  definicion: {
-    name: 'avanzar_seccion',
-    description: 'Deja anotado por qué sección del alta vas, para recibirle por ahí si se va y vuelve. Llámala cada vez que termines una sección.',
-    input_schema: {
-      type: 'object',
-      properties: { seccion: { type: 'integer', description: '0 bienvenida, 1 el negocio, 2 servicios, 3 profesionales, 4 horarios, 6 reservas, 9 cierre.' } },
-      required: ['seccion'],
-      additionalProperties: false,
-    },
-    strict: true,
-  },
-  async run(i, ctx) {
-    const seccion = Math.max(0, Math.min(9, Number(i.seccion) || 0));
-    await guardarEstadoDelAlta(ctx.sql, ctx.businessId, { seccion }, ctx.now());
-    return { ok: true, data: { seccion } };
-  },
-};
-
 const terminarAlta: HerramientaPortal = {
   name: 'terminar_alta',
   definicion: {
     name: 'terminar_alta',
     description:
-      'Da el alta por terminada (sección 9). A partir de ese momento el cliente ve su portal y a MAZZMKT le llega el aviso para revisarlo y activarlo. Llámala solo cuando hayas terminado las secciones 1, 2, 3, 4 y 6.',
+      'Da el alta por terminada. A partir de ese momento a MAZZMKT le llega el aviso para revisar el negocio y activarlo. Llámala solo cuando ya no quede ninguna sección del alta (las herramientas que guardan te dicen cuáles quedan en `quedan_del_alta`).',
     input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
     strict: true,
   },
   async run(_i, ctx) {
     await recargar(ctx);
     const n = ctx.ficha;
-    const falta: string[] = [];
-    if (!n.direccion || !n.telefonoHumano) falta.push('los datos del local (sección 1)');
-    if (n.servicios.filter((s) => s.activo).length === 0) falta.push('los servicios (sección 2)');
-    if (n.profesionales.filter((p) => p.activo).length === 0) falta.push('las profesionales (sección 3)');
-    if (n.horario.filter((t) => t.staffId === null).length === 0) falta.push('el horario del local (sección 4)');
-    if (falta.length > 0) {
-      return mal('alta_incompleta', `Todavía falta ${falta.join(', ')}. Sigue con esa sección antes de cerrar el alta.`);
+    // Lo que falta en los datos y, PC-18, cada sección que el chat no ha
+    // guardado todavía (las reglas tienen valores de serie: solo se sabe que
+    // se preguntaron por esta marca).
+    const falta = new Set<SeccionDelAlta>((await estadoDelAlta(ctx.sql, ctx.businessId)).faltan);
+    if (!n.direccion || !n.telefonoHumano) falta.add('negocio');
+    if (n.servicios.filter((s) => s.activo).length === 0) falta.add('servicios');
+    if (n.profesionales.filter((p) => p.activo).length === 0) falta.add('profesionales');
+    if (n.horario.filter((t) => t.staffId === null).length === 0) falta.add('horario');
+    if (falta.size > 0) {
+      const lista = SECCIONES_DEL_ALTA.filter((x) => falta.has(x)).map((x) => NOMBRE_DE_SECCION[x]);
+      return mal('alta_incompleta', `Todavía falta ${lista.join(', ')}. Ofrécele seguir con eso antes de cerrar el alta.`);
     }
     await guardarEstadoDelAlta(ctx.sql, ctx.businessId, { seccion: 9, terminada: true }, ctx.now());
     ctx.altaTerminada = true;
@@ -811,18 +796,21 @@ function errorDeLaBase(e: unknown, que: string): ResultadoHerramienta {
   return mal('error_interno', `Algo ha fallado al guardar ${que}. Díselo y pídele que lo intente de nuevo en un momento.`);
 }
 
-export const HERRAMIENTAS_ALTA: readonly HerramientaPortal[] = [
-  avanzarSeccion,
-  guardarHorarios,
-  guardarNegocio,
-  guardarProfesionales,
-  guardarReglasTool,
-  guardarServicios,
-  proponerResumen,
-  terminarAlta,
-  verConfiguracion,
-].sort((a, b) => a.name.localeCompare(b.name));
+/** PC-18: cómo se llama cada sección del alta cuando se le cuenta al modelo lo que queda. */
+const NOMBRE_DE_SECCION: Record<SeccionDelAlta, string> = {
+  negocio: 'los datos del local',
+  servicios: 'los servicios',
+  profesionales: 'las profesionales',
+  horario: 'el horario del local',
+  reglas: 'las reglas de reserva y cancelación',
+};
+const NUMERO_DE_SECCION: Record<SeccionDelAlta, number> = { negocio: 1, servicios: 2, profesionales: 3, horario: 4, reglas: 6 };
 
+// PC-18 (Fase 9b): el alta va por temas, en el orden que el cliente quiera, y
+// en cualquier chat. Por eso durante el alta están TODAS las herramientas
+// (también cargar un festivo o cambiar un servicio) más `terminar_alta`, y ya
+// no existe `avanzar_seccion`: qué secciones están hechas lo marca el código
+// al guardar (ejecutar(), abajo).
 export const HERRAMIENTAS_PORTAL: readonly HerramientaPortal[] = [
   cambiarServicio,
   cerrarDia,
@@ -837,18 +825,19 @@ export const HERRAMIENTAS_PORTAL: readonly HerramientaPortal[] = [
   verConfiguracion,
 ].sort((a, b) => a.name.localeCompare(b.name));
 
+export const HERRAMIENTAS_ALTA: readonly HerramientaPortal[] = [...HERRAMIENTAS_PORTAL, terminarAlta].sort((a, b) => a.name.localeCompare(b.name));
+
 export function herramientasDe(modo: 'alta' | 'portal'): readonly HerramientaPortal[] {
   return modo === 'alta' ? HERRAMIENTAS_ALTA : HERRAMIENTAS_PORTAL;
 }
 
 export function definiciones(modo: 'alta' | 'portal'): Anthropic.Beta.BetaTool[] {
-  const defs = herramientasDe(modo).map((h) => h.definicion);
-  // Después del alta van casi todas las herramientas juntas y, en modo
-  // estricto, la API las rechaza: «the compiled grammar is too large»
-  // (alta:eval, 19/11/2026). Ahí van sin `strict`: cada herramienta ya
-  // comprueba en el código lo que recibe (fechas, horas, nombres), que es lo
-  // que de verdad protege los datos (§1 del AGENTS.md raíz).
-  return modo === 'portal' ? defs.map(({ strict: _strict, ...d }) => d) : defs;
+  // Van casi todas las herramientas juntas y, en modo estricto, la API las
+  // rechaza: «the compiled grammar is too large» (alta:eval, 19/11/2026).
+  // Por eso van sin `strict`: cada herramienta ya comprueba en el código lo
+  // que recibe (fechas, horas, nombres), que es lo que de verdad protege los
+  // datos (§1 del AGENTS.md raíz). Desde PC-18 también durante el alta.
+  return herramientasDe(modo).map(({ definicion: { strict: _strict, ...d } }) => d);
 }
 
 export interface EjecucionHerramienta {
@@ -877,6 +866,14 @@ export async function ejecutar(
   } else {
     try {
       resultado = await h.run(args, ctx);
+      // PC-18: lo guardado cuenta como sección hecha del alta, y el modelo
+      // sabe al momento qué queda (no depende de que se acuerde).
+      if (resultado.ok && h.seccion && (SECCIONES_DEL_ALTA as readonly string[]).includes(h.seccion)) {
+        const estado = await marcarSeccionHecha(ctx.sql, ctx.businessId, h.seccion as SeccionDelAlta, ctx.now());
+        if (ctx.modo === 'alta') {
+          resultado.data.quedan_del_alta = estado.faltan.length ? estado.faltan.map((x) => NOMBRE_DE_SECCION[x]) : 'nada: llama a terminar_alta y haz el cierre';
+        }
+      }
     } catch (e) {
       onError(e);
       resultado = { ok: false, error: { motivo: 'error_interno', mensaje: 'Algo ha fallado en el sistema. Díselo con naturalidad y pídele que lo intente de nuevo en un momento.' } };
@@ -888,5 +885,7 @@ export async function ejecutar(
 /** El día de hoy del negocio, para que el agente entienda "el lunes 16". */
 export function contextoDelDia(ficha: NegocioPanel, ahora: Date): string {
   const { fecha, hora: h } = utcToLocal(ahora, ficha.timezone);
-  return `Hoy es ${fechaLarga(fecha)} y son las ${h} (hora de ${ficha.timezone}).`;
+  // El saludo de esta hora va aquí (cambia con la hora) y no en el system
+  // prompt, que así sigue sirviendo de caché.
+  return `Hoy es ${fechaLarga(fecha)} y son las ${h} (hora de ${ficha.timezone}). Saludo de esta hora: «${momentoDelDia(h)}».`;
 }

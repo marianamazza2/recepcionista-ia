@@ -7,10 +7,12 @@
 // técnico"), y el núcleo no se toca.
 //
 // Tiene dos modos, el mismo agente:
-//   · 'alta'   el alta por chat (PC-03), sección por sección, siguiendo el
-//              GUION QUE DICTÓ MARIANA el 18/11/2026 (nota «Guion del alta
-//              por chat» de Research Desk). Los textos de abajo son suyos:
-//              si cambian, se cambian en la nota y aquí, en el mismo cambio.
+//   · 'alta'   el alta por chat (PC-03), siguiendo el GUION QUE DICTÓ MARIANA
+//              el 18/11/2026 (nota «Guion del alta por chat» de Research
+//              Desk). Los textos de abajo son suyos: si cambian, se cambian en
+//              la nota y aquí, en el mismo cambio. Desde la Fase 9b (PC-18)
+//              va POR TEMAS: el cliente empieza por la sección que quiera, en
+//              el chat que quiera, y el portal ya le ha saludado (PC-19).
 //   · 'portal' después del alta (PC-04): el cliente pide cambios con palabras
 //              («Núria no viene el jueves») y el agente los aplica.
 //
@@ -24,6 +26,7 @@
 // =============================================================================
 
 import type { NegocioPanel } from '../db/negocios.js';
+import { SECCIONES_DEL_ALTA, type SeccionDelAlta } from '../db/portal.js';
 import { fechaLarga, utcToLocal } from '../core/time.js';
 import { telefonoLegible } from '../core/phone.js';
 
@@ -134,12 +137,43 @@ export function configuracionEnPalabras(n: NegocioPanel): string {
   return lineas.join('\n');
 }
 
-/** El saludo del guion según la hora local del negocio (sección 0). */
-export function saludoSegunLaHora(hora: string): string {
+/** «Buenos días», «Buenas tardes» o «Buenas noches» según la hora local del negocio. */
+export function momentoDelDia(hora: string): string {
   const h = Number(hora.slice(0, 2));
-  if (h < 13) return '¡Hola, buenos días!';
-  if (h < 21) return '¡Hola, buenas tardes!';
-  return '¡Hola, buenas noches!';
+  if (h >= 6 && h < 13) return 'Buenos días';
+  if (h >= 13 && h < 21) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+/** PC-19: el saludo de la pantalla de inicio del chat («Buenas tardes, Clínica Aurora. ¿En qué te puedo ayudar?»). */
+export function saludoDelPortal(nombre: string, hora: string): string {
+  return `${momentoDelDia(hora)}, ${nombre}. ¿En qué te puedo ayudar?`;
+}
+
+/** PC-18: cómo se ofrece cada sección del alta que falta. */
+const OFRECER_SECCION: Record<SeccionDelAlta, string> = {
+  negocio: 'cargar los datos de tu negocio (sector, dirección y teléfono)',
+  servicios: 'dar de alta tus servicios',
+  profesionales: 'dar de alta a las personas que trabajan contigo',
+  horario: 'cargar los horarios del local y de tu equipo',
+  reglas: 'configurar cómo se reserva y se cancela',
+};
+
+/**
+ * PC-20: lo que el chat puede hacer AHORA, con lo que ya está cargado. Sale
+ * del estado, no del modelo: así no ofrece «dar de alta tu negocio» cuando ya
+ * está dado de alta.
+ */
+export function loQuePuedoHacer(n: NegocioPanel, faltan: readonly SeccionDelAlta[]): string[] {
+  const out = SECCIONES_DEL_ALTA.filter((s) => faltan.includes(s)).map((s) => OFRECER_SECCION[s]);
+  const hay = (s: SeccionDelAlta) => !faltan.includes(s);
+  if (hay('servicios') && n.servicios.some((s) => s.activo)) out.push('cambiar un servicio (su duración, su precio o su descripción)');
+  if (hay('profesionales') && n.profesionales.some((p) => p.activo)) out.push('cambiar tu equipo o el horario de alguien');
+  if (hay('horario')) out.push('cambiar el horario del local');
+  out.push('cargar un festivo o el día libre de alguien');
+  if (n.profesionales.some((p) => p.activo)) out.push('abrir un día suelto para alguien (por ejemplo, un festivo que sí trabaja)');
+  if (hay('reglas')) out.push('cambiar las reglas de reserva y cancelación');
+  return out;
 }
 
 const COMUN = `
@@ -155,6 +189,8 @@ Eres el asistente del portal de un negocio que ha contratado la Recepcionista IA
 - Frases cortas, sin tecnicismos, sin listas largas, sin emojis, sin markdown.
 - Nunca digas «lista» ni «listo» refiriéndote a quien escribe: no sabes si es un hombre o una mujer.
 - Si te preguntan algo que no sabes (precios del servicio, contratos, facturación), dilo con naturalidad y remite a MAZZMKT, sin inventar; luego vuelve a donde estabais.
+- **Responde a lo que te dicen.** El portal ya le ha saludado con su nombre al entrar, así que no des la bienvenida del guion. Pero **si te saluda («hola», «buenas»), salúdale tú**, con el saludo de esta hora que tienes en el contexto del día, y sigue así (Mariana, 20/11/2026): «Buenos días, ¿cómo puedo ayudarte?»; **solo si todavía no hay nada cargado**, añade «¿Comenzamos con el alta?»; y luego, en una frase, dos o tres cosas de «Lo que puedes ofrecer ahora» terminando con «y todo lo que necesites. ¿Por dónde quieres empezar?». Ejemplo con el negocio vacío: «Buenos días, ¿cómo puedo ayudarte? ¿Comenzamos con el alta? Puedo cargar los datos de tu negocio (sector, dirección y teléfono), dar de alta tus servicios o a tu equipo, y todo lo que necesites. ¿Por dónde quieres empezar?». Si además de saludar ya te pide algo, salúdale en dos palabras y ve a lo que pide.
+- **Si no entiendes el mensaje** (letras al azar, algo sin sentido, algo que no tiene que ver con su recepcionista), contesta empezando por «Disculpa, no he comprendido tu mensaje.» y sigue con lo que puedes hacer ahora, de la lista «Lo que puedes ofrecer ahora» de abajo, en una frase natural («Puedo …, … o …»). No ofrezcas nada que no esté en esa lista: lo que ya está cargado no se ofrece como si faltara.
 
 # Reglas que no puedes saltarte
 
@@ -167,11 +203,16 @@ Eres el asistente del portal de un negocio que ha contratado la Recepcionista IA
 `;
 
 const GUION_DEL_ALTA = `
-# El alta, sección por sección (este es el guion; síguelo en este orden)
+# El alta, por temas
 
-## 0 · Bienvenida
-Ya sabes qué negocio es. Saluda según la hora y sigue: «Te damos la bienvenida a tu portal de [NOMBRE] para avanzar con el alta. Te iré haciendo preguntas para que avancemos con la configuración. ¿Empezamos?».
-Si dice que sí, pasa a la sección 1. Si todavía no quiere: «Sin problema. Cuando quieras, vuelve a entrar con tu email y tu contraseña y seguimos desde aquí.»
+El alta son cinco secciones: el negocio, servicios, profesionales, horarios y reservas. **El cliente puede empezar por la que quiera**, y cada una puede ir en un chat distinto: lo que se guarda en un chat lo ven todos.
+- Si te pide una sección («quiero cargar los horarios», «quiero dar de alta a mi equipo»), haz esa, aunque haya otras antes en el guion.
+- Si te dice «quiero empezar el alta», «sigamos con el alta» o no dice cuál, empieza por la primera que falte, en el orden del guion.
+- Cada vez que guardas una sección, la herramienta te dice en \`quedan_del_alta\` lo que falta. Díselo en una frase y pregúntale si seguís con la siguiente («Ya tenemos tus horarios. Te quedan los servicios y las reglas de reserva. ¿Seguimos con los servicios?»). Si ya no queda nada, llama a \`terminar_alta\` y haz el cierre (sección 9).
+- Si pide profesionales y todavía no hay servicios, guarda las profesionales sin servicios y dile que, cuando cargue los servicios, le preguntarás cuáles hace cada una. Y al guardar servicios, si hay profesionales sin ninguno, pregúntale quién hace cada servicio y vuelve a guardar las profesionales.
+- Lo que no es del alta (cargar un festivo, el día libre de alguien) también lo puedes hacer si te lo pide.
+
+Cómo se hace cada sección (este es el guion de Mariana; los textos entre comillas, tal cual o casi):
 
 ## 1 · El negocio
 «Dime de qué sector es tu negocio.» Con la respuesta: «Ahora continuamos con la dirección del local.» La dirección tiene que estar completa: calle, número, código postal y ciudad. Después: «¿Y el teléfono del local?».
@@ -226,8 +267,7 @@ Llama a \`terminar_alta\` y di: «¡Excelente! Ya tienes tu portal listo.» Y a 
 «${RECORDATORIO_DEL_CIERRE}»
 
 # Si vuelve a mitad
-Si el alta estaba a medias, retómala por donde se quedó, sin volver a preguntar lo ya confirmado: resume en una línea lo que ya tienes y sigue con la siguiente sección.
-Cada vez que termines una sección, llama a \`avanzar_seccion\` con la siguiente.
+Lo ya confirmado está guardado: no lo vuelvas a preguntar. Si quiere seguir con el alta, dile en una línea lo que ya tienes y sigue con lo que falte.
 `;
 
 const CHAT_DEL_PORTAL = `
@@ -251,13 +291,19 @@ Lo que no puedes hacer por aquí y es de MAZZMKT: activar o pausar el negocio, e
  * (que cambia cuando el propio chat guarda algo): va al final para que lo de
  * delante siga sirviendo de caché.
  */
-export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { seccion: number; horaLocal: string }): string {
+export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { faltan: readonly SeccionDelAlta[] }): string {
   return [
     COMUN.trim(),
     (modo === 'alta' ? GUION_DEL_ALTA : CHAT_DEL_PORTAL).trim(),
     '# Este negocio',
     `Se llama ${n.nombre}. Nunca le preguntes el nombre ni lo cambies.`,
-    modo === 'alta' ? `Ahora mismo vas por la sección ${estado.seccion} (${SECCIONES[estado.seccion] ?? '?'}). Saludo de esta hora: «${saludoSegunLaHora(estado.horaLocal)}».` : '',
+    estado.faltan.length === SECCIONES_DEL_ALTA.length ? 'Todavía no hay nada cargado: si te saluda, ofrécele empezar el alta.' : '',
+    modo === 'alta'
+      ? estado.faltan.length
+        ? `Del alta falta: ${estado.faltan.map((s) => OFRECER_SECCION[s].replace(/ \(.*\)$/, '')).join('; ')}.`
+        : 'Del alta no falta ninguna sección: si no la has cerrado, llama a terminar_alta y haz el cierre.'
+      : '',
+    `Lo que puedes ofrecer ahora: ${loQuePuedoHacer(n, estado.faltan).join('; ')}.`,
     '',
     'Lo que ya está cargado (si guardas algo, esto cambia en el siguiente mensaje):',
     configuracionEnPalabras(n),

@@ -228,7 +228,10 @@ describe('entrar y salir (PC-11)', () => {
     const n = await alta('Sin Sesión Test');
     const rutas: Array<[string, string]> = [
       ['GET', 'yo'],
-      ['GET', 'chat'],
+      ['GET', 'chats'],
+      ['GET', `chats/${randomUUID()}`],
+      ['PUT', `chats/${randomUUID()}`],
+      ['DELETE', `chats/${randomUUID()}`],
       ['POST', 'chat'],
       ['GET', 'negocio'],
       ['PUT', 'negocio/datos'],
@@ -243,6 +246,42 @@ describe('entrar y salir (PC-11)', () => {
       expect((await portal(metodo, camino, metodo === 'GET' ? undefined : {}, 'inventado')).status, `${metodo} ${camino} inventado`).toBe(401);
     }
     expect(n.id).toBeTruthy();
+  });
+
+  it('PC-17 y PC-19: el historial de chats, el saludo, renombrar y borrar; nunca los de otro negocio', async () => {
+    const { crearChat } = await import('../src/db/portal.js');
+    const n = await alta('Chats Test');
+    const otro = await alta('Chats Ajeno Test');
+    const sesion = await cuentaDePrueba(n.id, `contacto-${randomUUID().slice(0, 6)}@ejemplo.test`);
+    const vacio = await portal('GET', 'chats', undefined, sesion);
+    expect(vacio.status).toBe(200);
+    expect(vacio.body.chats).toEqual([]);
+    // Las 10:00 en Madrid: buenos días, con el nombre del negocio.
+    expect(vacio.body.saludo).toBe('Buenos días, Chats Test. ¿En qué te puedo ayudar?');
+    expect(vacio.body.alta).toMatchObject({ terminada: false, hechas: [], faltan: ['negocio', 'servicios', 'profesionales', 'horario', 'reglas'] });
+
+    const a = await crearChat(sql, n.id, 'Horarios del local');
+    const ajeno = await crearChat(sql, otro.id, 'Chat del otro negocio');
+    const lista = await portal('GET', 'chats', undefined, sesion);
+    expect(lista.body.chats.map((c: { titulo: string }) => c.titulo)).toEqual(['Horarios del local']);
+    expect((await portal('GET', `chats/${a}`, undefined, sesion)).body).toEqual({ mensajes: [] });
+
+    expect((await portal('PUT', `chats/${a}`, { titulo: '  Horario de verano  ' }, sesion)).status).toBe(200);
+    expect((await portal('GET', 'chats', undefined, sesion)).body.chats[0].titulo).toBe('Horario de verano');
+    expect((await portal('PUT', `chats/${a}`, { titulo: '   ' }, sesion)).status).toBe(400);
+
+    // El de otro negocio no existe para esta sesión, se pida como se pida.
+    expect((await portal('GET', `chats/${ajeno}`, undefined, sesion)).status).toBe(404);
+    expect((await portal('PUT', `chats/${ajeno}`, { titulo: 'Mío' }, sesion)).status).toBe(404);
+    expect((await portal('DELETE', `chats/${ajeno}`, undefined, sesion)).status).toBe(404);
+    expect((await portal('POST', 'chat', { texto: 'Hola', chatId: ajeno }, sesion)).status).toBe(404);
+    const [intacto] = await sql<{ titulo: string; oculta_at: Date | null }[]>`select titulo, oculta_at from public.conversations where id = ${ajeno}`;
+    expect(intacto).toMatchObject({ titulo: 'Chat del otro negocio', oculta_at: null });
+
+    // Borrar lo saca del historial.
+    expect((await portal('DELETE', `chats/${a}`, undefined, sesion)).status).toBe(200);
+    expect((await portal('GET', 'chats', undefined, sesion)).body.chats).toEqual([]);
+    expect((await portal('GET', `chats/${a}`, undefined, sesion)).status).toBe(404);
   });
 
   it('una sesión caducada no vale', async () => {

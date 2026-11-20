@@ -307,6 +307,7 @@ function Datos({ negocio: n, poner }: Props) {
     );
   return (
     <Bloque id="datos" titulo="El negocio">
+      <Pideselo vacio={!n.direccion || !n.telefonoHumano} texto="Todavía no has cargado los datos de tu negocio." seccion="negocio" />
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo etiqueta="Nombre"><input className="campo" {...c('nombre')} /></Campo>
         <Campo etiqueta="Sector"><input className="campo" placeholder="estética, peluquería…" {...c('sector')} /></Campo>
@@ -332,9 +333,25 @@ function Datos({ negocio: n, poner }: Props) {
 
 const SERVICIO_NUEVO = { nombre: '', descripcion: '', duracionMin: 60, bufferMin: 0, precio: '', precioVisible: true, activo: true };
 
+/**
+ * PC-19 (Fase 9b): en el portal, lo vacío lo dice y ofrece pedírselo al
+ * agente. En el panel de Mariana no sale (no hay `pedirAlAgente`).
+ */
+function Pideselo({ vacio, texto, seccion }: { vacio: boolean; texto: string; seccion: Parameters<NonNullable<ReturnType<typeof useApiNegocio>['pedirAlAgente']>>[0] }) {
+  const { pedirAlAgente } = useApiNegocio();
+  if (!vacio || !pedirAlAgente) return null;
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <span>{texto}</span>
+      <button type="button" className="boton" onClick={() => pedirAlAgente(seccion)}>Pídeselo al agente</button>
+    </div>
+  );
+}
+
 function Servicios({ negocio: n, poner }: Props) {
   return (
     <Bloque id="servicios" titulo="Servicios" ayuda="Un servicio con citas no se borra: se desactiva y el agente deja de ofrecerlo; sus citas siguen ahí.">
+      <Pideselo vacio={n.servicios.length === 0} texto="Todavía no has cargado tus servicios." seccion="servicios" />
       <div className="space-y-3">
         {n.servicios.map((s) => <FilaServicio key={s.id} negocio={n} poner={poner} servicio={s} />)}
         <FilaServicio negocio={n} poner={poner} servicio={null} />
@@ -404,6 +421,7 @@ function FilaServicio({ negocio: n, poner, servicio: s }: Props & { servicio: Se
 function Profesionales({ negocio: n, poner }: Props) {
   return (
     <Bloque id="profesionales" titulo="Profesionales" ayuda="Y qué servicios hace cada una. Una profesional con citas no se borra: se desactiva.">
+      <Pideselo vacio={n.profesionales.length === 0} texto="Todavía no has dado de alta a tu equipo." seccion="profesionales" />
       <div className="space-y-3">
         {n.profesionales.map((p) => <FilaProfesional key={p.id} negocio={n} poner={poner} profesional={p} />)}
         <FilaProfesional negocio={n} poner={poner} profesional={null} />
@@ -465,6 +483,7 @@ function Horarios({ negocio: n, poner }: Props) {
       titulo="Horarios"
       ayuda="Cada día, cada profesional trabaja como el local (de serie), no trabaja (aunque el local abra) o con sus horas propias, que ese día reemplazan a las del local."
     >
+      <Pideselo vacio={n.horario.every((t) => t.staffId !== null)} texto="Todavía no has cargado los horarios." seccion="horario" />
       <EditorHorario negocio={n} poner={poner} staffId={null} titulo="Horario del local" />
       {n.profesionales.filter((p) => p.activo).map((p) => (
         <div key={p.id} className="mt-6 border-t border-slate-100 pt-4">

@@ -8,8 +8,10 @@
 // códigos de email. Por eso vive aparte y el núcleo no se toca.
 //
 // Lo que este archivo garantiza:
-//   · una conversación por negocio (la del portal), marcada `alta` para que su
-//     gasto no cuente en el tope (PC-14) y se vea aparte en el consumo;
+//   · cada mensaje va a SU chat (PC-17, Fase 9b): un chat nuevo si no trae
+//     ninguno, y solo chats de este negocio. Todas las conversaciones van
+//     marcadas `alta` para que su gasto no cuente en el tope (PC-14) y se vea
+//     aparte en el consumo;
 //   · el business_id sale SIEMPRE de la sesión, nunca del chat (PC-02);
 //   · los mensajes de la misma conversación se procesan de uno en uno
 //     (el mismo lock que el widget, D-45) y el mismo mensaje repetido no se
@@ -23,14 +25,13 @@ import type { Sql } from 'postgres';
 
 import type { EmailProvider } from '../adapters/email/types.js';
 import { BETA_FALLBACKS, type AgentSettings, type ModelClient } from '../core/agent.js';
-import { appendMessages, conversationUsage, createConversation, getConversation, loadHistory, type MessageRow, type UsageDetalle } from '../db/conversations.js';
+import { appendMessages, conversationUsage, loadHistory, type MessageRow, type UsageDetalle } from '../db/conversations.js';
 import { leerNegocio, type NegocioPanel } from '../db/negocios.js';
-import { estadoDelAlta, guardarEstadoDelAlta } from '../db/portal.js';
+import { cadenaDelChat, chatDelMensaje, continuarChat, crearChat, estadoDelAlta, recortarTitulo, renombrarChat, type SeccionDelAlta } from '../db/portal.js';
 import { eventosDelTurno, registrarUso, type LlamadaRegistrada } from '../db/usage.js';
 import { conLockDeConversacion, filasDelTurno, findUserMessage } from '../db/widget.js';
 import { contextoDelDia, definiciones, ejecutar, type ContextoPortal, type Resumen } from './herramientas.js';
 import { promptDelPortal, type ModoChat } from './prompt.js';
-import { utcToLocal } from '../core/time.js';
 
 type MessageParam = Anthropic.Beta.BetaMessageParam;
 
@@ -53,6 +54,32 @@ export interface PortalChatDeps {
   baseUrl: string;
   now?: () => Date;
   onError?: (e: unknown) => void;
+  /**
+   * PC-17: pone el título de un chat nuevo a partir del primer mensaje. Sin
+   * él (tests, e2e), el título es el propio mensaje recortado.
+   */
+  titulador?: (texto: string) => Promise<string>;
+}
+
+/** El modelo pequeño que titula los chats: barato y rápido (menos de un céntimo por chat). */
+export const MODELO_TITULOS = 'claude-haiku-5-5';
+
+/** PC-17: el titulador de verdad, con un modelo pequeño. */
+export function tituladorConIA(model: ModelClient): (texto: string) => Promise<string> {
+  return async (texto) => {
+    const r = await model.create({
+      model: MODELO_TITULOS,
+      max_tokens: 40,
+      system: [
+        {
+          type: 'text',
+          text: 'Pones el título de un chat en el portal de un negocio que configura su recepcionista. Con el primer mensaje de la persona, escribe SOLO el título: de 2 a 5 palabras, en español de España, sin comillas ni punto final. Ejemplos: «Horarios del local», «Alta del equipo», «Festivo del 8 de diciembre». Si el mensaje no se entiende, «Chat nuevo».',
+        },
+      ],
+      messages: [{ role: 'user', content: [{ type: 'text', text: texto.slice(0, 500) }] }],
+    });
+    return recortarTitulo(textoDe(r)) || 'Chat nuevo';
+  };
 }
 
 export interface RespuestaPortal {
@@ -61,24 +88,31 @@ export interface RespuestaPortal {
   resumen: Resumen | null;
   /** PC-11: con true, el portal aparece. */
   altaTerminada: boolean;
-  /** Por qué sección del guion va (para recibirle por ahí si vuelve). */
+  /** La siguiente sección del guion que falta (9 si no falta ninguna). */
   seccion: number;
+  /** PC-18: las secciones del alta que faltan. */
+  faltan: SeccionDelAlta[];
   modo: ModoChat;
+  /** PC-17: el chat donde va este mensaje (nuevo si no se pidió ninguno). */
+  chat: { id: string; titulo: string };
   aviso?: 'mensaje_largo' | 'ocupado' | 'error';
 }
 
 const TEXTO_ERROR = 'Perdona, ha habido un problema y no he podido responderte. Inténtalo de nuevo en un momento.';
 const TEXTO_OCUPADO = 'Sigo con tu mensaje anterior. Espera un momento y vuelve a enviarlo.';
 
-/** La conversación del portal de ese negocio; la crea si no existe. */
-export async function conversacionDelPortal(sql: Sql, businessId: string): Promise<{ conversationId: string; seccion: number; terminada: boolean }> {
-  const estado = await estadoDelAlta(sql, businessId);
-  if (estado.conversationId && (await getConversation(sql, businessId, estado.conversationId))) {
-    return { conversationId: estado.conversationId, seccion: estado.seccion, terminada: estado.terminadaAt !== null };
+/** El chat no es de este negocio, no existe o se borró: para el portal, no existe (PC-02). */
+export class ChatNoEncontrado extends Error {
+  constructor() {
+    super('Ese chat no existe.');
   }
-  const conv = await createConversation(sql, businessId, null, 'web', { alta: true });
-  await guardarEstadoDelAlta(sql, businessId, { conversationId: conv.id });
-  return { conversationId: conv.id, seccion: estado.seccion, terminada: estado.terminadaAt !== null };
+}
+
+/** La conversación donde sigue un chat (la última de su cadena). */
+async function ultimaDelChat(sql: Sql, businessId: string, chatId: string): Promise<string> {
+  const cadena = await cadenaDelChat(sql, businessId, chatId);
+  if (cadena.length === 0) throw new ChatNoEncontrado();
+  return cadena.at(-1)!;
 }
 
 function vacio(): UsageDetalle {
@@ -119,7 +153,7 @@ function textoDe(m: Anthropic.Beta.BetaMessage): string {
  */
 export async function turnoDelPortal(
   deps: PortalChatDeps,
-  p: { businessId: string; texto: string; clientMessageId: string },
+  p: { businessId: string; texto: string; clientMessageId: string; chatId?: string | null },
 ): Promise<RespuestaPortal> {
   const now = deps.now ?? (() => new Date());
   const onError = deps.onError ?? (() => {});
@@ -127,21 +161,44 @@ export async function turnoDelPortal(
 
   const ficha = await leerNegocio(deps.sql, p.businessId);
   if (!ficha) throw new Error(`El negocio ${p.businessId} no existe`);
-  const { conversationId, seccion, terminada } = await conversacionDelPortal(deps.sql, p.businessId);
+  const estado = await estadoDelAlta(deps.sql, p.businessId);
+  const terminada = estado.terminadaAt !== null;
   const modo: ModoChat = terminada ? 'portal' : 'alta';
+  const base = { altaTerminada: terminada, seccion: estado.seccion, faltan: estado.faltan, modo };
 
   if (texto.length > LIMITES_PORTAL.maxCaracteres) {
     return {
       respuesta: `Tu mensaje es muy largo. ¿Puedes contármelo en menos de ${LIMITES_PORTAL.maxCaracteres.toLocaleString('es-ES')} caracteres?`,
       resumen: null,
-      altaTerminada: terminada,
-      seccion,
-      modo,
+      ...base,
+      chat: { id: p.chatId ?? '', titulo: '' },
       aviso: 'mensaje_largo',
     };
   }
 
-  const externalId = `portal:${conversationId}:${p.clientMessageId}`;
+  // PC-17: sin chat, uno nuevo con su título. El título se pide en paralelo
+  // al turno y, si falla, se queda el mensaje recortado.
+  // El id de idempotencia no lleva el chat: así, si se reenvía el primer
+  // mensaje de un chat nuevo (se cortó la conexión), va al chat que ya abrió.
+  const externalId = `portal:${p.clientMessageId}`;
+  let chatId = p.chatId ?? (await chatDelMensaje(deps.sql, p.businessId, externalId));
+  let titulo = '';
+  let titulando: Promise<void> = Promise.resolve();
+  if (!chatId) {
+    titulo = recortarTitulo(texto);
+    chatId = await crearChat(deps.sql, p.businessId, titulo);
+    const id = chatId;
+    if (deps.titulador) {
+      titulando = deps.titulador(texto).then(
+        async (t) => {
+          titulo = recortarTitulo(t);
+          await renombrarChat(deps.sql, p.businessId, id, titulo);
+        },
+        (e: unknown) => onError(e),
+      );
+    }
+  }
+  const conversationId = await ultimaDelChat(deps.sql, p.businessId, chatId);
 
   const r = await conLockDeConversacion(deps.sql, conversationId, LIMITES_PORTAL.esperaLockMs, async () => {
     // Idempotencia: el mismo mensaje reenviado devuelve lo que ya se contestó.
@@ -149,32 +206,36 @@ export async function turnoDelPortal(
     if (previo) {
       const filas = await filasDelTurno(deps.sql, p.businessId, previo);
       const ultima = [...filas].reverse().find((f) => f.rol === 'assistant' && f.contenido);
-      const estado = await estadoDelAlta(deps.sql, p.businessId);
+      const ahora = await estadoDelAlta(deps.sql, p.businessId);
       return {
         respuesta: ultima?.contenido ?? TEXTO_ERROR,
         resumen: null,
-        altaTerminada: estado.terminadaAt !== null,
-        seccion: estado.seccion,
+        altaTerminada: ahora.terminadaAt !== null,
+        seccion: ahora.seccion,
+        faltan: ahora.faltan,
         modo,
+        chat: { id: chatId, titulo },
       } satisfies RespuestaPortal;
     }
-    return ejecutarTurno(deps, { businessId: p.businessId, conversationId, texto, externalId, ficha, modo, seccion, now, onError });
+    return ejecutarTurno(deps, { businessId: p.businessId, chatId, conversationId, texto, externalId, ficha, modo, faltan: estado.faltan, now, onError });
   });
 
-  if (!r) return { respuesta: TEXTO_OCUPADO, resumen: null, altaTerminada: terminada, seccion, modo, aviso: 'ocupado' };
-  return r.valor;
+  await titulando;
+  if (!r) return { respuesta: TEXTO_OCUPADO, resumen: null, ...base, chat: { id: chatId, titulo }, aviso: 'ocupado' };
+  return { ...r.valor, chat: { id: chatId, titulo: titulo || r.valor.chat.titulo } };
 }
 
 async function ejecutarTurno(
   deps: PortalChatDeps,
   p: {
     businessId: string;
+    chatId: string;
     conversationId: string;
     texto: string;
     externalId: string;
     ficha: NegocioPanel;
     modo: ModoChat;
-    seccion: number;
+    faltan: SeccionDelAlta[];
     now: () => Date;
     onError: (e: unknown) => void;
   },
@@ -186,13 +247,12 @@ async function ejecutarTurno(
   // Una conversación muy larga se cambia por otra nueva ANTES de que se
   // llene (alta:eval, 19/11/2026: con un cliente que habla mucho, el alta
   // llegaba al límite casi al final y se quedaba bloqueada para siempre). Lo
-  // confirmado ya está guardado sección a sección y `portal.alta` sabe por
-  // dónde va: la nueva sigue desde ahí, sin repetir nada.
+  // confirmado ya está guardado sección a sección y `portal.alta` sabe qué
+  // falta: la nueva sigue desde ahí, sin repetir nada. Para el cliente es el
+  // MISMO chat (PC-17): la nueva apunta a la vieja y el historial las junta.
   let continuacion = false;
   if (total(await usageAcumulado(sql, businessId, conversationId)) >= LIMITES_PORTAL.maxTokensConversacion * UMBRAL_NUEVA_CONVERSACION) {
-    const nueva = await createConversation(sql, businessId, null, 'web', { alta: true });
-    await guardarEstadoDelAlta(sql, businessId, { conversationId: nueva.id });
-    conversationId = nueva.id;
+    conversationId = await continuarChat(sql, businessId, conversationId);
     continuacion = true;
   }
 
@@ -242,7 +302,7 @@ async function ejecutarTurno(
     await appendMessages(sql, businessId, conversationId, [{ rol: 'assistant', contenido: texto, mensajes: delAsistente, extra: { respuesta_fija: motivo } }]);
     await registrar(deps, businessId, conversationId, p.externalId, motivo);
     const estado = await estadoDelAlta(sql, businessId);
-    return { respuesta: texto, resumen: ctx.resumen ?? null, altaTerminada: estado.terminadaAt !== null, seccion: estado.seccion, modo, aviso: 'error' };
+    return { respuesta: texto, resumen: ctx.resumen ?? null, altaTerminada: estado.terminadaAt !== null, seccion: estado.seccion, faltan: estado.faltan, modo, chat: { id: p.chatId, titulo: '' }, aviso: 'error' };
   };
 
   for (let vuelta = 0; ; vuelta++) {
@@ -250,14 +310,13 @@ async function ejecutarTurno(
       return fija('Esta conversación se ha hecho muy larga. Recarga la página y seguimos con lo que falte.', 'limite_tokens');
     }
 
-    const hora = utcToLocal(now(), ctx.ficha.timezone).hora;
     let respuesta: Anthropic.Beta.BetaMessage;
     try {
       respuesta = await model.create({
         model: settings.model,
         max_tokens: settings.maxTokensRespuesta,
         tools: definiciones(modo),
-        system: [{ type: 'text', text: promptDelPortal(ctx.ficha, modo, { seccion: p.seccion, horaLocal: hora }), cache_control: { type: 'ephemeral' } }],
+        system: [{ type: 'text', text: promptDelPortal(ctx.ficha, modo, { faltan: (await estadoDelAlta(sql, businessId)).faltan }), cache_control: { type: 'ephemeral' } }],
         cache_control: { type: 'ephemeral' },
         messages: mensajes,
         output_config: { effort: settings.effort },
@@ -329,7 +388,9 @@ async function ejecutarTurno(
       resumen: ctx.resumen ?? null,
       altaTerminada: estado.terminadaAt !== null,
       seccion: estado.seccion,
+      faltan: estado.faltan,
       modo,
+      chat: { id: p.chatId, titulo: '' },
     };
   }
 }

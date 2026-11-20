@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { carriles } from '../admin/src/paginas/Agenda';
+import { carriles } from '../admin/src/carriles.js';
 
 const cita = (id: string, horaInicio: string, horaFin: string) => ({ id, horaInicio, horaFin });
 

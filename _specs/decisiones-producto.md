@@ -1520,6 +1520,10 @@ un enlace de invitación ligado a **ese negocio** y al **email de su contacto**:
 
 ### PC-03 · El alta por chat · ✅ decidida el 05/11/2026
 
+> **Desde el 20/11/2026 (PC-18), el orden es libre:** el cliente empieza por
+> la sección que quiera y en el chat que quiera. La bienvenida (sección 0) la
+> hace la pantalla de inicio (PC-19). El resumen para confirmar sigue igual.
+
 El cliente abre el enlace y le recibe un chat que pregunta **una cosa cada
 vez**, como una conversación, siguiendo las secciones del panel:
 
@@ -1598,6 +1602,11 @@ el panel (PI-21):
 > ¿quieres que se dejen esas citas? ¿Las dejamos programadas o las cancelo?
 
 ### PC-11 · Qué ve el cliente al entrar por primera vez · ✅ decidida el 13/11/2026
+
+> **Cambiada el 20/11/2026 (PC-19):** el portal ya no se esconde hasta
+> terminar el alta: se ve siempre, y lo vacío se pide al agente. Y el chat ya
+> no saluda solo con la bienvenida del guion: saluda la pantalla de inicio.
+> Lo de abajo queda como historia.
 
 Mariana, 13/11/2026. El camino de un cliente nuevo, de principio a fin:
 
@@ -1748,6 +1757,128 @@ otra.
   otra), las citas **en su propio Google Calendar** (Fase 7) y conectar **su
   programa de gestión** (Flowww, Koibox…) cuando un cliente lo traiga: es el
   «si ya tienes una, la conectamos» de la frase de venta.
+
+### PC-17 · El chat del portal, con historial de chats · ✅ decidida el 20/11/2026
+
+Mariana, 20/11/2026: el chat del portal tiene que verse **como los chats de
+IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
+
+- **A la izquierda, el historial**: «Nuevo chat» y la lista de chats, el más
+  reciente arriba. El cliente puede tener uno para cada tema: en uno empieza
+  el alta con los datos del negocio, en otro carga los horarios, en otro da de
+  alta a su equipo.
+- **Lo que se guarda en un chat lo ven todos**: es el mismo negocio. El chat
+  es solo la conversación.
+- **El título lo pone la IA** con el primer mensaje («Horarios del negocio»),
+  con un modelo pequeño: menos de un céntimo por chat. Si falla, el título es
+  el propio mensaje recortado. El cliente lo puede **renombrar** y **borrar**.
+- **Borrar un chat** lo saca del historial; lo que se guardó desde él no se
+  borra, y su gasto sigue registrado (PC-14). El texto caduca como el resto
+  de los chats (PD-13).
+- **Arriba a la derecha, un círculo con las iniciales del negocio**
+  («Clínica Aurora» → CA). Al pincharlo se despliega, ahí mismo, un menú
+  con tres filas (Mariana, 20/11/2026):
+  - **Cuenta**, con el icono de perfil, y debajo el nombre del negocio y el
+    email con el que entra, los dos en gris, **como datos**: no se pinchan ni
+    abren nada.
+  - **Ajustes**, con el icono del engranaje: todavía no hay ninguno, así que
+    no abre nada. Qué lleva se decide más adelante.
+  - **Cerrar sesión**.
+
+  Sin ventanas encima: de momento no hay más información que enseñar. El menú se cierra con
+  Esc o pinchando fuera y se sigue donde se estaba. Sin segunda barra de
+  iconos: con dos secciones, el selector «Agente | Portal» basta.
+- **En el móvil, como ChatGPT** (Mariana, 20/11/2026):
+  - Un chat vacío **no lleva saludo**: la caja para escribir va abajo del
+    todo y las sugerencias justo encima.
+  - Arriba: ☰ a la izquierda y **el círculo del perfil a la derecha**, el
+    mismo desplegable que en el ordenador (Cuenta, Ajustes, Cerrar sesión).
+    **Sin «Agente | Portal» arriba**: va dentro del menú.
+  - El menú ☰ se abre desde la izquierda: arriba, **el nombre del negocio en
+    negrita** y **su email** debajo, y a la derecha **la lupa**, que busca en
+    el historial por el título del chat. Luego **Agente** y **Portal** (con
+    Agenda y Configuración debajo si se está en el portal), una raya, **el
+    historial** y, **abajo del todo, «Nuevo chat»**, con el mismo aspecto que
+    en el ordenador (nada de botón azul).
+  - En el ordenador no cambia nada.
+- **En Agenda y en Configuración, arriba, «⌂ Inicio › Agenda»** (Mariana,
+  20/11/2026): la vuelta al inicio del portal a la vista, con una casita, y
+  no solo en la barra de la izquierda (que en el móvil está escondida).
+
+**Construido el 20/11/2026** (Fase 9b).
+
+### PC-18 · El alta por temas, en el orden que quiera · ✅ decidida el 20/11/2026
+
+Cambia PC-03 en una cosa: el guion ya **no obliga a ir en orden**. El cliente
+puede empezar por la sección que quiera («quiero cargar los horarios») y en el
+chat que quiera.
+
+- El alta son las mismas cinco secciones (negocio, servicios, profesionales,
+  horarios, reservas). Si dice «quiero empezar el alta» o no dice cuál, el
+  agente va por la primera que falte, en el orden del guion.
+- **Qué secciones están hechas lo apunta el código al guardar**, no el
+  modelo. Después de cada sección, el agente le dice lo que falta y le
+  pregunta si siguen («Ya tenemos tus horarios. Te quedan los servicios y las
+  reglas de reserva. ¿Seguimos con los servicios?»).
+- El alta se cierra cuando están las cinco; antes, el código no deja.
+- Si carga el equipo antes que los servicios, el agente guarda las personas y,
+  al cargar los servicios, le pregunta quién hace cada uno.
+- Durante el alta también puede pedir cosas que no son del alta (cargar un
+  festivo).
+
+**Construido el 20/11/2026** (Fase 9b).
+
+### PC-19 · El portal se ve siempre; lo vacío se pide al agente · ✅ decidida el 20/11/2026
+
+Cambia PC-11 en lo de esconder el portal hasta terminar el alta.
+
+- **Arriba en el centro, «Agente | Portal».** El portal está **siempre**
+  disponible, con o sin datos.
+- **Lo que está vacío lo dice**: «Todavía no has cargado los horarios», con un
+  botón **«Pídeselo al agente»**. Ese botón abre un **chat nuevo con el
+  mensaje ya enviado** («Quiero empezar a dar de alta los horarios del
+  negocio»), así el agente sabe de qué sección viene y arranca por ahí.
+- El inicio del portal enseña las cinco secciones del alta: hechas con ✓ y
+  las que faltan con su botón.
+- **El recepcionista sigue sin atender clientas** hasta que el alta esté
+  completa y Mariana lo active (PC-13, PI-03).
+- **Al entrar**, el chat saluda con la hora y el nombre del negocio, **en dos
+  líneas** (Mariana, 20/11/2026, por si el nombre es largo): «Buenos días,
+  Clínica Aurora» y debajo «¿En qué te puedo ayudar?» (*Buenos días* hasta las 13,
+  *Buenas tardes* hasta las 21, *Buenas noches* después; en español de España,
+  como todo lo que lee el cliente). La caja para escribir está **en el
+  centro**; en cuanto escribe, baja al pie. El agente ya no saluda solo ni da
+  la bienvenida del guion: el portal ya lo hizo.
+- **Debajo de la caja, sugerencias** que se tocan, según lo que tenga hecho:
+  «Empezar el alta», «Cargar mis servicios», «Dar de alta a mi equipo»…; con el
+  alta terminada, «Cargar un festivo», «Cambiar un horario», «Cambiar un
+  servicio».
+
+**Construido el 20/11/2026** (Fase 9b).
+
+### PC-20 · Cuando no entiende el mensaje · ✅ decidida el 20/11/2026
+
+Mariana, 20/11/2026: si el cliente escribe algo sin sentido («kjsbdgkljsbdg»),
+el agente contesta **«Disculpa, no he comprendido tu mensaje.»** y a
+continuación **lo que puede hacer**, con sentido: no le ofrece «dar de alta tu
+negocio» si ya está dado de alta.
+
+La lista de lo que puede ofrecer **la calcula el código** con lo que ya está
+cargado (las secciones que faltan del alta, cambiar un servicio si hay
+servicios, cargar un festivo, abrir un día suelto si hay equipo…), y el
+agente la dice en una frase: «Puedo cargar los datos de tu negocio, dar de
+alta tus servicios… o cargar un festivo. ¿Por dónde empezamos?».
+
+**Y si saluda (Mariana, 20/11/2026):** responde a lo que se le dice. A un
+«hola» contesta con el saludo de la hora y «¿cómo puedo ayudarte?»; **solo si
+no hay nada cargado** añade «¿Comenzamos con el alta?»; y termina con dos o
+tres cosas que puede hacer «y todo lo que necesites. ¿Por dónde quieres
+empezar?». Con el negocio vacío, la respuesta real fue: *«Buenos días, ¿cómo
+puedo ayudarte? ¿Comenzamos con el alta? Puedo cargar los datos de tu negocio
+(sector, dirección y teléfono), dar de alta tus servicios o a tu equipo, y todo
+lo que necesites. ¿Por dónde quieres empezar?»*
+
+**Construido el 20/11/2026** (Fase 9b).
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 

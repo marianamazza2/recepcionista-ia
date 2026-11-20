@@ -14,9 +14,17 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 9 (portal del cliente y alta por chat) construida el
-19/11/2026** en la rama `fase-9-spec`, a falta de que Mariana revise el
-informe de pruebas y mergee. Un negocio nuevo se da de alta **hablando con un
+**Estado: Fase 9 (portal del cliente y alta por chat) cerrada el
+20/11/2026**, en local y en la nube, con el portal publicado en
+https://recepcionista-ia-api.vercel.app/portal/ (solo con el enlace de
+invitación o con cuenta). Probada con los 76 casos del plan de aceptación,
+los 3 de la nube incluidos («Informe de pruebas · Fase 9», Research Desk).
+Antes del primer cliente real falta conectar un proveedor de email de verdad
+(PC-15): sin él, el código para crear la cuenta no le llega. **Fase 9b** (el
+chat del portal como los chats de IA conocidos: historial de chats, alta por
+temas, portal siempre visible; PC-17 a PC-20) construida en local el
+20/11/2026, en la rama `fase-9b-chat-portal`. Lo siguiente es la Fase 5
+(conocimiento del negocio). Un negocio nuevo se da de alta **hablando con un
 chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
 crea su cuenta con el código que le llega al email (PC-11), el chat le
 pregunta una cosa cada vez siguiendo el guion que dictó ella y, al terminar,
@@ -125,6 +133,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local y en la nube (12/11/2026) |
 | `20261113120000_email_y_codigo` | PA-16, PA-17, PW-18: `customers.email` en minúsculas, único por negocio (y el teléfono, único solo entre las fichas sin email); `conversations.verificada_at`; `codigos_verificacion` (solo el hash, 3 intentos) y `email_messages`, con RLS. Aplicada en local y en la nube (13/11/2026: SQL 13/13 y TypeScript 210/210 por los dos modos del pooler) |
 | `20261113130000_borrado_y_avisos` | PD-13: `app.borrar_conversaciones_vencidas()` (el texto del chat caduca a los 6 meses; la conversación, la ficha, las citas y el consumo se quedan) y `app.borrar_clienta()` (derecho de supresión: su texto fuera, sus conversaciones desligadas, su ficha anónima y sus citas en pie). PI-20: `app.profesional_trabaja_algun_dia()` y `negocio_lo_que_falta()` ya no cuenta a quien no trabaja ningún día. Aplicada en local y en la nube (13/11/2026: SQL 14/14 y TypeScript 222/222 por los dos modos del pooler) |
+| `20261121120000_chats_del_portal` | Fase 9b: `conversations.titulo`, `oculta_at` y `continua_de` (varios chats en el portal, PC-17) y `portal.alta.secciones_hechas` (el alta por temas, PC-18). Aplicada en local |
 | `20261119120000_portal_cliente` | Fase 9: esquema `portal` (invitaciones con hash y caducidad, códigos, cuentas, sesiones y estado del alta), `staff_turnos_sueltos` (PC-06) y `conversations.alta` (PC-14); `tramos_efectivos` y `slot_es_valido` aplican los turnos sueltos. Aplicada en local y en la nube (20/11/2026: SQL 15/15 y TypeScript 256/256 por los dos modos del pooler) |
 
 ### Las dos garantías que ya están puestas
@@ -443,8 +452,9 @@ panel).
 
 La herramienta del **negocio** (la de Mariana es el panel). Spec:
 [`_specs/fase-9-portal-cliente.md`](_specs/fase-9-portal-cliente.md); reglas
-**PC-01 a PC-16** en `decisiones-producto.md`; el guion del alta, en la nota
-«Guion del alta por chat» de Research Desk.
+**PC-01 a PC-20** en `decisiones-producto.md` (el aspecto de chat, de la Fase
+9b: [`_specs/fase-9b-chat-portal.md`](_specs/fase-9b-chat-portal.md)); el
+guion del alta, en la nota «Guion del alta por chat» de Research Desk.
 
 El camino entero:
 
@@ -455,12 +465,16 @@ El camino entero:
 2. **El cliente abre el enlace**, recibe un código de seis dígitos en ese
    email, elige su contraseña y ya tiene cuenta. A partir de ahí entra con su
    email y su contraseña: no hay registro público (PC-11).
-3. **Dentro ve solo el chat** y hace el alta: su negocio, sus servicios, su
-   equipo, sus horarios y sus reglas de reserva, una cosa cada vez y con un
-   resumen para confirmar al final de cada sección (PC-03). Si se va a mitad,
-   al volver sigue por donde lo dejó.
-4. **Al terminar aparece su portal** con todo lo que cargó, y a Mariana le
-   llega el aviso en su panel para revisarlo y activarlo (PC-11, PC-13).
+3. **Dentro le recibe el chat**, como los chats de IA que todos conocen:
+   «Buenos días, [negocio]. ¿En qué te puedo ayudar?», sugerencias, y a la
+   izquierda el historial (un chat por tema, PC-17). Hace el alta —su negocio,
+   sus servicios, su equipo, sus horarios y sus reglas de reserva— **en el
+   orden que quiera** (PC-18), una cosa cada vez y con un resumen para
+   confirmar al final de cada sección (PC-03).
+4. **El portal está siempre** («Agente | Portal», PC-19): lo vacío dice
+   «Pídeselo al agente» y abre un chat con ese pedido. Al terminar las cinco
+   secciones, a Mariana le llega el aviso en su panel para revisarlo y
+   activarlo (PC-13).
 5. **Después**: ve y cambia su configuración a mano (las mismas secciones y
    las mismas reglas que el panel), ve su **agenda** y pide cambios al chat
    («Núria no viene el jueves»). No ve el tope ni puede activar su negocio:

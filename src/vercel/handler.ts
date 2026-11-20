@@ -28,6 +28,7 @@ import { EmailDePrueba } from '../adapters/email/prueba.js';
 import { authPanelDesdeEnv } from '../api/admin/auth.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
+import { tituladorConIA } from '../alta/agente.js';
 import { anthropicModelClient, settingsFromEnv } from '../core/agent.js';
 import { createSql } from '../db/client.js';
 
@@ -42,11 +43,14 @@ function publicUrl(): string {
 function crearApi(): ReturnType<typeof createApi> {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error('Falta ANTHROPIC_API_KEY en las variables del proyecto de Vercel');
   const settings = settingsFromEnv();
+  const model = anthropicModelClient(settings);
   return createApi({
     // Pocas conexiones: el pooler de Supabase reparte; varias peticiones
     // pueden compartir instancia (Fluid Compute).
     sql: createSql(undefined, { max: 5, idle_timeout: 20 }),
-    model: anthropicModelClient(settings),
+    model,
+    // PC-17: el título de los chats del portal, con un modelo pequeño.
+    titulador: tituladorConIA(model),
     settings,
     // PW-18: hasta que Mariana elija proveedor, el email de prueba (va al log).
     email: new EmailDePrueba(),

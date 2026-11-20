@@ -82,10 +82,18 @@ pantalla.
     librería de calendario (D-89). **Qué horas están abiertas no se calcula
     aquí**: viene de la API (`app.tramos_efectivos`), así que lo sombreado es
     exactamente lo que el motor considera cerrado.
-11. **El portal, durante el alta, es solo el chat** (PC-11): las secciones
-    aparecen al terminar. El resumen para confirmar lo dibuja
-    `src/portal/Chat.tsx` con los datos que manda el agente: **el formato no
-    lo inventa el modelo**.
+11. **El portal se ve como un chat de IA** (Fase 9b, PC-17 y PC-19): a la
+    izquierda «Nuevo chat» y el historial; arriba «Agente | Portal» y el
+    círculo del perfil (despliega «Cuenta» con el nombre y el email como datos, «Ajustes» —todavía no abre nada— y Cerrar sesión; sin ventanas). En Agenda y Configuración, arriba, «⌂ Inicio › …» (`VolverAlInicio`) para volver al inicio del portal. En el móvil se ve como ChatGPT: chat vacío sin saludo y con la caja abajo, el círculo arriba a la derecha y sin selector arriba; en el menú ☰, el nombre del negocio, su email y la lupa que busca chats, luego Agente y Portal, el historial y «Nuevo chat» abajo (`BarraLateral` con `sesion`). El portal está
+    **siempre**, con o sin datos; lo vacío ofrece «Pídeselo al agente»,
+    que abre `#/nuevo/:pedido` (un chat nuevo con el mensaje de
+    `src/portal/pedir.ts` ya enviado). En la ficha compartida, ese aviso
+    sale solo si el contexto trae `pedirAlAgente` (el panel no lo pone). El
+    resumen para confirmar lo dibuja `src/portal/Chat.tsx` con los datos
+    que manda el agente: **el formato no lo inventa el modelo**.
+12. **Selectores de test estables**: las respuestas del chat llevan
+    `data-rol="asistente"` (y las del cliente `data-rol="cliente"`); la caja
+    es «Escribe tu mensaje». Usá eso, no clases de Tailwind.
 
 ## Tests
 

@@ -318,10 +318,24 @@ export async function borrarSesionesCaducadas(sql: Sql, ahora: Date = new Date()
 // El estado del alta (PC-03, PC-11, PC-13)
 // -----------------------------------------------------------------------------
 
+/** PC-18: las cinco secciones que hacen falta para terminar el alta, en el orden del guion. */
+export const SECCIONES_DEL_ALTA = ['negocio', 'servicios', 'profesionales', 'horario', 'reglas'] as const;
+export type SeccionDelAlta = (typeof SECCIONES_DEL_ALTA)[number];
+
+/** El número de cada una en el guion (0 bienvenida … 9 cierre). */
+const NUMERO_EN_EL_GUION: Record<SeccionDelAlta, number> = { negocio: 1, servicios: 2, profesionales: 3, horario: 4, reglas: 6 };
+
 export interface EstadoAlta {
   businessId: string;
-  /** 0 bienvenida … 9 cierre (las secciones del guion). */
+  /**
+   * La siguiente sección del guion que falta (1 el negocio … 6 reservas; 9 si
+   * no falta ninguna). Desde PC-18 se calcula con `seccionesHechas`.
+   */
   seccion: number;
+  /** PC-18: las secciones ya guardadas, en el orden en que se hicieron. */
+  seccionesHechas: SeccionDelAlta[];
+  /** Las que faltan, en el orden del guion. */
+  faltan: SeccionDelAlta[];
   conversationId: string | null;
   terminadaAt: Date | null;
   revisadaAt: Date | null;
@@ -330,15 +344,20 @@ export interface EstadoAlta {
 interface AltaRow {
   business_id: string;
   seccion: number;
+  secciones_hechas: string[];
   conversation_id: string | null;
   terminada_at: Date | null;
   revisada_at: Date | null;
 }
 
 function aEstado(r: AltaRow): EstadoAlta {
+  const hechas = r.secciones_hechas.filter((x): x is SeccionDelAlta => (SECCIONES_DEL_ALTA as readonly string[]).includes(x));
+  const faltan = SECCIONES_DEL_ALTA.filter((x) => !hechas.includes(x));
   return {
     businessId: r.business_id,
-    seccion: r.seccion,
+    seccion: r.terminada_at ? 9 : faltan[0] ? NUMERO_EN_EL_GUION[faltan[0]] : 9,
+    seccionesHechas: hechas,
+    faltan: r.terminada_at ? [] : faltan,
     conversationId: r.conversation_id,
     terminadaAt: r.terminada_at,
     revisadaAt: r.revisada_at,
@@ -378,6 +397,27 @@ export async function guardarEstadoDelAlta(
              conversation_id = coalesce(${cambios.conversationId ?? null}::uuid, conversation_id),
              terminada_at    = case when ${cambios.terminada ?? false} then coalesce(terminada_at, ${ahora}) else terminada_at end,
              updated_at      = ${ahora}
+       where business_id = ${businessId}::uuid
+      returning *`,
+  );
+  return aEstado(r!);
+}
+
+/**
+ * PC-18: esa sección del alta ya está guardada. Lo llama el código al guardar
+ * (src/alta/herramientas.ts), no el modelo: así «qué falta» nunca depende de
+ * que el modelo se acuerde de decirlo.
+ */
+export async function marcarSeccionHecha(sql: Sql, businessId: string, seccion: SeccionDelAlta, ahora: Date = new Date()): Promise<EstadoAlta> {
+  await estadoDelAlta(sql, businessId);
+  const [r] = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<AltaRow[]>`
+      update portal.alta
+         set secciones_hechas = case when ${seccion} = any(secciones_hechas) then secciones_hechas
+                                     else array_append(secciones_hechas, ${seccion}::text) end,
+             updated_at = ${ahora}
        where business_id = ${businessId}::uuid
       returning *`,
   );
@@ -459,4 +499,158 @@ export async function hayConfirmacion(
         from propuesta`,
   );
   return r?.confirmada ?? false;
+}
+
+// -----------------------------------------------------------------------------
+// Los chats del portal (PC-17)
+// -----------------------------------------------------------------------------
+// Un chat es una conversación de `public.conversations` marcada `alta`. Si se
+// hace demasiado largo sigue en otra conversación que apunta a la anterior
+// (`continua_de`): el chat se identifica SIEMPRE por la primera (la raíz), y
+// los mensajes se leen de toda la cadena. «Borrar» lo oculta del historial.
+
+export interface ChatDelPortal {
+  /** El id de la primera conversación del chat: el que ve el portal. */
+  id: string;
+  titulo: string;
+  /** El último mensaje (o cuándo se creó, si no tiene). */
+  actualizado: Date;
+}
+
+/** Los chats del historial, el más reciente primero. */
+export async function chatsDelPortal(sql: Sql, businessId: string, limite = 100): Promise<ChatDelPortal[]> {
+  const rows = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ id: string; titulo: string | null; actualizado: Date }[]>`
+      with recursive cadena as (
+        select c.id as raiz, c.id
+          from public.conversations c
+         where c.business_id = ${businessId}::uuid and c.alta and c.continua_de is null and c.oculta_at is null
+        union all
+        select k.raiz, n.id
+          from cadena k
+          join public.conversations n on n.business_id = ${businessId}::uuid and n.continua_de = k.id
+      )
+      select r.id, r.titulo,
+             greatest(r.created_at, coalesce(max(m.created_at), r.created_at)) as actualizado
+        from public.conversations r
+        join cadena k on k.raiz = r.id
+        left join public.messages m on m.business_id = ${businessId}::uuid and m.conversation_id = k.id
+       where r.business_id = ${businessId}::uuid
+       group by r.id, r.titulo, r.created_at
+       order by actualizado desc
+       limit ${limite}`,
+  );
+  return rows.map((r) => ({ id: r.id, titulo: r.titulo ?? 'Chat nuevo', actualizado: r.actualizado }));
+}
+
+/**
+ * Las conversaciones de un chat, de la primera a la última. Vacío si ese chat
+ * no es de este negocio, no es del portal o está oculto: para el portal, no
+ * existe (PC-02).
+ */
+export async function cadenaDelChat(sql: Sql, businessId: string, chatId: string): Promise<string[]> {
+  const rows = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ id: string }[]>`
+      with recursive cadena as (
+        select c.id, 0 as n
+          from public.conversations c
+         where c.business_id = ${businessId}::uuid and c.id = ${chatId}::uuid
+           and c.alta and c.continua_de is null and c.oculta_at is null
+        union all
+        select x.id, k.n + 1
+          from cadena k
+          join public.conversations x on x.business_id = ${businessId}::uuid and x.continua_de = k.id
+      )
+      select id from cadena order by n`,
+  );
+  return rows.map((r) => r.id);
+}
+
+/**
+ * El chat donde ya está ese mensaje del cliente (por su id de idempotencia),
+ * para que un reenvío del primer mensaje de un chat no abra otro chat.
+ */
+export async function chatDelMensaje(sql: Sql, businessId: string, externalId: string): Promise<string | null> {
+  const [r] = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ id: string }[]>`
+      with recursive hacia_atras as (
+        select c.id, c.continua_de
+          from public.messages m
+          join public.conversations c on c.business_id = m.business_id and c.id = m.conversation_id
+         where m.business_id = ${businessId}::uuid and m.external_id = ${externalId} and m.rol = 'user' and c.alta
+        union all
+        select c.id, c.continua_de
+          from hacia_atras h
+          join public.conversations c on c.business_id = ${businessId}::uuid and c.id = h.continua_de
+      )
+      select id from hacia_atras where continua_de is null limit 1`,
+  );
+  return r?.id ?? null;
+}
+
+/** Un chat nuevo en el historial. */
+export async function crearChat(sql: Sql, businessId: string, titulo: string): Promise<string> {
+  const [r] = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ id: string }[]>`
+      insert into public.conversations (business_id, canal, alta, titulo)
+      values (${businessId}::uuid, 'web', true, ${recortarTitulo(titulo)})
+      returning id`,
+  );
+  return r!.id;
+}
+
+/** El chat sigue en una conversación nueva (la anterior se hizo muy larga). */
+export async function continuarChat(sql: Sql, businessId: string, ultimaId: string): Promise<string> {
+  const [r] = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ id: string }[]>`
+      insert into public.conversations (business_id, canal, alta, titulo, continua_de)
+      select business_id, 'web', true, titulo, id
+        from public.conversations
+       where business_id = ${businessId}::uuid and id = ${ultimaId}::uuid
+      returning id`,
+  );
+  return r!.id;
+}
+
+export async function renombrarChat(sql: Sql, businessId: string, chatId: string, titulo: string): Promise<boolean> {
+  const filas = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx`
+      update public.conversations set titulo = ${recortarTitulo(titulo)}
+       where business_id = ${businessId}::uuid and id = ${chatId}::uuid and alta and continua_de is null and oculta_at is null
+      returning id`,
+  );
+  return filas.length > 0;
+}
+
+/** «Borrar» un chat: sale del historial; las filas (y su gasto) se quedan. */
+export async function ocultarChat(sql: Sql, businessId: string, chatId: string, ahora: Date = new Date()): Promise<boolean> {
+  const cadena = await cadenaDelChat(sql, businessId, chatId);
+  if (cadena.length === 0) return false;
+  await inTenant(
+    sql,
+    businessId,
+    (tx) => tx`
+      update public.conversations set oculta_at = ${ahora}
+       where business_id = ${businessId}::uuid and id = any(${cadena}::uuid[])`,
+  );
+  return true;
+}
+
+/** Un título para el historial: una línea, sin espacios de sobra, hasta 80 caracteres. */
+export function recortarTitulo(t: string): string {
+  const limpio = t.replace(/\s+/g, ' ').trim().replace(/^["«']+|["»'.]+$/g, '').trim();
+  if (!limpio) return 'Chat nuevo';
+  return limpio.length <= 80 ? limpio : `${limpio.slice(0, 77).trimEnd()}…`;
 }
