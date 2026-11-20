@@ -175,9 +175,9 @@ function Saludo({ saludo }: { saludo: string }) {
   // El saludo es el título (h1); la pregunta, su subtítulo (h2).
   return (
     <div className="mb-10 max-w-3xl text-center leading-tight text-slate-800">
-      <h1 className="break-words text-3xl font-medium sm:text-[2.5rem]">{arriba}</h1>
-      {/* Mismo estilo que el h1, apenas más chica (como la captura de Mariana, 20/11/2026). */}
-      {abajo ? <h2 className="mt-2 text-[1.625rem] font-medium sm:text-[2.25rem]">{abajo}</h2> : null}
+      <h1 className="break-words text-[24px] font-medium">{arriba}</h1>
+      {/* Mismo estilo que el h1: el saludo a 24 px y la pregunta a 20 px (Mariana, 20/11/2026). */}
+      {abajo ? <h2 className="mt-1 text-[20px] font-medium">{abajo}</h2> : null}
     </div>
   );
 }
