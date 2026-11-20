@@ -1776,12 +1776,15 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   borra, y su gasto sigue registrado (PC-14). El texto caduca como el resto
   de los chats (PD-13).
 - **Arriba a la derecha, un círculo con las iniciales del negocio**
-  («Clínica Aurora» → CA). Al pincharlo se despliega, ahí mismo, **Cuenta**:
-  el nombre del negocio y el email con el que entra, **como datos** (no se
-  pinchan ni abren nada), y debajo **Cerrar sesión**. Sin ventanas ni
-  páginas de Perfil o Ajustes (Mariana, 20/11/2026): de momento no hay más
-  información que enseñar, así que abrir algo no tiene sentido. Si algún día
-  hay ajustes de verdad, se decide entonces dónde van. El menú se cierra con
+  («Clínica Aurora» → CA). Al pincharlo se despliega, ahí mismo, un menú
+  con tres filas (Mariana, 20/11/2026):
+  - **Cuenta**, con el icono de perfil, y debajo el nombre del negocio y el
+    email con el que entra, **como datos**: no se pinchan ni abren nada.
+  - **Ajustes**, con el icono del engranaje y «Próximamente»: todavía no hay
+    ninguno, así que no abre nada. Qué lleva se decide más adelante.
+  - **Cerrar sesión**.
+
+  Sin ventanas encima: de momento no hay más información que enseñar. El menú se cierra con
   Esc o pinchando fuera y se sigue donde se estaba. Sin segunda barra de
   iconos: con dos secciones, el selector «Agente | Portal» basta.
 - En el móvil, el historial se abre con el botón ☰.

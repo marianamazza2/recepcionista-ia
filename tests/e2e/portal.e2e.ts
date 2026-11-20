@@ -398,13 +398,14 @@ describe('de la invitación a la primera cita', () => {
     expect(s!.d).toBe(75);
     await portal.screenshot({ path: join(CAPTURAS, '12-portal-chat-cambio.png'), fullPage: true });
     // El círculo enseña la cuenta ahí mismo, como datos (Mariana, 20/11/2026):
-    // «Cuenta», el nombre y el email, sin nada que pinchar ni ventanas; y
-    // Cerrar sesión. Se sigue en el mismo chat.
+    // «Cuenta» con el nombre y el email, «Ajustes» (próximamente) y Cerrar
+    // sesión, sin ventanas. Se sigue en el mismo chat.
     const aqui = portal.url();
     await portal.getByLabel('Tu perfil').click();
     const cuenta = portal.getByRole('region', { name: 'Cuenta' });
     await expect.poll(() => cuenta.isVisible(), ESPERA).toBe(true);
     expect(await cuenta.innerText()).toContain(EMAIL_CLIENTE);
+    expect(await portal.getByRole('menu').innerText()).toContain('Ajustes');
     expect(await portal.getByRole('menuitem').allInnerTexts()).toEqual(['Cerrar sesión']);
     expect(await portal.getByRole('dialog').count()).toBe(0);
     await portal.screenshot({ path: join(CAPTURAS, '12b-portal-cuenta.png') });

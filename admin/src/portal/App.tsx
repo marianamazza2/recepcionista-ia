@@ -12,9 +12,10 @@
 //     cargado… Pídeselo al agente», y ese botón abre un chat nuevo con el
 //     mensaje ya enviado.
 //   · Arriba a la derecha, un círculo con las iniciales del negocio. Al
-//     pincharlo: «Cuenta», con el nombre del negocio y el email como datos
-//     (no se pinchan), y Cerrar sesión. Sin ventanas ni páginas aparte
-//     (Mariana, 20/11/2026): de momento no hay nada más que enseñar.
+//     pincharlo: «Cuenta» (icono de perfil) con el nombre del negocio y el
+//     email debajo como datos, «Ajustes» (engranaje, «Próximamente») y
+//     Cerrar sesión. Nada abre ventanas ni páginas aparte (Mariana,
+//     20/11/2026): de momento no hay más que enseñar.
 //
 //   #/invitacion/:token   crear la cuenta con el enlace (PC-02)
 //   #/                    un chat nuevo: el saludo y las sugerencias
@@ -247,12 +248,18 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
       </button>
       {abierto ? (
         <div role="menu" aria-label="Tu cuenta" className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          {/* La cuenta se ve aquí mismo, como datos: no se pincha ni abre nada (Mariana, 20/11/2026). */}
-          <section aria-label="Cuenta" className="px-3 pb-2.5 pt-2">
-            <p className="text-xs font-medium text-slate-400">Cuenta</p>
-            <p className="mt-1.5 truncate text-sm font-medium text-slate-900">{sesion.negocio.nombre}</p>
-            <p className="truncate text-sm text-slate-500">{sesion.email}</p>
+          {/* Cuenta: el nombre y el email se ven aquí mismo, como datos; no se pincha ni abre nada (Mariana, 20/11/2026). */}
+          <section aria-label="Cuenta" className="px-3 py-2">
+            <p className="flex items-center gap-3 text-sm text-slate-700"><IconoPerfil />Cuenta</p>
+            <div className="min-w-0 pl-[30px] pt-1">
+              <p className="truncate text-xs font-medium text-slate-900">{sesion.negocio.nombre}</p>
+              <p className="truncate text-xs text-slate-500">{sesion.email}</p>
+            </div>
           </section>
+          {/* Ajustes: todavía no hay ninguno, así que no abre nada; se decide qué lleva más adelante (PC-17). */}
+          <p aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700">
+            <IconoAjustes />Ajustes<span className="ml-auto text-xs text-slate-400">Próximamente</span>
+          </p>
           <div className="my-1 border-t border-slate-100" />
           <button role="menuitem" type="button" className={opcion} onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
         </div>
@@ -431,6 +438,24 @@ function InicioPortal({ negocio: n, alta }: { negocio: Negocio; alta: { terminad
         )
       ) : null}
     </div>
+  );
+}
+
+function IconoPerfil() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <circle cx="10" cy="7" r="3.2" />
+      <path d="M3.8 16.5c1.2-2.8 3.5-4.2 6.2-4.2s5 1.4 6.2 4.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconoAjustes() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <circle cx="10" cy="10" r="2.6" />
+      <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" strokeLinecap="round" />
+    </svg>
   );
 }
 
