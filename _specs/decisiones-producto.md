@@ -1818,8 +1818,9 @@ Cambia PC-11 en lo de esconder el portal hasta terminar el alta.
   las que faltan con su botón.
 - **El recepcionista sigue sin atender clientas** hasta que el alta esté
   completa y Mariana lo active (PC-13, PI-03).
-- **Al entrar**, el chat saluda con la hora y el nombre del negocio: «Buenos
-  días, Clínica Aurora. ¿En qué te puedo ayudar?» (*Buenos días* hasta las 13,
+- **Al entrar**, el chat saluda con la hora y el nombre del negocio, **en dos
+  líneas** (Mariana, 20/11/2026, por si el nombre es largo): «Buenos días,
+  Clínica Aurora» y debajo «¿En qué te puedo ayudar?» (*Buenos días* hasta las 13,
   *Buenas tardes* hasta las 21, *Buenas noches* después; en español de España,
   como todo lo que lee el cliente). La caja para escribir está **en el
   centro**; en cuanto escribe, baja al pie. El agente ya no saluda solo ni da

@@ -113,7 +113,7 @@ export function Chat({ chatId, saludo, sugerencias, mensajeInicial, alCrear, alR
   if (lineas.length === 0 && !enviando) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-4 pb-24">
-        <h1 className="mb-8 text-center text-2xl font-medium text-slate-800 sm:text-3xl">{saludo}</h1>
+        <Saludo saludo={saludo} />
         <div className="w-full max-w-3xl">
           {caja}
           {error ? <div className="mt-3"><Aviso error={error} /></div> : null}
@@ -160,6 +160,23 @@ export function Chat({ chatId, saludo, sugerencias, mensajeInicial, alCrear, alR
         <p className="mt-2 text-center text-xs text-slate-400">Antes de guardar nada, te enseño un resumen para que lo confirmes.</p>
       </div>
     </div>
+  );
+}
+
+/**
+ * PC-19: el saludo en dos líneas (Mariana, 20/11/2026): «Buenos días, Clínica
+ * Aurora» arriba y «¿En qué te puedo ayudar?» debajo, para que un nombre largo
+ * no descoloque la pregunta. Un nombre muy largo parte su línea, no la de abajo.
+ */
+function Saludo({ saludo }: { saludo: string }) {
+  const corte = saludo.indexOf('¿');
+  const arriba = (corte > 0 ? saludo.slice(0, corte) : saludo).trim().replace(/\.$/, '');
+  const abajo = corte > 0 ? saludo.slice(corte).trim() : '';
+  return (
+    <h1 className="mb-10 max-w-3xl text-center text-3xl font-medium leading-tight text-slate-800 sm:text-[2.5rem]">
+      <span className="block break-words">{arriba}</span>
+      {abajo ? <span className="mt-2 block">{abajo}</span> : null}
+    </h1>
   );
 }
 

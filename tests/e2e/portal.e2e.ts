@@ -233,7 +233,7 @@ describe('de la invitación a la primera cita', () => {
     await expect.poll(() => portal.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
     // PC-19: la pantalla de inicio saluda con el nombre del negocio (a las
     // 10:00, buenos días) y el portal está disponible desde el principio.
-    await expect.poll(() => portal.getByRole('heading', { name: `Buenos días, ${NOMBRE}. ¿En qué te puedo ayudar?` }).isVisible(), ESPERA).toBe(true);
+    await expect.poll(() => portal.getByRole('heading', { name: `Buenos días, ${NOMBRE}` }).isVisible(), ESPERA).toBe(true);
     expect(await portal.getByRole('link', { name: 'Portal', exact: true }).isVisible()).toBe(true);
     expect(await portal.locator(RESPUESTAS).count()).toBe(0);
     await portal.screenshot({ path: join(CAPTURAS, '2-portal-inicio.png') });
