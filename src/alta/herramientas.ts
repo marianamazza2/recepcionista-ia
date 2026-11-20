@@ -42,6 +42,7 @@ import {
   leerNegocio,
   type NegocioPanel,
 } from '../db/negocios.js';
+import { momentoDelDia } from './prompt.js';
 import { estadoDelAlta, guardarEstadoDelAlta, hayConfirmacion, marcarSeccionHecha, SECCIONES_DEL_ALTA, type SeccionDelAlta } from '../db/portal.js';
 
 export interface ContextoPortal {
@@ -884,5 +885,7 @@ export async function ejecutar(
 /** El día de hoy del negocio, para que el agente entienda "el lunes 16". */
 export function contextoDelDia(ficha: NegocioPanel, ahora: Date): string {
   const { fecha, hora: h } = utcToLocal(ahora, ficha.timezone);
-  return `Hoy es ${fechaLarga(fecha)} y son las ${h} (hora de ${ficha.timezone}).`;
+  // El saludo de esta hora va aquí (cambia con la hora) y no en el system
+  // prompt, que así sigue sirviendo de caché.
+  return `Hoy es ${fechaLarga(fecha)} y son las ${h} (hora de ${ficha.timezone}). Saludo de esta hora: «${momentoDelDia(h)}».`;
 }

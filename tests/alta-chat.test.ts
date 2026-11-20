@@ -317,11 +317,18 @@ describe('el alta por chat (PC-03)', () => {
 
   it('PC-20: el prompt pide disculpas ante lo que no entiende y solo ofrece lo que tiene sentido', async () => {
     const id = await negocioNuevo(`No Entiende ${randomUUID().slice(0, 6)}`);
+    // Si saluda, se le saluda con la hora; «¿Comenzamos con el alta?» solo con el negocio vacío.
+    const hola = new ModeloSimulado([texto('Buenos días, ¿cómo puedo ayudarte?')]);
+    await hablar(id, hola, 'hola');
+    expect(JSON.stringify(hola.peticiones[0]!.messages)).toContain('Saludo de esta hora: «Buenos días»');
+    expect(JSON.stringify(hola.peticiones[0]!.system)).toContain('Todavía no hay nada cargado');
+    expect(JSON.stringify(hola.peticiones[0]!.system)).toContain('si te saluda');
     await hablar(id, new ModeloSimulado([resumen('negocio'), texto('¿Está todo bien?')]), 'Estética, Calle Mayor 12, 28013 Madrid, 910000000');
     await hablar(id, new ModeloSimulado([herramientas({ name: 'guardar_negocio', input: { sector: 'estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } }), texto('Guardado.')]), 'Sí');
     const m = new ModeloSimulado([texto('Disculpa, no he comprendido tu mensaje.')]);
     await hablar(id, m, 'kjsbdgkljsbdglkjsb');
     const prompt = JSON.stringify(m.peticiones[0]!.system);
+    expect(prompt).not.toContain('Todavía no hay nada cargado');
     expect(prompt).toContain('Disculpa, no he comprendido tu mensaje.');
     const ofrecer = /Lo que puedes ofrecer ahora: ([^\n]*)/.exec(JSON.parse(JSON.stringify(m.peticiones[0]!.system))[0].text)![1]!;
     expect(ofrecer).toContain('dar de alta tus servicios');

@@ -1845,6 +1845,15 @@ servicios, cargar un festivo, abrir un día suelto si hay equipo…), y el
 agente la dice en una frase: «Puedo cargar los datos de tu negocio, dar de
 alta tus servicios… o cargar un festivo. ¿Por dónde empezamos?».
 
+**Y si saluda (Mariana, 20/11/2026):** responde a lo que se le dice. A un
+«hola» contesta con el saludo de la hora y «¿cómo puedo ayudarte?»; **solo si
+no hay nada cargado** añade «¿Comenzamos con el alta?»; y termina con dos o
+tres cosas que puede hacer «y todo lo que necesites. ¿Por dónde quieres
+empezar?». Con el negocio vacío, la respuesta real fue: *«Buenos días, ¿cómo
+puedo ayudarte? ¿Comenzamos con el alta? Puedo cargar los datos de tu negocio
+(sector, dirección y teléfono), dar de alta tus servicios o a tu equipo, y todo
+lo que necesites. ¿Por dónde quieres empezar?»*
+
 **Construido el 20/11/2026** (Fase 9b).
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
