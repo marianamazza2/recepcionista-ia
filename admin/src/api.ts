@@ -8,6 +8,8 @@
 // sesión caducó y el email ya puesto (aceptación Fase 4, caso 74).
 // =============================================================================
 
+import { ErrorApi } from './error-api';
+
 export interface Sesion {
   accessToken: string;
   refreshToken: string;
@@ -50,16 +52,8 @@ export function alCambiarSesion(f: (s: Sesion | null) => void): () => void {
   return () => oyentes.delete(f);
 }
 
-/** Un error que la API explicó con palabras. */
-export class ErrorApi extends Error {
-  constructor(
-    readonly status: number,
-    mensaje: string,
-    readonly datos: Record<string, unknown> = {},
-  ) {
-    super(mensaje);
-  }
-}
+// Lo comparten el panel y el portal (admin/src/error-api.ts).
+export { ErrorApi } from './error-api';
 
 async function crudo(metodo: string, ruta: string, body?: unknown, token?: string): Promise<Response> {
   const headers: Record<string, string> = {};
@@ -184,6 +178,16 @@ export interface Festivo {
   diaEntero: boolean;
 }
 
+/** PC-06: una profesional trabaja un día concreto fuera de su horario. */
+export interface TurnoSuelto {
+  id: string;
+  staffId: string;
+  fecha: string;
+  apertura: string;
+  cierre: string;
+  motivo: string | null;
+}
+
 export interface Pregunta {
   id: string;
   pregunta: string;
@@ -213,13 +217,16 @@ export interface Negocio {
     cancelacionModo: 'informar' | 'bloquear';
     cancelacionPlazoHoras: number;
   };
-  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd: number };
+  /** PC-09: `topeMensualUsd` solo llega en el panel; en el portal no viene. */
+  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd?: number };
   servicios: Servicio[];
   profesionales: Profesional[];
   horario: Tramo[];
   /** PI-19: los días de la semana que cada profesional no trabaja. */
   diasLibres: { staffId: string; weekday: number }[];
   festivos: Festivo[];
+  /** PC-06: los de hoy en adelante. */
+  turnosSueltos: TurnoSuelto[];
   preguntas: Pregunta[];
   loQueFalta: Falta[];
   /** PI-22: la huella de cada sección; se manda al guardarla para no pisar lo que guardó otra persona. */
@@ -286,6 +293,29 @@ export interface CitaAgenda {
   staffId: string;
   clienta: Clienta;
   notas: string | null;
+}
+
+/** PC-16: un tramo trabajado ese día, para dibujar la columna. */
+export interface TramoAgenda {
+  staffId: string;
+  desde: string;
+  hasta: string;
+  /** Sale de un turno suelto (PC-06). */
+  suelto: boolean;
+}
+
+export interface DiaAgenda {
+  fecha: string;
+  tramos: TramoAgenda[];
+  citas: CitaAgenda[];
+}
+
+export interface Agenda {
+  desde: string;
+  dias: DiaAgenda[];
+  profesionales: { id: string; nombre: string }[];
+  hoy: string;
+  timezone: string;
 }
 
 export interface InformeConsumo {

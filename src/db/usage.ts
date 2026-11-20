@@ -17,6 +17,12 @@
 // Fase 4 (PI-11, PI-13): el informe separa las conversaciones de prueba del
 // panel ("Probar el chat") de las de clientas. El tope cuenta las dos: es
 // gasto real de la API (PI-15, decidida el 29/10/2026).
+//
+// Fase 9 (PC-14, 18/11/2026): el chat del PORTAL del cliente (el alta y los
+// cambios que pide después) se registra igual, se ve aparte en el informe y
+// NO cuenta para el tope: el tope es para atender clientas (PW-04). Así un
+// cliente que tarda en darse de alta no se queda sin recepcionista el primer
+// mes.
 // =============================================================================
 
 import type { JSONValue, Sql } from 'postgres';
@@ -113,7 +119,11 @@ export async function registrarUso(
   });
 }
 
-/** Coste del agente en lo que va de mes (mes natural en la zona del negocio), en US$. */
+/**
+ * Coste del agente en lo que va de mes (mes natural en la zona del negocio),
+ * en US$. PC-14: el chat del portal del cliente no entra, porque no cuenta
+ * para el tope.
+ */
 export async function costeDelMes(sql: Sql, businessId: string): Promise<number> {
   const [r] = await inTenant(
     sql,
@@ -122,7 +132,9 @@ export async function costeDelMes(sql: Sql, businessId: string): Promise<number>
       select coalesce(sum(u.coste_estimado), 0) as coste
         from public.usage_events u
         join public.businesses b on b.id = u.business_id
+        left join public.conversations c on c.business_id = u.business_id and c.id = u.conversation_id
        where u.business_id = ${businessId}::uuid
+         and not coalesce(c.alta, false)
          and u.created_at >= (date_trunc('month', now() at time zone b.timezone) at time zone b.timezone)`,
   );
   return Number(r!.coste);
@@ -148,6 +160,8 @@ export interface InformeConsumo {
   costeUsd: number;
   /** PI-13: las conversaciones de "Probar el chat", aparte. */
   pruebas: { mensajes: number; conversaciones: number; citas: number; costeUsd: number };
+  /** PC-14: el chat del portal del cliente (el alta y sus cambios). No cuenta para el tope. */
+  portal: { mensajes: number; conversaciones: number; costeUsd: number };
   topeUsd: number;
   /** (Coste de clientas + pruebas) / tope (0–1+): lo mismo que mira el tope. null si el tope es 0. */
   fraccionTope: number | null;
@@ -166,32 +180,36 @@ export async function informeConsumo(sql: Sql, businessId: string, mes: string):
         from public.businesses where id = ${businessId}::uuid`;
     if (!b) throw new Error(`No existe el negocio ${businessId}`);
     const filas = await tx<
-      { prueba: boolean; mensajes: string; conversaciones: string; citas: string; tokens: string; coste: string; sin_precio: string[] | null }[]
+      { grupo: string; mensajes: string; conversaciones: string; citas: string; tokens: string; coste: string; sin_precio: string[] | null }[]
     >`
       with periodo as (
         select (${mes + '-01'}::date::timestamp at time zone ${b.timezone}) as desde,
                ((${mes + '-01'}::date + interval '1 month')::timestamp at time zone ${b.timezone}) as hasta
       ), ev as (
-        select u.*, coalesce(c.prueba, false) as prueba
+        select u.*,
+               case when coalesce(c.alta, false) then 'portal'
+                    when coalesce(c.prueba, false) then 'prueba'
+                    else 'clientas' end as grupo
           from public.usage_events u
           cross join periodo p
           left join public.conversations c on c.business_id = u.business_id and c.id = u.conversation_id
          where u.business_id = ${businessId}::uuid
            and u.created_at >= p.desde and u.created_at < p.hasta
       )
-      select prueba,
+      select grupo,
              coalesce(sum(cantidad) filter (where tipo = 'mensaje'), 0) as mensajes,
              count(distinct conversation_id)                            as conversaciones,
              coalesce(sum(cantidad) filter (where tipo = 'cita'), 0)    as citas,
              coalesce(sum(cantidad) filter (where tipo = 'token'), 0)   as tokens,
              coalesce(sum(coste_estimado), 0)                           as coste,
              (select array_agg(distinct m) from ev e2, jsonb_array_elements_text(e2.detalle -> 'sin_precio') m
-               where e2.prueba = ev.prueba) as sin_precio
+               where e2.grupo = ev.grupo) as sin_precio
         from ev
-       group by prueba`;
-    const vacio = { prueba: false, mensajes: '0', conversaciones: '0', citas: '0', tokens: '0', coste: '0', sin_precio: null };
-    const r = filas.find((f) => !f.prueba) ?? vacio;
-    const p = filas.find((f) => f.prueba) ?? { ...vacio, prueba: true };
+       group by grupo`;
+    const vacio = { grupo: 'clientas', mensajes: '0', conversaciones: '0', citas: '0', tokens: '0', coste: '0', sin_precio: null };
+    const r = filas.find((f) => f.grupo === 'clientas') ?? vacio;
+    const p = filas.find((f) => f.grupo === 'prueba') ?? { ...vacio, grupo: 'prueba' };
+    const po = filas.find((f) => f.grupo === 'portal') ?? { ...vacio, grupo: 'portal' };
     const coste = Number(r.coste);
     const costePruebas = Number(p.coste);
     const tope = Number(b.tope);
@@ -206,10 +224,12 @@ export async function informeConsumo(sql: Sql, businessId: string, mes: string):
       tokens: Number(r.tokens),
       costeUsd: coste,
       pruebas: { mensajes: Number(p.mensajes), conversaciones: Number(p.conversaciones), citas: Number(p.citas), costeUsd: costePruebas },
+      // PC-14: aparte, y fuera de la cuenta del tope.
+      portal: { mensajes: Number(po.mensajes), conversaciones: Number(po.conversaciones), costeUsd: Number(po.coste) },
       topeUsd: tope,
       fraccionTope: fraccion,
       aviso: fraccion === null ? coste + costePruebas > 0 : fraccion >= AVISO_TOPE,
-      modelosSinPrecio: [...new Set([...(r.sin_precio ?? []), ...(p.sin_precio ?? [])])],
+      modelosSinPrecio: [...new Set([...(r.sin_precio ?? []), ...(p.sin_precio ?? []), ...(po.sin_precio ?? [])])],
     };
   });
 }

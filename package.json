@@ -2,7 +2,7 @@
   "name": "recepcionista-ia",
   "version": "0.1.0",
   "private": true,
-  "description": "Recepcionista IA: motor de reservas, núcleo del agente, canal widget web y panel interno (Fase 4)",
+  "description": "Recepcionista IA: motor de reservas, núcleo del agente, canal widget web, panel interno y portal del cliente (Fase 9)",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -15,13 +15,15 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p widget && tsc --noEmit -p admin",
     "chat": "tsx src/cli/chat.ts",
     "agent:eval": "tsx src/cli/eval.ts",
+    "alta:eval": "tsx src/cli/eval-alta.ts",
     "dev": "tsx src/dev/server.ts",
     "consumo": "tsx src/cli/consumo.ts",
     "build:widget": "tsx src/cli/build-widget.ts",
     "build:vercel": "tsx src/vercel/build.ts",
     "panel:cuenta": "tsx src/cli/panel-cuenta.ts",
     "build:panel": "vite build --config admin/vite.config.ts",
-    "borrado": "tsx src/cli/borrado.ts"
+    "borrado": "tsx src/cli/borrado.ts",
+    "build:portal": "vite build --config admin/vite.portal.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

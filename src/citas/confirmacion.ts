@@ -210,9 +210,14 @@ export async function enviarCancelacion(
 }
 
 /** Envía un email ya guardado como `pendiente` y deja su estado final. */
+/**
+ * Manda un email ya preparado y deja su estado en email_messages. Del negocio
+ * solo necesita el id y el nombre (el remitente, PW-18), así que vale también
+ * para los emails del portal (Fase 9), que no cargan la configuración entera.
+ */
 export async function mandar(
   deps: Pick<ConfirmacionDeps, 'sql' | 'email' | 'onError'>,
-  config: BusinessConfig,
+  config: Pick<BusinessConfig, 'id' | 'nombre'>,
   preparado: Preparado,
 ): Promise<ResultadoConfirmacion> {
   const onError = deps.onError ?? (() => {});

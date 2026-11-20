@@ -15,6 +15,9 @@
 //     PI-01) y nada más.
 //   · PI-05: lo que se guarda aquí lo lee el agente en el siguiente mensaje
 //     (src/config/business.ts): no hay caché que invalidar.
+//   · PC-06 (Fase 9): los turnos sueltos (una profesional trabaja un día
+//     concreto fuera de su horario) se cargan y se borran igual que los
+//     festivos, y los lee el mismo motor (app.tramos_efectivos).
 //   · PI-21: un festivo, una ausencia o un horario nuevo que deja fuera citas
 //     ya dadas no se guarda sin decir qué hacer con ellas ('preguntar' lanza
 //     CitasAfectadas con la lista y no cambia nada; 'dejar' las deja;
@@ -99,6 +102,15 @@ export interface FestivoPanel {
   motivo: string | null;
 }
 
+/** PC-06: una profesional trabaja un día concreto fuera de su horario. */
+export interface TurnoSueltoPanel {
+  staffId: string;
+  fecha: string; // 'YYYY-MM-DD' local
+  apertura: string; // 'HH:MM'
+  cierre: string; // 'HH:MM' ('24:00' = medianoche)
+  motivo: string | null;
+}
+
 export interface PreguntaPanel {
   pregunta: string;
   respuesta: string;
@@ -119,6 +131,8 @@ export interface NegocioPanel extends DatosNegocio {
   diasLibres: { staffId: string; weekday: number }[];
   /** PI-12: solo los que no han terminado (los pasados se ocultan). */
   festivos: (FestivoPanel & { id: string })[];
+  /** PC-06: solo los de hoy en adelante (los pasados se ocultan, como los festivos). */
+  turnosSueltos: (TurnoSueltoPanel & { id: string })[];
   preguntas: (PreguntaPanel & { id: string })[];
   loQueFalta: LoQueFalta[];
 }
@@ -319,6 +333,14 @@ export async function leerNegocio(sql: Sql, id: string): Promise<NegocioPanel | 
        where business_id = ${id}::uuid and hasta > now()
        order by desde, id`;
 
+    const sueltos = await tx<{ id: string; staff_id: string; fecha: string; apertura: string; cierre: string; motivo: string | null }[]>`
+      select id, staff_id, to_char(fecha, 'YYYY-MM-DD') as fecha,
+             to_char(hora_apertura, 'HH24:MI') as apertura, to_char(hora_cierre, 'HH24:MI') as cierre, motivo
+        from public.staff_turnos_sueltos
+       where business_id = ${id}::uuid
+         and fecha >= (now() at time zone ${b.timezone})::date
+       order by fecha, hora_apertura, id`;
+
     const preguntas = await tx<{ id: string; titulo: string; contenido_raw: string; orden: number }[]>`
       select id, titulo, contenido_raw, orden
         from public.knowledge_docs
@@ -368,6 +390,7 @@ export async function leerNegocio(sql: Sql, id: string): Promise<NegocioPanel | 
       horario: horario.map((h) => ({ staffId: h.staff_id, weekday: h.weekday, apertura: h.apertura, cierre: h.cierre })),
       diasLibres: libres.map((l) => ({ staffId: l.staff_id, weekday: l.weekday })),
       festivos: festivos.map((f) => ({ id: f.id, staffId: f.staff_id, desde: f.desde, hasta: f.hasta, motivo: f.motivo })),
+      turnosSueltos: sueltos.map((t) => ({ id: t.id, staffId: t.staff_id, fecha: t.fecha, apertura: t.apertura, cierre: t.cierre, motivo: t.motivo })),
       preguntas: preguntas.map((q) => ({ id: q.id, pregunta: q.titulo, respuesta: q.contenido_raw, orden: q.orden })),
       loQueFalta: b.falta,
     };
@@ -569,6 +592,34 @@ export async function crearFestivo(sql: Sql, id: string, f: FestivoPanel, citas:
 export async function borrarFestivo(sql: Sql, id: string, festivoId: string): Promise<void> {
   await enNegocio(sql, id, 'El festivo', (tx) => tx`
     delete from public.time_off where business_id = ${id}::uuid and id = ${festivoId}::uuid returning id`);
+}
+
+// -----------------------------------------------------------------------------
+// Turnos sueltos (PC-06)
+// -----------------------------------------------------------------------------
+
+/**
+ * PC-06: una profesional trabaja un día concreto fuera de su horario. Ese día
+ * manda sobre su horario de siempre y sobre "no trabaja" (PI-19), y si es
+ * festivo del local abre la agenda solo para ella y esas horas: todo eso lo
+ * aplica el motor (app.tramos_efectivos y app.slot_es_valido), no este código.
+ * Que dos turnos del mismo día no se pisen lo impide la base.
+ */
+export async function crearTurnoSuelto(sql: Sql, id: string, t: TurnoSueltoPanel): Promise<string> {
+  return inTenant(sql, id, async (tx) => {
+    const [st] = await tx`select 1 from public.staff where business_id = ${id}::uuid and id = ${t.staffId}::uuid`;
+    if (!st) throw new NoEncontrado('La profesional');
+    const [r] = await tx<{ id: string }[]>`
+      insert into public.staff_turnos_sueltos (business_id, staff_id, fecha, hora_apertura, hora_cierre, motivo)
+      values (${id}::uuid, ${t.staffId}::uuid, ${t.fecha}::date, ${t.apertura}::time, ${t.cierre}::time, ${t.motivo})
+      returning id`;
+    return r!.id;
+  });
+}
+
+export async function borrarTurnoSuelto(sql: Sql, id: string, turnoId: string): Promise<void> {
+  await enNegocio(sql, id, 'El turno suelto', (tx) => tx`
+    delete from public.staff_turnos_sueltos where business_id = ${id}::uuid and id = ${turnoId}::uuid returning id`);
 }
 
 export async function crearPregunta(sql: Sql, id: string, q: PreguntaPanel): Promise<string> {

@@ -77,13 +77,15 @@ export async function createConversation(
   businessId: string,
   customerId: string | null,
   canal: 'web' | 'whatsapp' | 'instagram' = 'web',
+  /** PC-14 (Fase 9): conversación del portal del cliente, no de una clienta. */
+  opciones: { alta?: boolean } = {},
 ): Promise<Conversation> {
   const [row] = await inTenant(
     sql,
     businessId,
     (tx) => tx<ConversationRow[]>`
-      insert into public.conversations (business_id, customer_id, canal)
-      values (${businessId}::uuid, ${customerId}::uuid, ${canal})
+      insert into public.conversations (business_id, customer_id, canal, alta)
+      values (${businessId}::uuid, ${customerId}::uuid, ${canal}, ${opciones.alta ?? false})
       returning id, business_id, customer_id, estado, verificada_at`,
   );
   return toConversation(row!);

@@ -46,6 +46,39 @@ en [`README.md`](README.md).
     se guarda nada. Una ruta de edición nueva tiene que llamar a
     `comprobarVersion` y su huella tiene que estar en `versiones()`.
 
+## Lo que comparten el panel y el portal (Fase 9, PC-05)
+
+`admin/negocio.ts` tiene **las rutas que editan la configuración de un
+negocio** (la ficha, datos, reglas, el chat en su web, servicios,
+profesionales, horario, festivos, turnos sueltos, la agenda y las citas a
+mano). No son del panel ni del portal: las montan los dos.
+
+- El panel, bajo `negocios/:id/…`: el negocio sale de la **URL**.
+- El portal, bajo `negocio/…`: el negocio sale de la **sesión** (PC-02), y
+  **ninguna** ruta del portal acepta un `business_id`.
+- `ver` ('panel' | 'portal') es lo único que cambia: con `'portal'` la ficha
+  no trae el tope y, al guardar el chat de su web, se conserva el que puso
+  Mariana (PC-09).
+
+Una ruta nueva de configuración va **ahí**, no en `admin/rutas.ts` ni en
+`portal/rutas.ts`: así entra a la vez en los dos y el chat del alta sigue
+llamando a las mismas funciones de `db/negocios.ts`.
+
+## El portal del cliente (`portal/rutas.ts`, Fase 9)
+
+16. **Sesión propia** (PC-11): un token del portal (`portal.sesiones`,
+    guardado solo en hash) en `Authorization`. Ni la clave de un widget ni un
+    token del panel valen aquí, y al revés tampoco. Sin sesión, 401 en todo
+    salvo entrar, abrir la invitación y crear la cuenta.
+17. **El negocio es el de la sesión, siempre.** No hay ninguna ruta con un id
+    de negocio: cambiar la dirección no lleva a ningún sitio.
+18. **Respuestas que no distinguen** (regla 8, aquí también): un enlace
+    inventado, usado, caducado o anulado contestan lo mismo, y un email que
+    no existe tarda lo mismo que uno que sí (se comprueba una contraseña
+    falsa a propósito).
+19. **El chat del portal** (`POST /chat`) llama a `src/alta/`; el resumen para
+    confirmar (PC-03) viaja en la respuesta como datos, y lo dibuja el portal.
+
 ## El panel (`admin/`, Fase 4)
 
 `/api/admin/…` tiene reglas propias, distintas de las del widget:
@@ -72,7 +105,10 @@ en [`README.md`](README.md).
 
 ## Tests
 
-`tests/admin-api.test.ts` cubre el panel con un `AuthPanel` falso.
+`tests/admin-api.test.ts` cubre el panel con un `AuthPanel` falso;
+`tests/portal-api.test.ts` cubre el portal (invitación, cuenta, aislamiento,
+PC-09, la agenda y los turnos sueltos) y `tests/alta-chat.test.ts` el chat,
+con el modelo simulado.
 `tests/widget-api.test.ts` llama a `createApi` directamente con `Request`
 construidos a mano y el modelo simulado: dominio, sesión, idempotencia (también
 simultánea), orden, límites y tope. `tests/cita-email.test.ts` cubre los emails

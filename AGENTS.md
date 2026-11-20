@@ -18,13 +18,15 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `_specs/` | Spec maestro, specs de fase y reglas de negocio | [`_specs/AGENTS.md`](_specs/AGENTS.md) |
 | `src/` | La aplicación (TypeScript, Node 22) | [`src/AGENTS.md`](src/AGENTS.md) |
 | `src/core/` | El núcleo del agente: igual para todos los negocios | [`src/core/AGENTS.md`](src/core/AGENTS.md) |
+| `src/alta/` | El chat del portal: el alta por chat y los cambios de después. **Otro agente**, no el de las clientas | [`src/alta/AGENTS.md`](src/alta/AGENTS.md) |
+| `src/portal/` | Cuentas del portal (contraseña y sesión propias) y sus emails | [`src/portal/AGENTS.md`](src/portal/AGENTS.md) |
 | `src/adapters/` | Agenda, canales, email y SMS detrás de interfaces | [`src/adapters/AGENTS.md`](src/adapters/AGENTS.md) |
 | `src/db/` | Acceso a datos: tenant, clientas, conversaciones, consumo | [`src/db/AGENTS.md`](src/db/AGENTS.md) |
-| `src/api/` | Handlers HTTP públicos (widget, página de la cita) | [`src/api/AGENTS.md`](src/api/AGENTS.md) · [`README`](src/api/README.md) |
+| `src/api/` | Handlers HTTP públicos (widget, página de la cita, panel y portal) | [`src/api/AGENTS.md`](src/api/AGENTS.md) · [`README`](src/api/README.md) |
 | `supabase/` | Migraciones, seed y tests SQL | [`supabase/AGENTS.md`](supabase/AGENTS.md) |
 | `tests/` | Tests TypeScript (Vitest) contra una base real | [`tests/AGENTS.md`](tests/AGENTS.md) |
 | `widget/` | El chat embebible que va en la web del negocio | [`widget/AGENTS.md`](widget/AGENTS.md) · [`README`](widget/README.md) |
-| `admin/` | El panel interno de Mariana (React + Vite + Tailwind): alta de negocios, visor, agenda, consumo | [`admin/AGENTS.md`](admin/AGENTS.md) · [`README`](admin/README.md) |
+| `admin/` | **Dos** apps del mismo proyecto de React (Vite + Tailwind): el panel interno de Mariana (`/panel/`) y el portal del cliente (`/portal/`), que comparten pantallas | [`admin/AGENTS.md`](admin/AGENTS.md) · [`README`](admin/README.md) |
 | `demo/` | La web inventada de Clínica Olea (medicina estética, Barcelona) con el widget pegado: la que se enseña en ventas; y `prueba.html?key=…` para cualquier negocio (las sirve `npm run dev`) | Sin reglas propias: negocio ficticio, sin marcas reales, sin promesas de resultados (publicidad sanitaria) |
 | `scripts/` | Runner de tests SQL y acceso a la nube | [`scripts/README.md`](scripts/README.md) |
 | `.claude/skills/` | Procedimientos de todos los días (verificar, migrar, consultar, Research Desk) | [§7b](#7b-skills-del-proyecto) |
@@ -56,6 +58,19 @@ El panel valida el formato del teléfono del local con la normalización común
 (`src/core/phone.ts`). Los tramos de horario del mismo día y del mismo local o
 profesional no se pueden solapar: lo impiden exclusiones de Postgres; el
 horario propio sigue siendo independiente del local (PD-01).
+
+**Un solo sitio para los datos (PC-05, Fase 9).** Hay tres formas de cambiar
+la configuración de un negocio —el panel de Mariana, el portal del cliente y
+su chat— y las tres pasan por las **mismas** funciones (`src/db/negocios.ts`)
+y las **mismas** rutas (`src/api/admin/negocio.ts`, montadas por el panel y
+por el portal). Una regla nueva entra una vez y vale en las tres. Lo único
+que cambia es `ver` ('panel' | 'portal'): el cliente no ve el tope, ni
+activar/pausar, ni la clave del widget (PC-09). **Nada de reimplementar una
+regla en el portal o en una herramienta del chat.**
+
+**Y el negocio sale de la sesión, nunca de la URL ni del chat (PC-02).** En
+el portal, ninguna ruta acepta un `business_id` y ninguna herramienta del chat
+lo recibe: salen de `portal.sesiones`.
 
 ## 2. Dónde vive cada decisión
 
@@ -144,12 +159,14 @@ npm run test:sql            # tests SQL de supabase/tests/
 npm run test:e2e            # la demo y el panel en Google Chrome con el modelo simulado (necesita Chrome)
 npm run chat -- --negocio estetica-aurora     # conversar por la Terminal (usa la API real)
 npm run agent:eval          # escenarios con el modelo real (cuesta céntimos)
-npm run dev                 # demo del widget (:4310 web, :4311 servidor) y panel (:4312/panel/), con la API real
+npm run alta:eval           # el chat del alta y del portal con el modelo real (≈ 1 US$ el escenario largo)
+npm run dev                 # demo del widget (:4310 web, :4311 servidor), panel (:4312/panel/) y portal del cliente (:4312/portal/), con la API real
 npm run consumo -- --negocio estetica-aurora  # consumo del mes y % del tope
 npm run borrado             # qué texto de chat caduca (PD-13); con --si lo borra
 npm run panel:cuenta -- --email …              # crear una cuenta del panel (pide la contraseña en la Terminal)
 npm run build:widget        # genera widget/dist/widget.js
 npm run build:panel         # compila el panel en admin/dist (lo hacen solos npm run dev y build:vercel)
+npm run build:portal        # compila el portal del cliente en admin/dist-portal (ídem)
 npm run build:vercel        # arma .vercel/output para publicar (necesita PUBLIC_API_URL; lo corre Vercel)
 ```
 
@@ -176,6 +193,8 @@ Postgres sin avisar.**
 
 - [ ] `npm run typecheck`, `npm test` y `npm run test:sql` en verde (y
       `npm run test:e2e` si tocaste el widget, la API o la demo).
+- [ ] Si tocaste el chat del portal (`src/alta/`): `npm run alta:eval`. Con el
+      modelo simulado no se ven los errores de la API.
 - [ ] Si tocaste el agente (prompt, herramientas, loop): `npm run agent:eval`
       sigue todo OK. Cuesta dinero: avisá antes de correrlo varias veces.
 - [ ] Si es el cierre de una fase: el plan de pruebas de aceptación revisado

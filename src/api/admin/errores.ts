@@ -60,6 +60,9 @@ const POR_RESTRICCION: Record<string, string> = {
   business_hours_local_sin_solape: 'Hay tramos que se solapan el mismo día. Revisa las horas de apertura y cierre.',
   business_hours_staff_sin_solape: 'Hay tramos que se solapan el mismo día. Revisa las horas de apertura y cierre.',
   time_off_rango_valido: 'El final tiene que ser después del inicio.',
+  // PC-06 (Fase 9): turnos sueltos.
+  turnos_sueltos_sin_solape: 'Esa profesional ya tiene un turno suelto ese día que se pisa con el nuevo. Revisa las horas.',
+  turnos_sueltos_horas: 'En un turno suelto, la hora de salida tiene que ser posterior a la de entrada.',
   knowledge_docs_faq_corta: 'Cada pregunta frecuente es corta: pregunta de hasta 200 caracteres y respuesta de hasta 1.000.',
   knowledge_docs_titulo_check: 'La pregunta no puede estar vacía.',
   staff_services_pkey: 'Ese servicio está repetido.',

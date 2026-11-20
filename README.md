@@ -14,11 +14,20 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 4 (panel interno) cerrada el 12/11/2026**, en local y en la
+**Estado: Fase 9 (portal del cliente y alta por chat) construida el
+19/11/2026** en la rama `fase-9-spec`, a falta de que Mariana revise el
+informe de pruebas y mergee. Un negocio nuevo se da de alta **hablando con un
+chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
+crea su cuenta con el código que le llega al email (PC-11), el chat le
+pregunta una cosa cada vez siguiendo el guion que dictó ella y, al terminar,
+aparece **su portal**, con su configuración, su **agenda visual** (PC-16) y
+el mismo chat para pedir cambios. Ver [El portal del cliente
+(Fase 9)](#el-portal-del-cliente-fase-9).
+
+Antes, la **Fase 4 (panel interno) cerrada el 12/11/2026**, en local y en la
 nube, con el panel publicado en
-https://recepcionista-ia-api.vercel.app/panel/ (solo con cuenta, PI-01). Lo
-siguiente es la Fase 9 (portal del cliente), que espera el guion de Mariana.
-Antes, en la rama `email-y-codigo` (13/11/2026): la clienta se identifica por
+https://recepcionista-ia-api.vercel.app/panel/ (solo con cuenta, PI-01).
+Y, en la rama `email-y-codigo` (13/11/2026): la clienta se identifica por
 su **email** (PA-17), la confirmación de la cita le llega **por email** con un
 archivo para el calendario (PW-18) y, para ver, cancelar o mover sus citas
 desde el chat, tiene que escribir el **código** que le llega a ese email
@@ -116,6 +125,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local y en la nube (12/11/2026) |
 | `20261113120000_email_y_codigo` | PA-16, PA-17, PW-18: `customers.email` en minúsculas, único por negocio (y el teléfono, único solo entre las fichas sin email); `conversations.verificada_at`; `codigos_verificacion` (solo el hash, 3 intentos) y `email_messages`, con RLS. Aplicada en local y en la nube (13/11/2026: SQL 13/13 y TypeScript 210/210 por los dos modos del pooler) |
 | `20261113130000_borrado_y_avisos` | PD-13: `app.borrar_conversaciones_vencidas()` (el texto del chat caduca a los 6 meses; la conversación, la ficha, las citas y el consumo se quedan) y `app.borrar_clienta()` (derecho de supresión: su texto fuera, sus conversaciones desligadas, su ficha anónima y sus citas en pie). PI-20: `app.profesional_trabaja_algun_dia()` y `negocio_lo_que_falta()` ya no cuenta a quien no trabaja ningún día. Aplicada en local y en la nube (13/11/2026: SQL 14/14 y TypeScript 222/222 por los dos modos del pooler) |
+| `20261119120000_portal_cliente` | Fase 9: esquema `portal` (invitaciones con hash y caducidad, códigos, cuentas, sesiones y estado del alta), `staff_turnos_sueltos` (PC-06) y `conversations.alta` (PC-14); `tramos_efectivos` y `slot_es_valido` aplican los turnos sueltos. Aplicada en local y en la nube (20/11/2026: SQL 15/15 y TypeScript 256/256 por los dos modos del pooler) |
 
 ### Las dos garantías que ya están puestas
 
@@ -229,6 +239,7 @@ psql "$DATABASE_URL" -c "select c.nombre, s.nombre as profesional,
 ```bash
 npm run agent:eval                # los 15 escenarios y el juez de tono (≈ 0,45 US$ con Opus 5)
 npm run agent:eval -- --solo 3    # solo uno
+npm run alta:eval                 # el chat del alta y del portal con el modelo real (≈ 1 US$ el alta entera)
 npm run agent:eval -- --ver       # con la conversación entera
 ```
 
@@ -425,6 +436,65 @@ cuentas de la nube se crean con
 la escribe Mariana en su Terminal). Si algún día se quiere una dirección
 propia: un tercer dominio y `PANEL_HOST` con ese dominio (su raíz lleva al
 panel).
+
+---
+
+## El portal del cliente (Fase 9)
+
+La herramienta del **negocio** (la de Mariana es el panel). Spec:
+[`_specs/fase-9-portal-cliente.md`](_specs/fase-9-portal-cliente.md); reglas
+**PC-01 a PC-16** en `decisiones-producto.md`; el guion del alta, en la nota
+«Guion del alta por chat» de Research Desk.
+
+El camino entero:
+
+1. **Mariana genera el enlace** desde su panel, en la pestaña «Su portal» de
+   cada negocio: ligado a ese negocio y al email del contacto, de un solo uso,
+   caduca a los 7 días y se puede anular o generar otro (PC-02). Se le manda
+   por email y se enseña una vez para copiarlo (en la base queda solo su hash).
+2. **El cliente abre el enlace**, recibe un código de seis dígitos en ese
+   email, elige su contraseña y ya tiene cuenta. A partir de ahí entra con su
+   email y su contraseña: no hay registro público (PC-11).
+3. **Dentro ve solo el chat** y hace el alta: su negocio, sus servicios, su
+   equipo, sus horarios y sus reglas de reserva, una cosa cada vez y con un
+   resumen para confirmar al final de cada sección (PC-03). Si se va a mitad,
+   al volver sigue por donde lo dejó.
+4. **Al terminar aparece su portal** con todo lo que cargó, y a Mariana le
+   llega el aviso en su panel para revisarlo y activarlo (PC-11, PC-13).
+5. **Después**: ve y cambia su configuración a mano (las mismas secciones y
+   las mismas reglas que el panel), ve su **agenda** y pide cambios al chat
+   («Núria no viene el jueves»). No ve el tope ni puede activar su negocio:
+   eso es de Mariana (PC-09).
+
+### La agenda visual (PC-16)
+
+En el portal y en el panel, la misma: el **día** con una columna por
+profesional y las horas hacia abajo, la **semana** con una columna por día, lo
+cerrado sombreado, cada cita como un bloque. Se pincha un hueco para **cargar
+una cita a mano** (PI-14: a cualquier hora, nunca fuera de horario, en festivo
+ni encima de otra) y una cita para verla y **cancelarla** (con su email,
+PW-10). Se usa también desde el móvil.
+
+### Turnos sueltos (PC-06)
+
+Una profesional puede trabajar **un día concreto** fuera de su horario de
+siempre. Ese día manda sobre su horario y sobre los días que no trabaja; si es
+festivo del local, la agenda se abre **solo para ella y solo esas horas**. Se
+carga desde el portal y desde el panel.
+
+### Usarlo en local
+
+`npm run dev` levanta también el portal en
+**http://localhost:4312/portal/**. Para probarlo: en el panel, pestaña «Su
+portal» de un negocio → «Generar el enlace» → copiar el enlace y abrirlo. El
+código del email sale en la Terminal (proveedor de prueba, PW-18). Antes del
+primer cliente real hay que conectar un proveedor de email de verdad (PC-15).
+
+### Lo que cuesta
+
+El chat del portal (el alta y los cambios de después) **no cuenta para el tope
+mensual** del negocio: el tope es para atender clientas (PW-04). Se registra
+aparte y se ve aparte en `npm run consumo` y en el panel (PC-14).
 
 ---
 

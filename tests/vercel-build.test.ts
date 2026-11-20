@@ -47,10 +47,13 @@ describe('lo que se publica', () => {
     expect(readFileSync(join(out, 'static/privacidad.html'), 'utf8')).toContain('Política de privacidad');
   });
 
-  it('el panel (Fase 4) va en /panel/ con su CSP, y PANEL_HOST lleva su raíz al panel', async () => {
+  it('el panel (Fase 4) y el portal (Fase 9) van en /panel/ y /portal/ con su CSP, y PANEL_HOST lleva su raíz al panel', async () => {
     expect(readFileSync(join(out, 'static/panel/index.html'), 'utf8')).toContain('/panel/assets/');
-    const config = JSON.parse(readFileSync(join(out, 'config.json'), 'utf8')) as { routes: { src?: string; headers?: Record<string, string>; has?: unknown }[] };
-    const cabeceras = config.routes.find((r) => r.src === '^/panel/.*$')!.headers!;
+    // Fase 9: el portal es la otra entrada del mismo proyecto de React.
+    expect(readFileSync(join(out, 'static/portal/portal.html'), 'utf8')).toContain('/portal/assets/');
+    const config = JSON.parse(readFileSync(join(out, 'config.json'), 'utf8')) as { routes: { src?: string; dest?: string; headers?: Record<string, string>; has?: unknown }[] };
+    expect(config.routes.find((r) => r.src === '^/portal/$')!.dest).toBe('/portal/portal.html');
+    const cabeceras = config.routes.find((r) => r.src === '^/(panel|portal)/.*$')!.headers!;
     expect(cabeceras['content-security-policy']).toContain("default-src 'self'");
     expect(cabeceras['x-frame-options']).toBe('DENY');
     expect(config.routes.some((r) => r.has)).toBe(false);

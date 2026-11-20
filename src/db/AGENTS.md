@@ -14,6 +14,7 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
 | `negocios.ts` | Fase 4: alta y edición de un negocio por bloques (con los días que cada profesional no trabaja, PI-19), lo que falta (PI-03), activar/pausar, cambiar la clave (PI-09), citas afectadas por un festivo o un horario nuevo (PI-21) |
 | `visor.ts` | Fase 4: lista y detalle de conversaciones con sus herramientas (PI-06), derivaciones pendientes y resolverlas (PI-07) |
 | `personas.ts` | Fase 4: quién entra al panel (`panel.personas`, PI-01) |
+| `portal.ts` | Fase 9: invitaciones (PC-02), el código que confirma el email, cuentas y sesiones del portal (PC-11) y el estado del alta (PC-03, PC-13). Todo en el esquema `portal`, no en `public`: ahí hay contraseñas y tokens |
 | `borrado.ts` | PD-13 (13/11/2026): retención del texto del chat (6 meses de serie) y borrar a una clienta que lo pide. El borrado real lo hacen dos funciones de Postgres; acá solo se llaman. `buscarClienta` por email o teléfono, para el comando `npm run borrado` |
 
 ## Reglas
@@ -22,8 +23,10 @@ Funciones pequeñas y explícitas sobre la librería `postgres`. Sin ORM, sin
   declara el tenant con scope de transacción (D-16). **Y además** cada
   consulta filtra `where business_id = …` (T-03): la conexión del backend hace
   BYPASSRLS, así que ese filtro es la barrera principal, no algo redundante.
-- Las pocas lecturas sin tenant son las que lo resuelven (negocio por slug o
-  por `widget_key`). Cualquier otra excepción se justifica en un comentario:
+- Las pocas lecturas sin tenant son las que lo resuelven (negocio por slug,
+  por `widget_key` y, en la Fase 9, una invitación por su token, una cuenta
+  por su email y una sesión por su token: lo primero que devuelven es a qué
+  negocio pertenecen). Cualquier otra excepción se justifica en un comentario:
   en la Fase 4, la lista de negocios del panel y el consumo de todos
   (`listarNegocios`, `informeConsumoTodos`: el panel los ve todos, PI-01) y
   `panel.personas`, que no es de ningún negocio.

@@ -1483,7 +1483,7 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
 | PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color, logo, dominios y privacidad), los **horarios de quien cambia cada semana** y los **festivos y ausencias** se cargan en el portal; el **tono** y la **bienvenida** del agente y **cada cuánto se ofrecen horarios** (30 min) van de serie. El cierre del chat recuerda lo que falta | — | ✅ decidida 18/11/2026 |
 | PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
-| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta | — | ✅ decidida 18/11/2026 |
+| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta. ⚠️ Por confirmar: el chat del portal de después va por el mismo camino | — | ✅ decidida 18/11/2026 (el matiz, 19/11/2026) |
 | PC-15 | Proveedor de email antes del primer cliente | Se elige y se conecta **antes de mandar el primer enlace a un cliente real** (la cuenta se confirma con un código al email) | — | ✅ decidida 18/11/2026 |
 | PC-16 | Dónde ve el negocio sus citas | Una **agenda visual en su portal**, en esta fase: el día con una columna por profesional y la semana; pinchar un hueco para cargar una cita y una cita para verla o cancelarla. La agenda del panel interno pasa a ser igual de visual. Su Google Calendar, en la Fase 7; su programa de gestión, cuando un cliente lo traiga | — | ✅ decidida 18/11/2026 |
 
@@ -1693,6 +1693,15 @@ mensual de cada negocio (PW-04) está pensado para atender clientas.
 registra aparte, como coste de alta, y Mariana lo ve en el consumo. Así un
 cliente que tarda en darse de alta no se queda sin recepcionista el primer
 mes.
+
+**⚠️ Por confirmar (apareció al construir la fase, 19/11/2026): el chat del
+portal DESPUÉS del alta.** PC-14 habla del chat del alta. Pero el mismo chat
+se queda en el portal para pedir cambios («Núria no viene el jueves»), y eso
+también cuesta céntimos. *Propuesta, y así está construido:* va por el mismo
+camino que el alta — se registra aparte, se ve aparte en el consumo y **no
+cuenta para el tope**, porque el tope es para atender clientas (PW-04) y
+quien escribe aquí es el negocio, no una clienta. Si Mariana prefiere que sí
+cuente, se cambia una línea (`conversations.alta`) y se dice aquí.
 
 ### PC-15 · Proveedor de email antes del primer cliente real · ✅ decidida el 18/11/2026
 

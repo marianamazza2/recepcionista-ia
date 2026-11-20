@@ -1,5 +1,11 @@
 // =============================================================================
-// Ficha de un negocio: alta y edición por bloques (Fase 4 · 4.3)
+// Ficha de un negocio: alta y edición por bloques (Fase 4 · 4.3; Fase 9 · 9.4)
+// =============================================================================
+// LA MISMA ficha en los dos sitios (PC-05): el panel interno de Mariana y el
+// portal del cliente. No habla con una API concreta: usa la de su contexto
+// (negocio-api.tsx) con caminos relativos al negocio, y `ver` decide lo
+// único que cambia — con 'portal' no se ve el tope mensual, ni activar o
+// pausar, ni la clave del widget (PC-09): eso es de MAZZMKT.
 // =============================================================================
 // En el orden del cuestionario de alta: negocio, servicios, profesionales,
 // horarios, festivos, reglas, preguntas frecuentes y el chat en su web. Arriba,
@@ -16,7 +22,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
-import { api, ErrorApi, type CitaAfectada, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
+import { ErrorApi, type CitaAfectada, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
+import { useApiNegocio } from '../negocio-api';
 import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, trabajaAlgunDia, type EstadoDia } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
 import { Aviso, Bloque, fechaCorta, SEMANA, useAccion } from '../ui';
@@ -34,23 +41,26 @@ function guardado(setVersion: (v: string) => void, de: (n: Negocio) => string, p
 }
 
 export function Ficha(p: Props) {
+  const { ver } = useApiNegocio();
+  const secciones: [string, string][] = [
+    ['publicar', ver === 'panel' ? 'Publicar' : 'Lo que falta'],
+    ['datos', ver === 'panel' ? 'Negocio' : 'Tu negocio'],
+    ['servicios', 'Servicios'],
+    ['profesionales', 'Profesionales'],
+    ['horarios', 'Horarios'],
+    ['turnos', 'Turnos sueltos'],
+    ['festivos', 'Festivos y ausencias'],
+    ['reglas', 'Reservas y cancelación'],
+    ['preguntas', 'Preguntas frecuentes'],
+    ['chat', ver === 'panel' ? 'El chat en su web' : 'El chat en tu web'],
+  ];
   return (
     <div className="grid gap-6 lg:grid-cols-[180px_1fr]">
       <nav className="hidden text-sm lg:block">
         <ul className="sticky top-20 space-y-1 text-slate-500">
-          {[
-            ['publicar', 'Publicar'],
-            ['datos', 'Negocio'],
-            ['servicios', 'Servicios'],
-            ['profesionales', 'Profesionales'],
-            ['horarios', 'Horarios'],
-            ['festivos', 'Festivos y ausencias'],
-            ['reglas', 'Reservas y cancelación'],
-            ['preguntas', 'Preguntas frecuentes'],
-            ['chat', 'El chat en su web'],
-          ].map(([id, t]) => (
+          {secciones.map(([id, t]) => (
             <li key={id}>
-              <button type="button" className="hover:text-slate-900" onClick={() => document.getElementById(id!)?.scrollIntoView({ behavior: 'smooth' })}>{t}</button>
+              <button type="button" className="hover:text-slate-900" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })}>{t}</button>
             </li>
           ))}
         </ul>
@@ -61,6 +71,7 @@ export function Ficha(p: Props) {
         <Servicios {...p} />
         <Profesionales {...p} />
         <Horarios {...p} />
+        <TurnosSueltos {...p} />
         <Festivos {...p} />
         <Reglas {...p} />
         <Preguntas {...p} />
@@ -158,6 +169,7 @@ function IrA({ seccion }: { seccion: string | undefined }) {
 }
 
 function Publicar({ negocio: n, poner }: Props) {
+  const { pedir, ver } = useApiNegocio();
   const a = useAccion();
   const [copiado, setCopiado] = useState(false);
   const codigo = `<script src="${n.widgetJs}" data-key="${n.widgetKey}" async></script>`;
@@ -173,7 +185,11 @@ function Publicar({ negocio: n, poner }: Props) {
     }
   };
   return (
-    <Bloque id="publicar" titulo="Publicar">
+    <Bloque
+      id="publicar"
+      titulo={ver === 'panel' ? 'Publicar' : 'Lo que falta'}
+      ayuda={ver === 'portal' ? 'Cuando no falte nada, MAZZMKT revisa tu configuración y publica tu chat.' : undefined}
+    >
       {n.loQueFalta.length > 0 ? (
         <div role="group" aria-label="Falta para activar" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
           <p className="font-semibold">Falta para poder activarlo</p>
@@ -200,9 +216,16 @@ function Publicar({ negocio: n, poner }: Props) {
           </ul>
         </div>
       ) : null}
+      {ver === 'portal' ? (
+        <p className="mt-4 text-sm text-slate-500">
+          Tu chat lo publica MAZZMKT: cuando aquí no falte nada, lo revisan y lo activan en tu web.
+        </p>
+      ) : null}
+      {ver === 'panel' ? (
+      <>
       <div className="mt-4 flex flex-wrap gap-2">
         {n.estado !== 'activo' ? (
-          <button type="button" className="boton" disabled={a.ocupado || n.loQueFalta.length > 0} onClick={() => a.hacer(async () => poner(await api('POST', `negocios/${n.id}/activar`)), 'Negocio activado.')}>
+          <button type="button" className="boton" disabled={a.ocupado || n.loQueFalta.length > 0} onClick={() => a.hacer(async () => poner(await pedir('POST', 'activar')), 'Negocio activado.')}>
             Activar
           </button>
         ) : null}
@@ -211,7 +234,7 @@ function Publicar({ negocio: n, poner }: Props) {
             type="button"
             className="boton-suave"
             disabled={a.ocupado}
-            onClick={() => confirm('Al pausarlo, el chat de su web deja de responder y el agente no atiende. ¿Pausar?') && a.hacer(async () => poner(await api('POST', `negocios/${n.id}/pausar`)), 'Negocio pausado.')}
+            onClick={() => confirm('Al pausarlo, el chat de su web deja de responder y el agente no atiende. ¿Pausar?') && a.hacer(async () => poner(await pedir('POST', 'pausar')), 'Negocio pausado.')}
           >
             Pausar
           </button>
@@ -230,7 +253,7 @@ function Publicar({ negocio: n, poner }: Props) {
             disabled={a.ocupado}
             onClick={() =>
               confirm('La clave actual dejará de funcionar AL MOMENTO y el negocio tendrá que pegar el código nuevo en su web. ¿Cambiar la clave?') &&
-              a.hacer(async () => poner(await api('POST', `negocios/${n.id}/clave`)), 'Clave cambiada. Manda el código nuevo al negocio.')
+              a.hacer(async () => poner(await pedir('POST', 'clave')), 'Clave cambiada. Manda el código nuevo al negocio.')
             }
           >
             Cambiar la clave
@@ -238,6 +261,9 @@ function Publicar({ negocio: n, poner }: Props) {
         </div>
         <p className="mt-2 text-xs text-slate-500">El chat aparece en su web cuando el negocio está <strong>activo</strong> y en los dominios de "El chat en su web" (PI-16): en prueba o pausado, no sale aunque el código esté pegado. Antes de activar, usa "Probar el chat". Ya activo, para verlo en local añade <code>localhost</code> y abre la web de prueba: <code>http://localhost:4310/prueba.html?key={n.widgetKey}</code></p>
       </div>
+      </>
+      ) : null}
+      {ver === 'portal' ? <Aviso error={a.error} ok={a.ok} /> : null}
     </Bloque>
   );
 }
@@ -247,6 +273,7 @@ function Publicar({ negocio: n, poner }: Props) {
 // -----------------------------------------------------------------------------
 
 function Datos({ negocio: n, poner }: Props) {
+  const { pedir } = useApiNegocio();
   const [f, setF] = useState({
     nombre: n.nombre,
     sector: n.sector ?? '',
@@ -266,7 +293,7 @@ function Datos({ negocio: n, poner }: Props) {
         setVersion,
         (r) => r.versiones.datos,
         poner,
-        await api('PUT', `negocios/${n.id}/datos`, {
+        await pedir('PUT', 'datos', {
           nombre: f.nombre,
           sector: nada(f.sector),
           timezone: f.timezone,
@@ -317,6 +344,7 @@ function Servicios({ negocio: n, poner }: Props) {
 }
 
 function FilaServicio({ negocio: n, poner, servicio: s }: Props & { servicio: Servicio | null }) {
+  const { pedir } = useApiNegocio();
   const inicial = s ? { ...s, descripcion: s.descripcion ?? '', precio: s.precio === null ? '' : String(s.precio) } : SERVICIO_NUEVO;
   const [f, setF] = useState(inicial);
   useEffect(() => setF(inicial), [s]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -335,7 +363,7 @@ function FilaServicio({ negocio: n, poner, servicio: s }: Props & { servicio: Se
       ...(s ? { version: n.versiones.servicios[s.id] } : {}),
     };
     void a.hacer(async () => {
-      poner(await api(s ? 'PUT' : 'POST', s ?`negocios/${n.id}/servicios/${s.id}` : `negocios/${n.id}/servicios`, body));
+      poner(await pedir(s ? 'PUT' : 'POST', s ? `servicios/${s.id}` : 'servicios', body));
       if (!s) setF(SERVICIO_NUEVO);
     }, s ? 'Guardado.' : 'Servicio añadido.');
   };
@@ -385,6 +413,7 @@ function Profesionales({ negocio: n, poner }: Props) {
 }
 
 function FilaProfesional({ negocio: n, poner, profesional: p }: Props & { profesional: Profesional | null }) {
+  const { pedir } = useApiNegocio();
   const inicial = { nombre: p?.nombre ?? '', servicioIds: p?.servicioIds ?? [] };
   const [f, setF] = useState(inicial);
   useEffect(() => setF(inicial), [p]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -392,7 +421,7 @@ function FilaProfesional({ negocio: n, poner, profesional: p }: Props & { profes
   const guardar = (activo = p?.activo ?? true) => {
     if (p && p.activo && !activo && p.citasFuturas > 0 && !confirm(`${p.nombre} tiene ${p.citasFuturas} cita${p.citasFuturas > 1 ? 's' : ''} futura${p.citasFuturas > 1 ? 's' : ''}. Siguen en pie, pero el agente dejará de darle citas. ¿Desactivar?`)) return;
     void a.hacer(async () => {
-      poner(await api(p ? 'PUT' : 'POST', p ? `negocios/${n.id}/profesionales/${p.id}` : `negocios/${n.id}/profesionales`, { nombre: f.nombre, activo, servicioIds: f.servicioIds, ...(p ? { version: n.versiones.profesionales[p.id] } : {}) }));
+      poner(await pedir(p ? 'PUT' : 'POST', p ? `profesionales/${p.id}` : 'profesionales', { nombre: f.nombre, activo, servicioIds: f.servicioIds, ...(p ? { version: n.versiones.profesionales[p.id] } : {}) }));
       if (!p) setF({ nombre: '', servicioIds: [] });
     }, p ? 'Guardado.' : 'Profesional añadida.');
   };
@@ -453,6 +482,7 @@ const ESTADOS_DIA: { valor: EstadoDia; texto: string }[] = [
 ];
 
 function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId: string | null; titulo: string }) {
+  const { pedir } = useApiNegocio();
   const deServidor = () => ({
     tramos: n.horario.filter((t) => t.staffId === staffId),
     libres: staffId === null ? [] : n.diasLibres.filter((l) => l.staffId === staffId).map((l) => l.weekday),
@@ -504,7 +534,7 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
 
   const pc = usePreguntarCitas();
   const enviar = async (citas?: DecisionCitas) =>
-    poner(await api('PUT', `negocios/${n.id}/horario`, { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}), ...(citas ? { citas } : {}), version: n.versiones.horario[staffId ?? 'local'] }));
+    poner(await pedir('PUT', 'horario', { staffId, tramos, ...(esProfesional ? { diasLibres: libres } : {}), ...(citas ? { citas } : {}), version: n.versiones.horario[staffId ?? 'local'] }));
   const guardar = () => {
     if (fuera.length > 0 && !confirm(`${quien} trabajaría fuera del horario del local: ${listaFuera}. ¿Guardar igual?`)) return;
     void a.hacer(() => pc.intentar(enviar));
@@ -594,17 +624,84 @@ function EditorHorario({ negocio: n, poner, staffId, titulo }: Props & { staffId
 }
 
 // -----------------------------------------------------------------------------
+// Turnos sueltos (PC-06)
+// -----------------------------------------------------------------------------
+// Una profesional trabaja un día CONCRETO fuera de su horario de siempre. Ese
+// día manda sobre su horario y sobre "no trabaja"; si es festivo del local,
+// abre la agenda solo para ella y esas horas. Lo aplica el motor, no esto.
+
+function TurnosSueltos({ negocio: n, poner }: Props) {
+  const { pedir } = useApiNegocio();
+  const [f, setF] = useState({ staffId: '', fecha: '', apertura: '', cierre: '', motivo: '' });
+  const a = useAccion();
+  const activas = n.profesionales.filter((p) => p.activo);
+  const nombre = (id: string) => n.profesionales.find((p) => p.id === id)?.nombre ?? 'Profesional';
+  const anadir = () =>
+    a.hacer(async () => {
+      poner(await pedir('POST', 'turnos-sueltos', { staffId: f.staffId || activas[0]?.id, fecha: f.fecha, apertura: f.apertura, cierre: f.cierre, motivo: nada(f.motivo) }));
+      setF({ ...f, fecha: '', apertura: '', cierre: '', motivo: '' });
+    }, 'Añadido.');
+  return (
+    <Bloque
+      id="turnos"
+      titulo="Turnos sueltos"
+      ayuda="Un día concreto en el que una profesional trabaja fuera de su horario de siempre. Si ese día el local está cerrado o es festivo, se abre la agenda solo para ella y solo esas horas."
+    >
+      <ul className="divide-y divide-slate-100 text-sm">
+        {n.turnosSueltos.map((t) => (
+          <li key={t.id} className="flex items-center gap-3 py-2">
+            <span className="w-28 font-medium">{nombre(t.staffId)}</span>
+            <span>{fechaCorta(t.fecha)} de {t.apertura} a {t.cierre}</span>
+            <span className="text-slate-500">{t.motivo}</span>
+            <button
+              type="button"
+              className="ml-auto text-xs text-red-700 hover:underline"
+              onClick={() => void a.hacer(async () => poner(await pedir('DELETE', `turnos-sueltos/${t.id}`)), 'Borrado.')}
+            >
+              Borrar
+            </button>
+          </li>
+        ))}
+        {n.turnosSueltos.length === 0 ? <li className="py-2 text-slate-500">No hay ninguno.</li> : null}
+      </ul>
+      {activas.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-500">Primero da de alta a alguna profesional.</p>
+      ) : (
+        <div className="mt-4 grid gap-3 rounded-md bg-slate-50 p-3 sm:grid-cols-3">
+          <Campo etiqueta="Quién">
+            <select className="campo" value={f.staffId || activas[0]!.id} onChange={(e) => setF({ ...f, staffId: e.target.value })}>
+              {activas.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+            </select>
+          </Campo>
+          <Campo etiqueta="Día"><input className="campo" type="date" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Campo>
+          <div className="flex gap-2">
+            <Campo etiqueta="De"><input className="campo" type="time" value={f.apertura} onChange={(e) => setF({ ...f, apertura: e.target.value })} /></Campo>
+            <Campo etiqueta="A"><input className="campo" type="time" value={f.cierre} onChange={(e) => setF({ ...f, cierre: e.target.value })} /></Campo>
+          </div>
+          <Campo etiqueta="Motivo (opcional)"><input className="campo" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder="Puente, refuerzo…" /></Campo>
+          <div className="flex items-end sm:col-span-2">
+            <button type="button" className="boton" disabled={a.ocupado || !f.fecha || !f.apertura || !f.cierre} onClick={() => void anadir()}>Añadir</button>
+          </div>
+        </div>
+      )}
+      <Aviso error={a.error} ok={a.ok} />
+    </Bloque>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Festivos y ausencias (PI-12)
 // -----------------------------------------------------------------------------
 
 function Festivos({ negocio: n, poner }: Props) {
+  const { pedir } = useApiNegocio();
   const [f, setF] = useState({ staffId: '', fechaDesde: '', fechaHasta: '', porHoras: false, horaDesde: '', horaHasta: '', motivo: '' });
   const a = useAccion();
   const nombre = (id: string | null) => (id ? (n.profesionales.find((p) => p.id === id)?.nombre ?? 'Profesional') : 'Local');
   const pc = usePreguntarCitas();
   const enviar = async (citas?: DecisionCitas) => {
     poner(
-      await api('POST', `negocios/${n.id}/festivos`, {
+      await pedir('POST', 'festivos', {
         staffId: f.staffId || null,
         fechaDesde: f.fechaDesde,
         ...(f.porHoras ? { horaDesde: f.horaDesde, horaHasta: f.horaHasta } : f.fechaHasta ? { fechaHasta: f.fechaHasta } : {}),
@@ -631,7 +728,7 @@ function Festivos({ negocio: n, poner }: Props) {
                 : `${fechaCorta(x.fechaDesde)} de ${x.horaDesde} a ${x.horaHasta}`}
             </span>
             <span className="text-slate-500">{x.motivo}</span>
-            <button type="button" className="ml-auto text-xs text-red-700 hover:underline" onClick={() => void a.hacer(async () => poner(await api('DELETE', `negocios/${n.id}/festivos/${x.id}`)), 'Borrado.')}>Borrar</button>
+            <button type="button" className="ml-auto text-xs text-red-700 hover:underline" onClick={() => void a.hacer(async () => poner(await pedir('DELETE', `festivos/${x.id}`)), 'Borrado.')}>Borrar</button>
           </li>
         ))}
         {n.festivos.length === 0 ? <li className="py-2 text-slate-500">No hay próximos.</li> : null}
@@ -667,6 +764,7 @@ function Festivos({ negocio: n, poner }: Props) {
 // -----------------------------------------------------------------------------
 
 function Reglas({ negocio: n, poner }: Props) {
+  const { pedir } = useApiNegocio();
   const [f, setF] = useState({ ...n.reglas, politicaCancelacion: n.reglas.politicaCancelacion ?? '' });
   const [version, setVersion] = useState(n.versiones.reglas); // PI-22
   const a = useAccion();
@@ -696,7 +794,7 @@ function Reglas({ negocio: n, poner }: Props) {
           <Campo etiqueta="Política de cancelación (el agente la explica tal cual)"><textarea className="campo" rows={2} value={f.politicaCancelacion} onChange={(e) => setF({ ...f, politicaCancelacion: e.target.value })} /></Campo>
         </div>
       </div>
-      <button type="button" className="boton mt-4" disabled={a.ocupado} onClick={() => void a.hacer(async () => guardado(setVersion, (r) => r.versiones.reglas, poner, await api('PUT', `negocios/${n.id}/reglas`, { ...f, politicaCancelacion: nada(f.politicaCancelacion), version })))}>Guardar</button>
+      <button type="button" className="boton mt-4" disabled={a.ocupado} onClick={() => void a.hacer(async () => guardado(setVersion, (r) => r.versiones.reglas, poner, await pedir('PUT', 'reglas', { ...f, politicaCancelacion: nada(f.politicaCancelacion), version })))}>Guardar</button>
       <Aviso error={a.error} ok={a.ok} />
     </Bloque>
   );
@@ -723,6 +821,7 @@ function Preguntas({ negocio: n, poner }: Props) {
 }
 
 function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string | null; inicial: { pregunta: string; respuesta: string; orden: number } }) {
+  const { pedir } = useApiNegocio();
   const [f, setF] = useState(inicial);
   useEffect(() => setF(inicial), [n]); // eslint-disable-line react-hooks/exhaustive-deps
   const a = useAccion();
@@ -733,8 +832,8 @@ function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string |
         <textarea className="campo" aria-label="Respuesta" rows={2} maxLength={1000} placeholder="Sí, el parking de la plaza está a 2 minutos." value={f.respuesta} onChange={(e) => setF({ ...f, respuesta: e.target.value })} />
       </div>
       <div className="mt-2 flex justify-end gap-2">
-        {id ? <button type="button" className="boton-peligro" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api('DELETE', `negocios/${n.id}/preguntas/${id}`)), 'Borrada.')}>Borrar</button> : null}
-        <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await api(id ? 'PUT' : 'POST', id ? `negocios/${n.id}/preguntas/${id}` : `negocios/${n.id}/preguntas`, { ...f, ...(id ? { version: n.versiones.preguntas[id] } : {}) })), id ? 'Guardada.' : 'Añadida.')}>{id ? 'Guardar' : 'Añadir'}</button>
+        {id ? <button type="button" className="boton-peligro" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await pedir('DELETE', `preguntas/${id}`)), 'Borrada.')}>Borrar</button> : null}
+        <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => poner(await pedir(id ? 'PUT' : 'POST', id ? `preguntas/${id}` : 'preguntas', { ...f, ...(id ? { version: n.versiones.preguntas[id] } : {}) })), id ? 'Guardada.' : 'Añadida.')}>{id ? 'Guardar' : 'Añadir'}</button>
       </div>
       <Aviso error={a.error} ok={a.ok} />
     </div>
@@ -746,6 +845,7 @@ function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string |
 // -----------------------------------------------------------------------------
 
 function Chat({ negocio: n, poner }: Props) {
+  const { pedir, ver } = useApiNegocio();
   const [f, setF] = useState({ dominios: n.chat.dominios.join('\n'), color: n.chat.color, logo: n.chat.logo, privacidadUrl: n.chat.privacidadUrl ?? '', topeMensualUsd: n.chat.topeMensualUsd });
   const [avisoLogo, setAvisoLogo] = useState<string | null>(null);
   const [version, setVersion] = useState(n.versiones.chat); // PI-22
@@ -776,7 +876,10 @@ function Chat({ negocio: n, poner }: Props) {
             </div>
           </Campo>
           <Campo etiqueta="Política de privacidad (enlace)"><input className="campo" placeholder="https://…" value={f.privacidadUrl} onChange={(e) => setF({ ...f, privacidadUrl: e.target.value })} /></Campo>
-          <Campo etiqueta="Tope mensual de la IA (US$)" ayuda="Al llegar, el chat da el teléfono del local sin llamar a la IA."><input className="campo" type="number" min={0} step="1" value={f.topeMensualUsd} onChange={(e) => setF({ ...f, topeMensualUsd: Number(e.target.value) })} /></Campo>
+          {/* PC-09: el tope lo pone MAZZMKT según el plan; el cliente ni lo ve. */}
+          {ver === 'panel' ? (
+            <Campo etiqueta="Tope mensual de la IA (US$)" ayuda="Al llegar, el chat da el teléfono del local sin llamar a la IA."><input className="campo" type="number" min={0} step="1" value={f.topeMensualUsd ?? 0} onChange={(e) => setF({ ...f, topeMensualUsd: Number(e.target.value) })} /></Campo>
+          ) : null}
         </div>
         <div className="sm:col-span-2">
           <span className="etiqueta">Logo (PNG, JPG, SVG o WebP; si pesa más de 150 KB se reduce solo)</span>
@@ -803,12 +906,13 @@ function Chat({ negocio: n, poner }: Props) {
               setVersion,
               (r) => r.versiones.chat,
               poner,
-              await api('PUT', `negocios/${n.id}/chat`, {
+              await pedir('PUT', 'chat', {
                 dominios: f.dominios.split(/[\n,]+/).map((d) => d.trim()).filter(Boolean),
                 color: f.color.trim(),
                 logo: f.logo,
                 privacidadUrl: nada(f.privacidadUrl),
-                topeMensualUsd: f.topeMensualUsd,
+                // PC-09: el portal no lo manda; la API conserva el que puso Mariana.
+                ...(ver === 'panel' ? { topeMensualUsd: f.topeMensualUsd } : {}),
                 version,
               }),
             ),

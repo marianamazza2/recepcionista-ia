@@ -1,7 +1,14 @@
 // Un negocio: cabecera con su estado y las secciones del panel.
+//
+// Fase 9 (PC-05): la ficha y la agenda son las MISMAS pantallas que ve el
+// cliente en su portal. Aquí se les da la API del panel con
+// <ProveedorNegocio>, con `ver: panel` (Mariana sí ve el tope, activa/pausa y
+// la clave del widget). La pestaña "Portal" le enseña su portal tal cual.
 
 import { api, type Negocio } from '../api';
+import { ProveedorNegocio } from '../negocio-api';
 import { Aviso, Cargando, EtiquetaEstado, useCarga } from '../ui';
+import { Invitacion } from './Invitacion';
 import { Agenda } from './Agenda';
 import { Conversaciones, Derivaciones } from './Conversaciones';
 import { Ficha } from './Ficha';
@@ -9,10 +16,11 @@ import { Probar } from './Probar';
 
 const SECCIONES = [
   ['ficha', 'Ficha'],
+  ['agenda', 'Agenda'],
   ['probar', 'Probar el chat'],
   ['conversaciones', 'Conversaciones'],
   ['derivaciones', 'Derivaciones'],
-  ['agenda', 'Agenda'],
+  ['portal', 'Su portal'],
 ] as const;
 
 export function NegocioPagina({ id, seccion, sub }: { id: string; seccion: string; sub: string | null }) {
@@ -20,6 +28,12 @@ export function NegocioPagina({ id, seccion, sub }: { id: string; seccion: strin
   if (error) return <Aviso error={error} />;
   if (!n) return <Cargando />;
   const partes = [seccion, sub];
+  // PC-05: la ficha y la agenda del panel hablan con /api/admin/negocios/:id/…
+  const apiDelPanel = {
+    ver: 'panel' as const,
+    pedir: <T,>(metodo: 'GET' | 'POST' | 'PUT' | 'DELETE', camino: string, body?: unknown) =>
+      api<T>(metodo, `negocios/${id}${camino ? `/${camino}` : ''}`, body),
+  };
   return (
     <div className="space-y-6">
       <div>
@@ -41,17 +55,21 @@ export function NegocioPagina({ id, seccion, sub }: { id: string; seccion: strin
           ))}
         </nav>
       </div>
-      {partes[0] === 'probar' ? (
-        <Probar negocio={n} />
-      ) : partes[0] === 'conversaciones' ? (
-        <Conversaciones negocio={n} abierta={sub} />
-      ) : partes[0] === 'derivaciones' ? (
-        <Derivaciones negocio={n} onCambio={recargar} />
-      ) : partes[0] === 'agenda' ? (
-        <Agenda negocio={n} />
-      ) : (
-        <Ficha negocio={n} poner={poner} />
-      )}
+      <ProveedorNegocio valor={apiDelPanel}>
+        {partes[0] === 'probar' ? (
+          <Probar negocio={n} />
+        ) : partes[0] === 'conversaciones' ? (
+          <Conversaciones negocio={n} abierta={sub} />
+        ) : partes[0] === 'derivaciones' ? (
+          <Derivaciones negocio={n} onCambio={recargar} />
+        ) : partes[0] === 'agenda' ? (
+          <Agenda negocio={n} />
+        ) : partes[0] === 'portal' ? (
+          <Invitacion negocio={n} poner={poner} />
+        ) : (
+          <Ficha negocio={n} poner={poner} />
+        )}
+      </ProveedorNegocio>
     </div>
   );
 }

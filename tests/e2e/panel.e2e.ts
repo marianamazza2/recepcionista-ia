@@ -264,20 +264,33 @@ describe('el panel en el navegador', () => {
     await panel.screenshot({ path: join(CAPTURAS, '3-conversacion.png'), fullPage: true });
   });
 
-  it('la agenda muestra la cita y carga otra a mano a las 12:15 (fuera de la rejilla)', async () => {
+  // PC-16: la agenda es visual. La cita se ve como un bloque en la columna de
+  // su profesional y para cargar otra se pincha un hueco libre.
+  it('la agenda visual muestra la cita y carga otra a mano a las 12:15 (fuera de la rejilla)', async () => {
     await panel.goto(`${servidores.panelUrl}/panel/#/negocios/${negocioId}/agenda`);
     await panel.locator('input[type=date]').fill('2030-10-15');
-    await expect.poll(() => panel.getByText('10:00–11:00').isVisible(), ESPERA).toBe(true);
-    await panel.getByLabel(/^Hora/).fill('12:15');
-    await panel.getByLabel('Email de la clienta (opcional)').fill('clienta.local@example.com');
-    await panel.getByLabel('Teléfono de la clienta').fill(telefonoDeTest());
-    await panel.getByLabel('Nombre').fill('Clienta en el local');
-    await panel.getByRole('button', { name: 'Cargar cita' }).click();
-    await expect.poll(() => panel.getByText('12:15–13:15').isVisible(), ESPERA).toBe(true);
+    await expect.poll(() => panel.getByRole('button', { name: /10:00 Clienta Panel/ }).isVisible(), ESPERA).toBe(true);
+    await panel.screenshot({ path: join(CAPTURAS, '4-agenda-dia.png'), fullPage: true });
+
+    await panel.getByRole('button', { name: /^Abierto de/ }).first().click();
+    const dialogo = panel.getByRole('dialog', { name: 'Cargar una cita a mano' });
+    await dialogo.waitFor(ESPERA);
+    await dialogo.getByLabel('Hora').fill('12:15');
+    await dialogo.getByLabel('Email (opcional)').fill('clienta.local@example.com');
+    await dialogo.getByLabel('Teléfono de la clienta').fill(telefonoDeTest());
+    await dialogo.getByLabel('Nombre').fill('Clienta en el local');
+    await dialogo.getByRole('button', { name: 'Cargar cita' }).click();
+    await expect.poll(() => panel.getByRole('button', { name: /12:15 Clienta en el local/ }).isVisible(), ESPERA).toBe(true);
     await panel.screenshot({ path: join(CAPTURAS, '4-agenda.png'), fullPage: true });
     const [c] = await sql<{ origen: string }[]>`
       select origen from public.appointments where business_id = ${negocioId} and start_at = ${localToUtc('2030-10-15', '12:15', 'Europe/Madrid')}`;
     expect(c!.origen).toBe('manual');
+
+    // Y la semana se lee de un vistazo.
+    await panel.getByRole('button', { name: 'Semana' }).click();
+    await expect.poll(() => panel.getByRole('button', { name: /12:15 Clienta en el local/ }).isVisible(), ESPERA).toBe(true);
+    await panel.screenshot({ path: join(CAPTURAS, '4-agenda-semana.png'), fullPage: true });
+    await panel.getByRole('button', { name: 'Día' }).click();
   });
 
   it('PI-21: un festivo o una ausencia encima de citas sale en un cartel; no guardar, cancelar o dejar', async () => {
