@@ -13,7 +13,8 @@ herramientas y su loop, y `core/` no se toca (Fase 9, PC-03).
 
 ## Dos modos, un agente
 
-- **`alta`** (PC-03): el guion, sección por sección, hasta `terminar_alta`.
+- **`alta`** (PC-03, PC-18): el guion, **por temas**: el cliente empieza por la
+  sección que quiera y en el chat que quiera, hasta `terminar_alta`.
 - **`portal`** (PC-04): después del alta, el cliente pide cambios con palabras
   («Núria no viene el jueves») y el agente los aplica.
 
@@ -43,6 +44,18 @@ Lo que no se puede romper se comprueba en el código, aquí:
 5. **El formato del resumen lo pone el portal**, no el modelo: la herramienta
    recibe datos (título, líneas, tabla) y `admin/src/portal/Chat.tsx` los
    dibuja siempre igual.
+6. **Qué secciones del alta están hechas lo marca el código** (PC-18):
+   `ejecutar()` llama a `marcarSeccionHecha` cuando una herramienta con
+   `seccion` del alta guarda bien, y le devuelve al modelo `quedan_del_alta`.
+   `terminar_alta` no cierra si falta alguna. No hay `avanzar_seccion`.
+7. **Cada mensaje va a su chat** (PC-17): `turnoDelPortal` recibe `chatId`
+   (null = uno nuevo) y un chat de otro negocio lanza `ChatNoEncontrado`. El
+   id de un chat es el de su **primera** conversación; si se hace largo sigue
+   en otra con `continua_de` y para el cliente es el mismo chat.
+8. **Lo que puede ofrecer lo calcula el código** (PC-20):
+   `loQuePuedoHacer()` en `prompt.ts`, con lo que ya está cargado. El prompt
+   dice que ante un mensaje sin sentido empiece por «Disculpa, no he
+   comprendido tu mensaje.» y ofrezca solo lo de esa lista.
 
 ## Convenciones
 
@@ -55,10 +68,16 @@ Lo que no se puede romper se comprueba en el código, aquí:
   explicar, así que se escribe pensando en eso.
 - El consumo se registra como el del widget pero **no cuenta para el tope**
   (PC-14): la conversación va marcada con `conversations.alta`.
-- **Después del alta, las herramientas van sin `strict`**: juntas, en modo
-  estricto, la API las rechaza («the compiled grammar is too large»). Cada
-  herramienta comprueba en el código lo que recibe, así que no se pierde
-  nada. En el alta sí van con `strict` (son menos).
+- **Las herramientas van sin `strict`**: juntas, en modo estricto, la API las
+  rechaza («the compiled grammar is too large»). Cada herramienta comprueba en
+  el código lo que recibe, así que no se pierde nada. Desde PC-18 durante el
+  alta están casi todas (también cargar un festivo), así que tampoco ahí.
+- **El título de un chat nuevo** lo pone `tituladorConIA` con un modelo
+  pequeño (`MODELO_TITULOS`), en paralelo al turno. Sin titulador (tests,
+  e2e) es el primer mensaje recortado. El servidor de desarrollo y Vercel lo
+  conectan.
+- **El agente no saluda**: la pantalla de inicio del portal ya lo hizo
+  (PC-19).
 - **Una respuesta fija también va al historial como mensaje del asistente.**
   Este chat no deriva tras un error (el de las clientas sí, PA-06): si el
   turno quedara sin respuesta, la API rechazaría todos los mensajes
@@ -71,8 +90,9 @@ Lo que no se puede romper se comprueba en el código, aquí:
 
 `tests/alta-chat.test.ts`, con el modelo simulado (sin coste): cada sección
 guarda lo mismo que guardaría el panel, sin confirmar no se guarda, un dato
-inválido no se guarda, no se toca otro negocio, se retoma por donde se dejó y
-el gasto va aparte. La prueba entera en el navegador, en
+inválido no se guarda, no se toca otro negocio, el alta va por temas en chats
+distintos, un chat de otro negocio no existe, el prompt sabe lo que falta y lo
+que puede ofrecer, y el gasto va aparte. La prueba entera en el navegador, en
 `tests/e2e/portal.e2e.ts`. Con el modelo real, `npm run alta:eval`
 (`src/cli/eval-alta.ts`): una clienta simulada hace el alta entera siguiendo el
 guion y después pide cambios; se comprueba en la base. Cuesta ≈ 1 US$ por

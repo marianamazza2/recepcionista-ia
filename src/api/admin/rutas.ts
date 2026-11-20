@@ -60,6 +60,8 @@ export interface AdminDeps extends WebChatDeps {
   auth?: AuthPanel | null;
   /** PC-02: a dónde apunta el enlace de invitación (la web del portal). De serie, baseUrl. */
   portalUrl?: string;
+  /** PC-17: título de los chats nuevos del portal (src/alta/agente.ts, tituladorConIA). */
+  titulador?: (texto: string) => Promise<string>;
 }
 
 export interface ContextoAdmin {

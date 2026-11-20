@@ -16,7 +16,31 @@ export interface SesionPortal {
   sessionToken: string;
   email: string;
   negocio: { id: string; nombre: string; estado: 'activo' | 'pausado' | 'trial' };
-  alta: { seccion: number; terminada: boolean };
+  alta: EstadoAlta;
+}
+
+/** PC-18: qué secciones del alta están hechas y cuáles faltan. */
+export interface EstadoAlta {
+  seccion: number;
+  terminada: boolean;
+  hechas: string[];
+  faltan: string[];
+}
+
+/** PC-17: un chat del historial. */
+export interface ChatResumido {
+  id: string;
+  titulo: string;
+  actualizado: string;
+}
+
+export interface Historial {
+  chats: ChatResumido[];
+  /** PC-19: «Buenas tardes, Clínica Aurora. ¿En qué te puedo ayudar?», con la hora del negocio. */
+  saludo: string;
+  alta: EstadoAlta;
+  negocio: { id: string; nombre: string; estado: string };
+  email: string;
 }
 
 const CLAVE = 'recepcionista-portal:sesion';
@@ -124,6 +148,8 @@ export interface RespuestaChat {
   resumen: Resumen | null;
   altaTerminada: boolean;
   seccion: number;
+  faltan: string[];
   modo: 'alta' | 'portal';
+  chat: { id: string; titulo: string };
   aviso?: string;
 }

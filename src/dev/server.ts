@@ -35,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import type { Sql } from 'postgres';
 
 import type { EmailProvider } from '../adapters/email/types.js';
+import { tituladorConIA } from '../alta/agente.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
 import type { AuthPanel } from '../api/admin/auth.js';
@@ -70,6 +71,8 @@ export interface OpcionesServidores {
   onError?: (e: unknown) => void;
   /** Una línea por petición en la consola. */
   log?: boolean;
+  /** PC-17: título de los chats del portal. Sin él (tests), el primer mensaje recortado. */
+  titulador?: (texto: string) => Promise<string>;
 }
 
 /** Escucha en el puerto en IPv4 y en IPv6 locales ("localhost" puede ser cualquiera de los dos). */
@@ -115,6 +118,7 @@ export async function iniciarServidores(
     ...(panelUrl ? { portalUrl: panelUrl } : {}),
     ...(o.now ? { now: o.now } : {}),
     ...(o.onError ? { onError: o.onError } : {}),
+    ...(o.titulador ? { titulador: o.titulador } : {}),
   });
   const log = (inicio: number, req: IncomingMessage, status: number) => {
     if (o.log) {
@@ -245,9 +249,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const vigia = await construirPanel({ watch: true });
   const vigiaPortal = await construirPortal({ watch: true });
   const auth = authPanelDesdeEnv();
+  const model = anthropicModelClient(settings);
   const s = await iniciarServidores({
     sql,
-    model: anthropicModelClient(settings),
+    model,
+    titulador: tituladorConIA(model),
     settings,
     email: new EmailDePrueba(),
     apiPort: Number(process.env.API_PORT) || 4311,

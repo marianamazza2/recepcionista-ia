@@ -46,6 +46,8 @@ interface Entorno {
 }
 
 interface Charla {
+  /** PC-17: el chat de esta charla (lo abre el primer mensaje). */
+  chatId?: string;
   respuestas: RespuestaPortal[];
   texto: string;
 }
@@ -68,7 +70,8 @@ async function negocioNuevo(e: Entorno, nombre: string): Promise<string> {
 }
 
 async function decir(e: Entorno, businessId: string, texto: string, charla: Charla): Promise<RespuestaPortal> {
-  const r = await turnoDelPortal(deps(e), { businessId, texto, clientMessageId: randomUUID() });
+  const r = await turnoDelPortal(deps(e), { businessId, texto, clientMessageId: randomUUID(), chatId: charla.chatId ?? null });
+  charla.chatId = r.chat.id;
   charla.respuestas.push(r);
   charla.texto += `\n${r.respuesta}`;
   if (e.ver) {
@@ -120,7 +123,8 @@ function contestar(r: RespuestaPortal, estado: { servicios: number; profesionale
 async function altaCompleta(e: Entorno, businessId: string, maxMensajes = 45): Promise<{ charla: Charla; terminada: boolean }> {
   const charla: Charla = { respuestas: [], texto: '' };
   const estado = { servicios: 0, profesionales: 0 };
-  let r = await decir(e, businessId, 'Hola', charla);
+  // Como la sugerencia «Empezar el alta» del inicio del chat (PC-19).
+  let r = await decir(e, businessId, 'Quiero empezar el alta de mi negocio.', charla);
   for (let i = 0; i < maxMensajes && !r.altaTerminada; i++) {
     r = await decir(e, businessId, contestar(r, estado), charla);
   }
@@ -230,6 +234,32 @@ const ESCENARIOS: Escenario[] = [
         ok: d === 75 && m?.b === 10 && n > 0,
         detalle: `duración de la limpieza: ${d ?? '(sin cambiar)'}; margen: ${m?.b}; ausencias guardadas: ${n}; mensajes después del alta: ${charla.respuestas.length}`,
         charla,
+      };
+    },
+  },
+  {
+    titulo: 'Un mensaje sin sentido → «Disculpa, no he comprendido…» y lo que puede hacer (PC-20); y el alta por temas: empieza por los horarios (PC-18)',
+    async correr(e) {
+      const id = await negocioNuevo(e, 'Por temas');
+      const charla: Charla = { respuestas: [], texto: '' };
+      const r1 = await decir(e, id, 'kjsbdgkljsbdglkjsb', charla);
+      const disculpa = /^disculpa, no he comprendido tu mensaje/i.test(r1.respuesta.trim());
+      const ofrece = /servicios/i.test(r1.respuesta) && /horario/i.test(r1.respuesta);
+      // Otro chat: empieza por los horarios, aunque en el guion van cuartos.
+      const otro: Charla = { respuestas: [], texto: '' };
+      const r2 = await decir(e, id, 'Quiero empezar a dar de alta los horarios del negocio.', otro);
+      const vaAHorarios = /horario|abierto|d[ií]as/i.test(r2.respuesta) && !/sector/i.test(r2.respuesta);
+      const r3 = await decir(e, id, 'De lunes a viernes de 9 a 18. Sábado y domingo cerrado.', otro);
+      let r = r3;
+      for (let i = 0; i < 4 && !r.faltan.length; i++) r = await decir(e, id, 'Sí.', otro);
+      for (let i = 0; i < 4 && r.faltan.includes('horario'); i++) r = await decir(e, id, r.resumen ? 'Sí, está todo bien.' : /todas|equipo|profesional/i.test(r.respuesta) ? 'Todavía no tengo equipo cargado.' : 'Sí.', otro);
+      const [tramos] = await e.sql<{ n: number }[]>`select count(*)::int as n from public.business_hours where business_id = ${id} and staff_id is null`;
+      const dosChats = charla.chatId !== otro.chatId;
+      const ok = disculpa && ofrece && vaAHorarios && tramos!.n === 5 && dosChats && !r.faltan.includes('horario');
+      return {
+        ok,
+        detalle: `disculpa: ${disculpa}; ofrece lo que puede: ${ofrece}; va a los horarios: ${vaAHorarios}; tramos guardados: ${tramos!.n}; dos chats: ${dosChats}; faltan: ${r.faltan.join(', ')}`,
+        charla: { respuestas: [...charla.respuestas, ...otro.respuestas], texto: charla.texto + otro.texto },
       };
     },
   },

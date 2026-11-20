@@ -43,9 +43,14 @@ async function negocioNuevo(nombre: string): Promise<string> {
   return id;
 }
 
+/** El chat abierto de cada negocio (PC-17): el primer mensaje abre uno y los siguientes van ahí. */
+const chatAbierto = new Map<string, string>();
+
 /** Un turno del chat: el cliente escribe y el modelo guionizado contesta. */
 async function hablar(businessId: string, modelo: ModeloSimulado, texto: string) {
-  return turnoDelPortal(deps(modelo), { businessId, texto, clientMessageId: randomUUID() });
+  const r = await turnoDelPortal(deps(modelo), { businessId, texto, clientMessageId: randomUUID(), chatId: chatAbierto.get(businessId) ?? null });
+  chatAbierto.set(businessId, r.chat.id);
+  return r;
 }
 
 /** El resumen que exige PC-03 antes de guardar esa sección. */
@@ -72,7 +77,6 @@ describe('el alta por chat (PC-03)', () => {
 
     m = new ModeloSimulado([
       herramientas({ name: 'guardar_negocio', input: { sector: 'medicina estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } }),
-      herramientas({ name: 'avanzar_seccion', input: { seccion: 2 } }),
       texto('Perfecto. Bueno, ahora comencemos con la sección de servicios.'),
     ]);
     r = await hablar(id, m, 'Sí, está todo bien');
@@ -80,7 +84,10 @@ describe('el alta por chat (PC-03)', () => {
     expect(n.sector).toBe('medicina estética');
     expect(n.direccion).toBe('Calle Mayor 12, 28013 Madrid');
     expect(n.telefonoHumano).toBe('+34910000123'.slice(0, 3) + '910000000'.slice(0, 0) + '+34910000000'.slice(3)); // normalizado a +34910000000
+    // PC-18: la sección queda hecha y el modelo sabe al momento lo que queda.
     expect((await estadoDelAlta(sql, id)).seccion).toBe(2);
+    expect((await estadoDelAlta(sql, id)).seccionesHechas).toEqual(['negocio']);
+    expect(JSON.stringify(m.peticiones[1]!.messages.at(-1))).toContain('quedan_del_alta');
 
     // Sección 2 · servicios (uno con precio y otro sin precio: "depende").
     m = new ModeloSimulado([resumen('servicios'), texto('Toxina botulínica · 30 min · 300 € · Peeling · 45 min · sin precio. ¿Está todo bien?')]);
@@ -254,18 +261,73 @@ describe('el alta por chat (PC-03)', () => {
     expect((await leerNegocio(sql, mio))!.direccion).toBe('Otra Calle 2, 08001 Barcelona');
   });
 
-  it('si se va a mitad, al volver sigue por donde lo dejó y no repite lo confirmado', async () => {
+  it('si se va a mitad, al volver el prompt sabe lo que falta y no repite lo confirmado', async () => {
     const id = await negocioNuevo(`A Mitad ${randomUUID().slice(0, 6)}`);
-    let m = new ModeloSimulado([herramientas({ name: 'avanzar_seccion', input: { seccion: 3 } }), texto('Vamos con las profesionales.')]);
-    await hablar(id, m, 'Hola');
-    expect((await estadoDelAlta(sql, id)).seccion).toBe(3);
+    await hablar(id, new ModeloSimulado([resumen('negocio'), texto('¿Está todo bien?')]), 'Medicina estética, Calle Mayor 12, 28013 Madrid, 910000000');
+    await hablar(id, new ModeloSimulado([herramientas({ name: 'guardar_negocio', input: { sector: 'estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } }), texto('Guardado.')]), 'Sí');
+    expect((await estadoDelAlta(sql, id)).seccion).toBe(2);
 
-    // "Vuelve" (otra instancia del modelo): el prompt le dice por dónde va.
-    m = new ModeloSimulado([texto('Seguimos donde lo dejamos: las profesionales.')]);
-    const r = await hablar(id, m, 'Ya estoy aquí otra vez');
-    expect(r.seccion).toBe(3);
+    // "Vuelve" otro día, en un chat NUEVO: el prompt le dice lo que falta.
+    chatAbierto.delete(id);
+    const m = new ModeloSimulado([texto('Seguimos con los servicios.')]);
+    const r = await hablar(id, m, 'Sigamos con el alta');
+    expect(r.seccion).toBe(2);
+    expect(r.faltan).toEqual(['servicios', 'profesionales', 'horario', 'reglas']);
     const prompt = JSON.stringify(m.peticiones[0]!.system);
-    expect(prompt).toContain('sección 3');
+    expect(prompt).toContain('Del alta falta: dar de alta tus servicios');
+    expect(prompt).not.toContain('Del alta falta: cargar los datos de tu negocio');
+  });
+
+  it('PC-18: el alta va por temas, en cualquier orden y en chats distintos', async () => {
+    const id = await negocioNuevo(`Por Temas ${randomUUID().slice(0, 6)}`);
+    // Empieza por el horario del local, en su propio chat.
+    await hablar(id, new ModeloSimulado([resumen('horario'), texto('¿Está todo bien?')]), 'Quiero cargar los horarios del local: de lunes a viernes de 9 a 18');
+    const chatHorarios = chatAbierto.get(id)!;
+    await hablar(id, new ModeloSimulado([herramientas({ name: 'guardar_horarios', input: { local: ['lunes', 'martes'].map((dia) => ({ dia, desde: '09:00', hasta: '18:00' })), profesionales: [] } }), texto('Guardado.')]), 'Sí');
+    expect((await estadoDelAlta(sql, id)).seccionesHechas).toEqual(['horario']);
+    // Otro chat: el equipo.
+    chatAbierto.delete(id);
+    await hablar(id, new ModeloSimulado([resumen('profesionales'), texto('¿Está todo bien?')]), 'Quiero dar de alta a mi equipo: Núria');
+    expect(chatAbierto.get(id)).not.toBe(chatHorarios);
+    await hablar(id, new ModeloSimulado([herramientas({ name: 'guardar_profesionales', input: { profesionales: [{ nombre: 'Núria', servicios: [] }] } }), texto('Guardado.')]), 'Sí');
+    const estado = await estadoDelAlta(sql, id);
+    expect(estado.seccionesHechas).toEqual(['horario', 'profesionales']);
+    expect(estado.faltan).toEqual(['negocio', 'servicios', 'reglas']);
+    // Cerrar el alta con secciones sin hacer no se puede: el código dice cuáles.
+    const m = new ModeloSimulado([herramientas({ name: 'terminar_alta', input: {} }), texto('Te faltan cosas.')]);
+    const r = await hablar(id, m, 'Ya está');
+    expect(r.altaTerminada).toBe(false);
+    expect(JSON.stringify(m.peticiones[1]!.messages.at(-1))).toContain('los datos del local, los servicios');
+  });
+
+  it('PC-17: un mensaje sin chat abre uno nuevo; un chat de otro negocio no existe', async () => {
+    const mio = await negocioNuevo(`Chats ${randomUUID().slice(0, 6)}`);
+    const ajeno = await negocioNuevo(`Chats Ajeno ${randomUUID().slice(0, 6)}`);
+    const a = await turnoDelPortal(deps(new ModeloSimulado([texto('Vale.')])), { businessId: mio, texto: 'Quiero cargar un festivo', clientMessageId: randomUUID() });
+    expect(a.chat.titulo).toBe('Quiero cargar un festivo');
+    const titulador = async () => 'Festivo de diciembre';
+    const b = await turnoDelPortal({ ...deps(new ModeloSimulado([texto('Vale.')])), titulador }, { businessId: mio, texto: 'Otro tema', clientMessageId: randomUUID() });
+    expect(b.chat.id).not.toBe(a.chat.id);
+    expect(b.chat.titulo).toBe('Festivo de diciembre');
+    const { chatsDelPortal } = await import('../src/db/portal.js');
+    expect((await chatsDelPortal(sql, mio)).map((c) => c.titulo).sort()).toEqual(['Festivo de diciembre', 'Quiero cargar un festivo']);
+    // El chat de otro negocio no se puede usar (PC-02).
+    await expect(turnoDelPortal(deps(new ModeloSimulado([texto('x')])), { businessId: ajeno, texto: 'Hola', clientMessageId: randomUUID(), chatId: a.chat.id })).rejects.toThrow('Ese chat no existe');
+  });
+
+  it('PC-20: el prompt pide disculpas ante lo que no entiende y solo ofrece lo que tiene sentido', async () => {
+    const id = await negocioNuevo(`No Entiende ${randomUUID().slice(0, 6)}`);
+    await hablar(id, new ModeloSimulado([resumen('negocio'), texto('¿Está todo bien?')]), 'Estética, Calle Mayor 12, 28013 Madrid, 910000000');
+    await hablar(id, new ModeloSimulado([herramientas({ name: 'guardar_negocio', input: { sector: 'estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } }), texto('Guardado.')]), 'Sí');
+    const m = new ModeloSimulado([texto('Disculpa, no he comprendido tu mensaje.')]);
+    await hablar(id, m, 'kjsbdgkljsbdglkjsb');
+    const prompt = JSON.stringify(m.peticiones[0]!.system);
+    expect(prompt).toContain('Disculpa, no he comprendido tu mensaje.');
+    const ofrecer = /Lo que puedes ofrecer ahora: ([^\n]*)/.exec(JSON.parse(JSON.stringify(m.peticiones[0]!.system))[0].text)![1]!;
+    expect(ofrecer).toContain('dar de alta tus servicios');
+    expect(ofrecer).toContain('cargar un festivo');
+    // El negocio ya está cargado: no se ofrece otra vez.
+    expect(ofrecer).not.toContain('cargar los datos de tu negocio');
   });
 
   it('el mismo mensaje reenviado no se procesa dos veces', async () => {
@@ -297,7 +359,8 @@ describe('una conversación del alta muy larga (alta:eval, 19/11/2026)', () => {
   it('antes de llenarse, sigue en otra nueva sin perder lo guardado ni volver a empezar', async () => {
     const id = await negocioNuevo(`Alta Larga ${randomUUID().slice(0, 6)}`);
     await hablar(id, new ModeloSimulado([texto('¿Empezamos?')]), 'Hola');
-    const antes = await estadoDelAlta(sql, id);
+    const chatId = chatAbierto.get(id)!;
+    const antes = { conversationId: chatId };
     // La conversación ya gastó casi todo su tope (un cliente que habló mucho).
     await sql`
       insert into public.messages (business_id, conversation_id, rol, contenido, tool_calls)
@@ -306,8 +369,13 @@ describe('una conversación del alta muy larga (alta:eval, 19/11/2026)', () => {
     const m = new ModeloSimulado([texto('Seguimos: ¿cuál es el teléfono del local?')]);
     const r = await hablar(id, m, 'La dirección es Calle Mayor 12, 28013 Madrid');
     expect(r.respuesta).toBe('Seguimos: ¿cuál es el teléfono del local?');
-    const despues = await estadoDelAlta(sql, id);
-    expect(despues.conversationId).not.toBe(antes.conversationId);
+    // PC-17: para el cliente es el MISMO chat; por dentro, otra conversación.
+    expect(r.chat.id).toBe(chatId);
+    const { cadenaDelChat, chatsDelPortal } = await import('../src/db/portal.js');
+    const cadena = await cadenaDelChat(sql, id, chatId);
+    expect(cadena).toHaveLength(2);
+    expect((await chatsDelPortal(sql, id)).map((c) => c.id)).toEqual([chatId]);
+    const despues = { conversationId: cadena[1]! };
     // La nueva empieza limpia: solo el mensaje de ahora y el aviso de que es continuación.
     const msgs = m.peticiones[0]!.messages;
     expect(msgs).toHaveLength(2);
@@ -331,6 +399,13 @@ describe('el chat del portal después del alta (PC-04, PC-10, PC-06)', () => {
         herramientas({
           name: 'guardar_horarios',
           input: { local: [1, 2, 3, 4, 5].map((d) => ({ dia: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][d], desde: '10:00', hasta: '18:00' })), profesionales: [] },
+        }),
+      ],
+      [
+        'reglas',
+        herramientas({
+          name: 'guardar_reglas',
+          input: { antelacion_min_horas: 2, cancelacion_plazo_horas: 24, quien_elige_profesional: 'preguntar', dentro_del_plazo: 'informar', politica_cancelacion: 'Avísanos con 24 horas.' },
         }),
       ],
     ];
@@ -434,7 +509,10 @@ describe('el chat del portal después del alta (PC-04, PC-10, PC-06)', () => {
   it('después del alta las herramientas van sin modo estricto (la gramática sería demasiado grande)', async () => {
     const { definiciones } = await import('../src/alta/herramientas.js');
     expect(definiciones('portal').every((d) => !('strict' in d))).toBe(true);
-    expect(definiciones('alta').every((d) => d.strict === true)).toBe(true);
+    // PC-18: durante el alta van también casi todas: tampoco en modo estricto.
+    expect(definiciones('alta').every((d) => !('strict' in d))).toBe(true);
+    expect(definiciones('alta').map((d) => d.name)).toContain('cerrar_dia');
+    expect(definiciones('alta').map((d) => d.name)).not.toContain('avanzar_seccion');
   });
 });
 

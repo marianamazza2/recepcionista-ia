@@ -7,16 +7,18 @@
 //   1. Mariana da de alta el negocio en su panel y genera su enlace (PC-02).
 //   2. El cliente abre el enlace, recibe el código en su email y crea su
 //      cuenta y su contraseña (PC-11).
-//   3. Dentro ve SOLO el chat y hace el alta entera: su negocio, su servicio,
-//      su profesional, su horario y sus reglas, confirmando cada resumen.
-//   4. Al terminar aparece su portal con los datos (PC-11) y a Mariana le
-//      llega el aviso en su panel (PC-13).
+//   3. Dentro le recibe el chat con su saludo (PC-19); toca «Empezar el alta»
+//      y lo hace entero: su negocio, su servicio, su profesional, su horario
+//      y sus reglas, confirmando cada resumen. El portal está desde el
+//      principio (Fase 9b).
+//   4. Al terminar, el inicio del portal dice que el alta está completa y a
+//      Mariana le llega el aviso en su panel (PC-13).
 //   5. Mariana lo activa.
 //   6. Su widget le da una cita a una clienta…
 //   7. …que el negocio ve en su agenda visual, donde además carga otra a mano
 //      pinchando un hueco (PC-16).
-//   8. El cliente cambia la duración de su servicio por el chat y el agente de
-//      las clientas lo aplica en el mensaje siguiente.
+//   8. El cliente cambia la duración de su servicio en un chat nuevo (PC-17) y
+//      el agente de las clientas lo aplica en el mensaje siguiente.
 //
 // El modelo es SIMULADO (sin coste): el guion de abajo se consume en orden,
 // primero el del chat del alta, luego el del widget y luego el del portal.
@@ -62,7 +64,6 @@ const resumen = (seccion: string, titulo: string, lineas: { etiqueta: string; va
 
 const modelo = new ModeloSimulado([
   // --- El chat del alta (el guion de Mariana, sección por sección) ------------
-  texto('¡Hola, buenos días! Te damos la bienvenida a tu portal para avanzar con el alta. Te iré haciendo preguntas para que avancemos con la configuración. ¿Empezamos?'),
   texto('Dime de qué sector es tu negocio.'),
   texto('Ahora continuamos con la dirección del local.'),
   texto('¿Y el teléfono del local?'),
@@ -73,24 +74,21 @@ const modelo = new ModeloSimulado([
   ]),
   texto('Te confirmo: medicina estética, Calle Mayor 12, 28013 Madrid, 910 000 000. ¿Está todo bien?'),
   herramientas(
-    { name: 'guardar_negocio', input: { sector: 'medicina estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } },
-    { name: 'avanzar_seccion', input: { seccion: 2 } },
+    { name: 'guardar_negocio', input: { sector: 'medicina estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '910000000' } }
   ),
   texto('Perfecto. Bueno, ahora comencemos con la sección de servicios. ¿Cuál es el servicio que quieres dar de alta?'),
   texto('Perfecto. ¿Tienes más servicios para dar de alta?'),
   resumen('servicios', 'Tus servicios', [], { columnas: ['Servicio', 'Duración', 'Precio'], filas: [['Limpieza facial', '60 min', '45 €']] }),
   texto('Limpieza facial · 60 min · 45 €. ¿Está todo bien?'),
   herramientas(
-    { name: 'guardar_servicios', input: { servicios: [{ nombre: 'Limpieza facial', duracion_min: 60, margen_min: 10, precio: 45, descripcion: 'Limpieza profunda con extracción.' }] } },
-    { name: 'avanzar_seccion', input: { seccion: 3 } },
+    { name: 'guardar_servicios', input: { servicios: [{ nombre: 'Limpieza facial', duracion_min: 60, margen_min: 10, precio: 45, descripcion: 'Limpieza profunda con extracción.' }] } }
   ),
   texto('Bueno, ahora pasamos a la sección de los profesionales que trabajan contigo. Dime el nombre y apellido del profesional.'),
   texto('¿Tienes otro profesional para dar de alta?'),
   resumen('profesionales', 'Tu equipo', [{ etiqueta: 'Núria Puig', valor: 'Limpieza facial' }]),
   texto('Núria Puig hace la limpieza facial. ¿Está todo bien?'),
   herramientas(
-    { name: 'guardar_profesionales', input: { profesionales: [{ nombre: 'Núria Puig', servicios: ['Limpieza facial'] }] } },
-    { name: 'avanzar_seccion', input: { seccion: 4 } },
+    { name: 'guardar_profesionales', input: { profesionales: [{ nombre: 'Núria Puig', servicios: ['Limpieza facial'] }] } }
   ),
   texto('Bueno, ahora vamos a pasar a la sección de horarios. Dime los días y entre qué horarios está abierto el local.'),
   resumen('horario', 'Así queda tu semana', [], {
@@ -99,8 +97,7 @@ const modelo = new ModeloSimulado([
   }),
   texto('Así queda tu semana. ¿Está todo bien?'),
   herramientas(
-    { name: 'guardar_horarios', input: { local: DIAS.map((dia) => ({ dia, desde: '09:00', hasta: '18:00' })), profesionales: [] } },
-    { name: 'avanzar_seccion', input: { seccion: 6 } },
+    { name: 'guardar_horarios', input: { local: DIAS.map((dia) => ({ dia, desde: '09:00', hasta: '18:00' })), profesionales: [] } }
   ),
   texto('Bueno, ahora vamos con la sección de reservas y cancelación. ¿Una persona necesita reservar con una antelación mínima?'),
   resumen('reglas', 'Reservas y cancelación', [
@@ -112,8 +109,7 @@ const modelo = new ModeloSimulado([
     {
       name: 'guardar_reglas',
       input: { antelacion_min_horas: 2, cancelacion_plazo_horas: 24, quien_elige_profesional: 'preguntar', dentro_del_plazo: 'informar', politica_cancelacion: 'Avísanos con 24 horas de antelación.' },
-    },
-    { name: 'avanzar_seccion', input: { seccion: 9 } },
+    }
   ),
   texto('Ya tengo todo lo imprescindible. ¿Cerramos el alta?'),
   herramientas({ name: 'terminar_alta', input: {} }),
@@ -166,6 +162,8 @@ beforeAll(async () => {
   navegador = await chromium.launch({ channel: 'chrome', headless: true });
   panel = await (await navegador.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   portal = await (await navegador.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  portal.on('pageerror', (e) => console.error('[portal] error de la página:', e.message));
+  portal.on('console', (m) => m.type() === 'error' && console.error('[portal] consola:', m.text()));
 }, 180_000);
 
 afterAll(async () => {
@@ -183,11 +181,14 @@ function codigoDelEmail(): string {
   return c!;
 }
 
+const RESPUESTAS = '[data-rol="asistente"]';
+
 /** Escribe en el chat del portal y espera a que conteste. */
-async function decir(mensaje: string, respuestasAntes: number): Promise<void> {
-  await portal.getByLabel('Escribe tu respuesta').fill(mensaje);
+async function decir(mensaje: string): Promise<void> {
+  const antes = await portal.locator(RESPUESTAS).count();
+  await portal.getByLabel('Escribe tu mensaje').fill(mensaje);
   await portal.getByRole('button', { name: 'Enviar' }).click();
-  await expect.poll(() => portal.locator('.bg-slate-100.text-slate-900').count(), ESPERA).toBe(respuestasAntes + 1);
+  await expect.poll(() => portal.locator(RESPUESTAS).count(), ESPERA).toBe(antes + 1);
 }
 
 describe('de la invitación a la primera cita', () => {
@@ -229,66 +230,71 @@ describe('de la invitación a la primera cita', () => {
 
     await portal.getByLabel('Código del email').fill(codigoDelEmail());
     await portal.getByRole('button', { name: 'Crear mi cuenta' }).click();
-    await expect.poll(() => portal.getByLabel('Escribe tu respuesta').isVisible(), ESPERA).toBe(true);
-    // PC-11: dentro, solo el chat; las secciones del portal no están todavía.
-    expect(await portal.getByRole('link', { name: 'Agenda', exact: true }).count()).toBe(0);
+    await expect.poll(() => portal.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
+    // PC-19: la pantalla de inicio saluda con el nombre del negocio (a las
+    // 10:00, buenos días) y el portal está disponible desde el principio.
+    await expect.poll(() => portal.getByRole('heading', { name: `Buenos días, ${NOMBRE}. ¿En qué te puedo ayudar?` }).isVisible(), ESPERA).toBe(true);
+    expect(await portal.getByRole('link', { name: 'Portal', exact: true }).isVisible()).toBe(true);
+    expect(await portal.locator(RESPUESTAS).count()).toBe(0);
+    await portal.screenshot({ path: join(CAPTURAS, '2-portal-inicio.png') });
   });
 
   it('3. hace el alta entera por el chat, confirmando cada resumen', async () => {
-    // El chat saluda él solo (sección 0 del guion).
-    await expect.poll(() => portal.locator('.bg-slate-100.text-slate-900').count(), ESPERA).toBe(1);
-    expect(await portal.textContent('body')).toContain('¿Empezamos?');
-    await portal.screenshot({ path: join(CAPTURAS, '3-portal-chat-alta.png'), fullPage: true });
-
-    await decir('Sí, empezamos', 1);
-    await decir('Medicina estética', 2);
-    await decir('Calle Mayor 12, 28013 Madrid', 3);
-    await decir('910000000', 4);
+    // PC-19: una sugerencia manda su mensaje y abre el chat en el historial.
+    await portal.getByRole('button', { name: 'Empezar el alta' }).click();
+    await expect.poll(() => portal.locator(RESPUESTAS).count(), ESPERA).toBe(1);
+    expect(await portal.textContent('body')).toContain('Quiero empezar el alta de mi negocio.');
+    await expect.poll(() => portal.getByRole('list', { name: 'Tus chats' }).textContent(), ESPERA).toContain('Quiero empezar el alta');
+    await portal.screenshot({ path: join(CAPTURAS, '3-portal-chat-alta.png') });
+    await decir('Medicina estética');
+    await decir('Calle Mayor 12, 28013 Madrid');
+    await decir('910000000');
     // PC-03: el resumen se ve como un bloque, no como texto suelto.
     expect(await portal.textContent('body')).toContain('Te confirmo');
     expect(await portal.textContent('body')).toContain('Calle Mayor 12, 28013 Madrid');
     await portal.screenshot({ path: join(CAPTURAS, '4-portal-resumen.png'), fullPage: true });
 
-    await decir('Sí, está todo bien', 5);
+    await decir('Sí, está todo bien');
     const [b] = await sql<{ sector: string; direccion: string; telefono: string }[]>`
       select sector, direccion, telefono_humano as telefono from public.businesses where id = ${negocioId}`;
     expect(b).toMatchObject({ sector: 'medicina estética', direccion: 'Calle Mayor 12, 28013 Madrid', telefono: '+34910000000' });
 
-    await decir('Limpieza facial, 60 minutos, 10 de margen, 45 euros', 6);
-    await decir('No, ninguno más', 7);
-    await decir('Sí', 8);
+    await decir('Limpieza facial, 60 minutos, 10 de margen, 45 euros');
+    await decir('No, ninguno más');
+    await decir('Sí');
     const servicios = await sql<{ nombre: string; d: number; b: number }[]>`
       select nombre, duracion_min as d, buffer_min as b from public.services where business_id = ${negocioId}`;
     expect(servicios).toEqual([{ nombre: 'Limpieza facial', d: 60, b: 10 }]);
 
-    await decir('Núria Puig, hace la limpieza facial', 9);
-    await decir('No, nadie más', 10);
-    await decir('Sí', 11);
+    await decir('Núria Puig, hace la limpieza facial');
+    await decir('No, nadie más');
+    await decir('Sí');
     const staff = await sql<{ nombre: string }[]>`select nombre from public.staff where business_id = ${negocioId}`;
     expect(staff).toEqual([{ nombre: 'Núria Puig' }]);
 
-    await decir('De lunes a viernes de 9 a 18', 12);
+    await decir('De lunes a viernes de 9 a 18');
     expect(await portal.textContent('body')).toContain('Así queda tu semana');
-    await decir('Sí', 13);
+    await decir('Sí');
     const tramos = await sql<{ weekday: number }[]>`
       select weekday from public.business_hours where business_id = ${negocioId} and staff_id is null order by weekday`;
     expect(tramos.map((t) => t.weekday)).toEqual([1, 2, 3, 4, 5]);
 
-    await decir('2 horas de antelación y 24 horas para cancelar', 14);
-    await decir('Sí', 15);
+    await decir('2 horas de antelación y 24 horas para cancelar');
+    await decir('Sí');
     const [reglas] = await sql<{ a: number; c: number }[]>`
       select antelacion_min_horas as a, cancelacion_plazo_horas as c from public.businesses where id = ${negocioId}`;
     expect(reglas).toEqual({ a: 2, c: 24 });
   });
 
   it('4. al terminar aparece su portal con los datos, y Mariana recibe el aviso', async () => {
-    await decir('Sí, cierra el alta', 16);
-    // PC-11: ahora sí está el portal.
-    await expect.poll(() => portal.getByRole('link', { name: 'Agenda', exact: true }).isVisible(), ESPERA).toBe(true);
+    await decir('Sí, cierra el alta');
     expect(await portal.textContent('body')).toContain('Ya tienes tu portal listo');
     // PC-12: el cierre le recuerda lo que no se preguntó.
     expect(await portal.textContent('body')).toContain('preguntas frecuentes');
     expect(await portal.textContent('body')).toContain('El chat en tu web');
+    // El inicio del portal: el alta completa (PC-18).
+    await portal.getByRole('link', { name: 'Portal', exact: true }).click();
+    await expect.poll(() => portal.getByRole('heading', { name: 'Tu alta está completa' }).isVisible(), ESPERA).toBe(true);
     await portal.screenshot({ path: join(CAPTURAS, '5-portal-portada.png'), fullPage: true });
 
     // Su configuración, con lo que cargó por el chat.
@@ -305,7 +311,9 @@ describe('de la invitación a la primera cita', () => {
 
     // PC-13: el aviso en el panel de Mariana.
     await panel.goto(`${servidores.panelUrl}/panel/#/`);
-    await expect.poll(() => panel.getByRole('status').textContent(), ESPERA).toContain('ha terminado su alta');
+    // «… ha terminado su alta» o «N clientes han terminado su alta» si hay más
+    // en la base (otras pruebas a la vez): lo que importa es que esté este.
+    await expect.poll(() => panel.getByRole('status').textContent(), ESPERA).toMatch(/terminado su alta/);
     expect(await panel.getByRole('status').textContent()).toContain(NOMBRE);
     await panel.screenshot({ path: join(CAPTURAS, '7-panel-aviso.png'), fullPage: true });
   });
@@ -380,11 +388,12 @@ describe('de la invitación a la primera cita', () => {
   });
 
   it('8. cambia la duración por el chat y el agente de las clientas lo aplica', async () => {
+    // Un chat nuevo, aparte del del alta (PC-17).
     await portal.goto(`${servidores.panelUrl}/portal/#/`);
-    await expect.poll(() => portal.getByLabel('Escribe tu respuesta').isVisible(), ESPERA).toBe(true);
-    const antes = await portal.locator('.bg-slate-100.text-slate-900').count();
-    await decir('La limpieza facial ahora dura 75 minutos', antes);
-    await decir('Sí', antes + 1);
+    await portal.getByRole('button', { name: 'Nuevo chat' }).first().click();
+    await expect.poll(() => portal.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
+    await decir('La limpieza facial ahora dura 75 minutos');
+    await decir('Sí');
     const [s] = await sql<{ d: number }[]>`select duracion_min as d from public.services where business_id = ${negocioId}`;
     expect(s!.d).toBe(75);
     await portal.screenshot({ path: join(CAPTURAS, '12-portal-chat-cambio.png'), fullPage: true });
@@ -410,15 +419,21 @@ describe('de la invitación a la primera cita', () => {
     await movil.getByLabel('Email').fill(EMAIL_CLIENTE);
     await movil.getByLabel('Contraseña').fill(PASSWORD_CLIENTE);
     await movil.getByRole('button', { name: 'Entrar' }).click();
-    await expect.poll(() => movil.getByRole('link', { name: 'Agenda', exact: true }).isVisible(), ESPERA).toBe(true);
+    await expect.poll(() => movil.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1-portada.png'), fullPage: true });
+    // El historial, detrás del botón de menú.
+    await movil.getByRole('button', { name: 'Abrir el menú' }).click();
+    await expect.poll(() => movil.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
+    await movil.screenshot({ path: join(CAPTURAS, 'movil-1b-historial.png') });
+    // Se cierra tocando fuera, a la derecha del menú.
+    await movil.getByRole('button', { name: 'Cerrar el menú' }).click({ position: { x: 370, y: 400 } });
 
-    await movil.getByRole('link', { name: 'Agenda', exact: true }).click();
+    await movil.goto(`${servidores.panelUrl}/portal/#/agenda`);
     await movil.locator('input[type=date]').fill('2030-10-15');
     await expect.poll(() => movil.getByRole('button', { name: /10:00 Clienta del Portal/ }).isVisible(), ESPERA).toBe(true);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-2-agenda.png'), fullPage: true });
 
-    await movil.getByRole('link', { name: 'Configuración' }).click();
+    await movil.goto(`${servidores.panelUrl}/portal/#/configuracion`);
     await expect.poll(() => movil.locator('#servicios').getByLabel('Nombre').first().inputValue(), ESPERA).toBe('Limpieza facial');
     await movil.screenshot({ path: join(CAPTURAS, 'movil-3-configuracion.png'), fullPage: true });
     // No se desborda en horizontal.
