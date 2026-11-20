@@ -347,7 +347,6 @@ function BarraLateral({
   cerrar?: () => void;
 }) {
   const [buscando, setBuscando] = useState(false);
-  const [busqueda, setBusqueda] = useState('');
   const fila = (activo: boolean) => `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${activo ? 'bg-slate-200/80 text-slate-900' : 'text-slate-700 hover:bg-slate-200/50'}`;
   const botonNuevo = (
     <button type="button" className={`${fila(false)} font-medium ${movil ? '' : 'mt-2'}`} onClick={nuevoChat}>
@@ -355,9 +354,6 @@ function BarraLateral({
       Nuevo chat
     </button>
   );
-  // En el móvil la lupa filtra la lista ahí mismo; en el ordenador abre una
-  // ventana en el centro, como ChatGPT (Mariana, 20/11/2026), y la lista no cambia.
-  const visibles = movil && buscando ? filtrarChats(chats, busqueda) : chats;
   const secciones = (
     [
       ['portal', 'Inicio'],
@@ -377,29 +373,15 @@ function BarraLateral({
           </div>
           <button
             type="button"
-            aria-label={buscando ? 'Dejar de buscar' : 'Buscar chats'}
-            aria-pressed={buscando}
+            aria-label="Buscar chats"
             className={`rounded-lg p-2 text-slate-600 hover:bg-slate-200/60 ${movil ? '-mt-1' : ''}`}
-            onClick={() => { setBuscando((b) => !b); setBusqueda(''); }}
+            onClick={() => setBuscando(true)}
           >
             <IconoBuscar />
           </button>
         </div>
-        {buscando && !movil ? (
-          <BuscarChats chats={chats} cerrar={() => setBuscando(false)} />
-        ) : null}
-        {buscando && movil ? (
-          <input
-            type="search"
-            aria-label="Buscar en tus chats"
-            placeholder="Buscar chats"
-            autoFocus
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Escape') { setBuscando(false); setBusqueda(''); } }}
-            className="mx-1 mt-2 w-[calc(100%-0.5rem)] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-slate-300 focus:outline-none"
-          />
-        ) : null}
+        {/* La lupa abre la búsqueda como ChatGPT (Mariana, 20/11/2026): en el ordenador, una ventana en el centro; en el móvil, a pantalla completa. */}
+        {buscando ? <BuscarChats chats={chats} movil={movil} cerrar={() => setBuscando(false)} alAbrir={cerrar} /> : null}
         {movil ? (
           <>
             <nav className="mt-3" aria-label="Ir a">
@@ -422,9 +404,8 @@ function BarraLateral({
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
         <p className="px-3 pb-1 text-xs font-medium text-slate-400">Chats</p>
         {chats.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Todavía no hay ninguno.</p> : null}
-        {chats.length > 0 && visibles.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Ningún chat con «{busqueda.trim()}».</p> : null}
         <ul aria-label="Tus chats">
-          {visibles.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
+          {chats.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
         </ul>
       </div>
       {movil ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
@@ -440,12 +421,17 @@ function filtrarChats(chats: ChatResumido[], busqueda: string): ChatResumido[] {
 }
 
 /**
- * La búsqueda del ordenador, como ChatGPT (Mariana, 20/11/2026): una ventana
- * en el centro con «Buscar…» y la ✕ arriba, «Chats recientes» debajo y los
- * chats que coinciden mientras se escribe. Pinchar uno lo abre; Intro abre el
- * primero; Esc, la ✕ o pinchar fuera la cierran.
+ * La búsqueda de chats, como ChatGPT (Mariana, 20/11/2026). Busca por el
+ * título, sin mirar mayúsculas ni tildes; pinchar un chat lo abre e Intro
+ * abre el primero.
+ *   · En el ordenador, una ventana en el centro: «Buscar…» y la ✕ arriba,
+ *     «Chats recientes» y los chats que coinciden. Esc, la ✕ o pinchar fuera
+ *     la cierran.
+ *   · En el móvil, a pantalla completa: «Últimos abiertos» arriba, cada chat
+ *     con su icono, su título y su último mensaje en gris, y abajo la caja
+ *     «Buscar» con la ✕ al lado (vuelve al menú).
  */
-function BuscarChats({ chats, cerrar }: { chats: ChatResumido[]; cerrar: () => void }) {
+function BuscarChats({ chats, movil, cerrar, alAbrir }: { chats: ChatResumido[]; movil?: boolean; cerrar: () => void; alAbrir?: () => void }) {
   const [busqueda, setBusqueda] = useState('');
   const encontrados = filtrarChats(chats, busqueda);
   useEffect(() => {
@@ -455,31 +441,81 @@ function BuscarChats({ chats, cerrar }: { chats: ChatResumido[]; cerrar: () => v
   }, [cerrar]);
   const abrir = (id: string) => {
     cerrar();
+    alAbrir?.();
     ir(`chat/${id}`);
   };
+  const vacio = busqueda.trim() === '';
+  const avisos = (
+    <>
+      {chats.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Todavía no hay ninguno.</p> : null}
+      {chats.length > 0 && encontrados.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Ningún chat con «{busqueda.trim()}».</p> : null}
+    </>
+  );
+  const campo = (clase: string) => (
+    <input
+      type="search"
+      aria-label="Buscar en tus chats"
+      placeholder={movil ? 'Buscar' : 'Buscar…'}
+      autoFocus
+      enterKeyHint="search"
+      value={busqueda}
+      onChange={(e) => setBusqueda(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && encontrados[0]) abrir(encontrados[0].id);
+      }}
+      className={`min-w-0 flex-1 bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden ${clase}`}
+    />
+  );
+  const equis = (
+    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" /></svg>
+  );
+
+  if (movil) {
+    return (
+      <div role="dialog" aria-modal="true" aria-label="Buscar chats" className="fixed inset-0 z-50 flex h-dvh flex-col bg-white">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-6">
+          {vacio && chats.length > 0 ? <h2 className="pb-3 text-lg font-medium text-slate-900">Últimos abiertos</h2> : null}
+          {avisos}
+          <ul aria-label="Chats encontrados" className="space-y-1">
+            {encontrados.map((c) => (
+              <li key={c.id}>
+                <button type="button" className="flex w-full items-center gap-4 rounded-xl py-2.5 text-left active:bg-slate-100" onClick={() => abrir(c.id)}>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200"><IconoChat /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] text-slate-900">{c.titulo}</span>
+                    {c.ultimo ? <span className="block truncate text-sm text-slate-500">{c.ultimo}</span> : null}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="flex items-center gap-2 px-3 pb-4 pt-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-slate-100 px-4 py-2.5">
+            <span className="text-slate-500"><IconoBuscar /></span>
+            {campo('text-base')}
+          </label>
+          <button type="button" aria-label="Cerrar la búsqueda" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700" onClick={cerrar}>
+            {equis}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[18vh]">
       <button type="button" aria-label="Cerrar la búsqueda" tabIndex={-1} className="absolute inset-0 cursor-default bg-black/5" onClick={cerrar} />
       <div role="dialog" aria-modal="true" aria-label="Buscar chats" className="relative flex max-h-[60vh] min-h-[320px] w-full max-w-2xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center gap-3 px-6 pb-2 pt-5">
-          <input
-            type="search"
-            aria-label="Buscar en tus chats"
-            placeholder="Buscar…"
-            autoFocus
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && encontrados[0]) abrir(encontrados[0].id); }}
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
-          />
+          {campo('text-[15px]')}
           <button type="button" aria-label="Cerrar" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" onClick={cerrar}>
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" /></svg>
+            {equis}
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-3">
-          {!busqueda.trim() ? <p className="px-3 pb-2 text-sm text-slate-500">Chats recientes</p> : null}
-          {chats.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Todavía no hay ninguno.</p> : null}
-          {chats.length > 0 && encontrados.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Ningún chat con «{busqueda.trim()}».</p> : null}
+          {vacio ? <p className="px-3 pb-2 text-sm text-slate-500">Chats recientes</p> : null}
+          {avisos}
           <ul aria-label="Chats encontrados">
             {encontrados.map((c) => (
               <li key={c.id}>

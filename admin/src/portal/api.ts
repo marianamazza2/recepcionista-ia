@@ -32,6 +32,8 @@ export interface ChatResumido {
   id: string;
   titulo: string;
   actualizado: string;
+  /** El último mensaje, en una línea (la línea gris de la búsqueda del móvil). */
+  ultimo: string | null;
 }
 
 export interface Historial {

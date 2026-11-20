@@ -515,6 +515,20 @@ export interface ChatDelPortal {
   titulo: string;
   /** El último mensaje (o cuándo se creó, si no tiene). */
   actualizado: Date;
+  /**
+   * El texto del último mensaje que se ve (de quien sea), en una línea y
+   * recortado: la línea gris de la búsqueda del móvil, como ChatGPT (PC-17,
+   * Mariana 20/11/2026). Null si el chat no tiene ninguno.
+   */
+  ultimo: string | null;
+}
+
+/** El último mensaje en una línea, sin las marcas de negrita y recortado. */
+export function lineaDeVistazo(texto: string | null, largo = 140): string | null {
+  if (!texto) return null;
+  const limpio = texto.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+  if (!limpio) return null;
+  return limpio.length > largo ? `${limpio.slice(0, largo - 1).trimEnd()}…` : limpio;
 }
 
 /** Los chats del historial, el más reciente primero. */
@@ -522,7 +536,7 @@ export async function chatsDelPortal(sql: Sql, businessId: string, limite = 100)
   const rows = await inTenant(
     sql,
     businessId,
-    (tx) => tx<{ id: string; titulo: string | null; actualizado: Date }[]>`
+    (tx) => tx<{ id: string; titulo: string | null; actualizado: Date; ultimo: string | null }[]>`
       with recursive cadena as (
         select c.id as raiz, c.id
           from public.conversations c
@@ -531,18 +545,28 @@ export async function chatsDelPortal(sql: Sql, businessId: string, limite = 100)
         select k.raiz, n.id
           from cadena k
           join public.conversations n on n.business_id = ${businessId}::uuid and n.continua_de = k.id
+      ),
+      -- El último mensaje que el portal enseña (los mismos que GET chats/:id).
+      ultimos as (
+        select distinct on (k.raiz) k.raiz, m.contenido
+          from cadena k
+          join public.messages m on m.business_id = ${businessId}::uuid and m.conversation_id = k.id
+         where m.rol in ('user', 'assistant') and coalesce(m.contenido, '') <> ''
+         order by k.raiz, m.created_at desc, m.id desc
       )
       select r.id, r.titulo,
-             greatest(r.created_at, coalesce(max(m.created_at), r.created_at)) as actualizado
+             greatest(r.created_at, coalesce(max(m.created_at), r.created_at)) as actualizado,
+             u.contenido as ultimo
         from public.conversations r
         join cadena k on k.raiz = r.id
         left join public.messages m on m.business_id = ${businessId}::uuid and m.conversation_id = k.id
+        left join ultimos u on u.raiz = r.id
        where r.business_id = ${businessId}::uuid
-       group by r.id, r.titulo, r.created_at
+       group by r.id, r.titulo, r.created_at, u.contenido
        order by actualizado desc
        limit ${limite}`,
   );
-  return rows.map((r) => ({ id: r.id, titulo: r.titulo ?? 'Chat nuevo', actualizado: r.actualizado }));
+  return rows.map((r) => ({ id: r.id, titulo: r.titulo ?? 'Chat nuevo', actualizado: r.actualizado, ultimo: lineaDeVistazo(r.ultimo) }));
 }
 
 /**

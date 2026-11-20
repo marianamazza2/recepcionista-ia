@@ -486,16 +486,33 @@ describe('de la invitación a la primera cita', () => {
     expect(texto).not.toContain('Cerrar sesión');
     const nuevo = (await menu.getByRole('button', { name: 'Nuevo chat' }).boundingBox())!;
     expect(nuevo.y).toBeGreaterThan(844 - 100);
-    // La lupa busca en el historial por el título, sin mirar tildes ni mayúsculas.
-    await menu.getByRole('button', { name: 'Buscar chats' }).click();
-    await menu.getByLabel('Buscar en tus chats').fill('LIMPIEZA');
-    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(1);
-    await movil.screenshot({ path: join(CAPTURAS, 'movil-1c-buscar.png') });
-    await menu.getByLabel('Buscar en tus chats').fill('zzz');
-    await expect.poll(() => menu.getByText('Ningún chat con «zzz».').isVisible(), ESPERA).toBe(true);
-    await menu.getByRole('button', { name: 'Dejar de buscar' }).click();
-    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1b-historial.png') });
+    // La lupa abre la búsqueda a pantalla completa, como ChatGPT: «Últimos
+    // abiertos», cada chat con su último mensaje en gris, y abajo «Buscar» y la ✕.
+    await menu.getByRole('button', { name: 'Buscar chats' }).click();
+    const buscar = movil.getByRole('dialog', { name: 'Buscar chats' });
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    expect(await buscar.getByRole('heading', { name: 'Últimos abiertos' }).isVisible()).toBe(true);
+    const filas = buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li');
+    expect(await filas.count()).toBe(2);
+    expect(await filas.first().innerText()).toContain('Hecho: la limpieza facial dura ahora 75 minutos.');
+    const campo = (await buscar.getByLabel('Buscar en tus chats').boundingBox())!;
+    expect(campo.y).toBeGreaterThan(844 - 100);
+    await movil.screenshot({ path: join(CAPTURAS, 'movil-1c-buscar.png') });
+    await buscar.getByLabel('Buscar en tus chats').fill('LIMPIEZA');
+    await expect.poll(() => filas.count(), ESPERA).toBe(1);
+    expect(await buscar.getByRole('heading', { name: 'Últimos abiertos' }).count()).toBe(0);
+    await buscar.getByLabel('Buscar en tus chats').fill('zzz');
+    await expect.poll(() => buscar.getByText('Ningún chat con «zzz».').isVisible(), ESPERA).toBe(true);
+    // La ✕ vuelve al menú; pinchar un chat lo abre y cierra todo.
+    await buscar.getByRole('button', { name: 'Cerrar la búsqueda' }).click();
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
+    expect(await menu.isVisible()).toBe(true);
+    await menu.getByRole('button', { name: 'Buscar chats' }).click();
+    await buscar.getByRole('button', { name: /limpieza facial/i }).click();
+    await expect.poll(() => menu.count(), ESPERA).toBe(0);
+    expect(movil.url()).toMatch(/#\/chat\/[0-9a-f-]+$/);
+    await movil.getByRole('button', { name: 'Abrir el menú' }).click();
     // Se cierra tocando fuera, a la derecha del menú.
     await movil.getByRole('button', { name: 'Cerrar el menú' }).click({ position: { x: 370, y: 400 } });
 

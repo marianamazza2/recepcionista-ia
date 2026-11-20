@@ -1769,7 +1769,9 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   tildes (Mariana, 20/11/2026). En el ordenador abre **una ventana en el
   centro, como ChatGPT**: «Buscar…» y la ✕ arriba, «Chats recientes» y,
   al escribir, los que coinciden; pinchar uno lo abre, e Intro abre el
-  primero. En el móvil filtra la lista ahí mismo. Debajo, «Nuevo chat» y la lista de chats, el más
+  primero. En el móvil, **a pantalla completa, como ChatGPT**: «Últimos
+  abiertos» arriba, cada chat con su icono, su título y su último mensaje
+  en gris, y abajo la caja «Buscar» con la ✕ al lado (vuelve al menú). Debajo, «Nuevo chat» y la lista de chats, el más
   reciente arriba. El cliente puede tener uno para cada tema: en uno empieza
   el alta con los datos del negocio, en otro carga los horarios, en otro da de
   alta a su equipo.
