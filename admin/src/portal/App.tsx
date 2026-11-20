@@ -244,7 +244,7 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
   const opcion = 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100';
   return (
     <div ref={caja} className="relative">
-      <button type="button" aria-label="Tu perfil" aria-expanded={abierto} className="rounded-full p-0.5 hover:ring-4 hover:ring-slate-200" onClick={() => setAbierto((a) => !a)}>
+      <button type="button" aria-label="Tu perfil" aria-expanded={abierto} className="cursor-pointer rounded-full p-0.5 hover:ring-4 hover:ring-slate-200" onClick={() => setAbierto((a) => !a)}>
         <Circulo nombre={sesion.negocio.nombre} />
       </button>
       {abierto ? (
@@ -482,7 +482,6 @@ function Perfil({ sesion }: { sesion: SesionPortal }) {
       </div>
       <p className="mt-4 text-sm text-slate-600">Entras con <strong>{sesion.email}</strong> y tu contraseña.</p>
       <p className="mt-2 text-sm text-slate-500">¿Necesitas cambiar el email o la contraseña, o que entre otra persona de tu equipo? Escríbele a MAZZMKT y te lo resuelven.</p>
-      <button type="button" className="boton-suave mt-4" onClick={() => void salir()}>Cerrar sesión</button>
     </div>
   );
 }
