@@ -12,10 +12,9 @@
 //     cargado… Pídeselo al agente», y ese botón abre un chat nuevo con el
 //     mensaje ya enviado.
 //   · Arriba a la derecha, un círculo con las iniciales del negocio. Al
-//     pincharlo: el nombre completo, Perfil, Ajustes y Cerrar sesión. Perfil
-//     y Ajustes se abren en una VENTANA encima (como ChatGPT, Mariana
-//     20/11/2026): al cerrarla sigue donde estaba; ni el selector ni la barra
-//     de la izquierda se mueven.
+//     pincharlo: «Cuenta», con el nombre del negocio y el email como datos
+//     (no se pinchan), y Cerrar sesión. Sin ventanas ni páginas aparte
+//     (Mariana, 20/11/2026): de momento no hay nada más que enseñar.
 //
 //   #/invitacion/:token   crear la cuenta con el enlace (PC-02)
 //   #/                    un chat nuevo: el saludo y las sugerencias
@@ -216,9 +215,9 @@ export function iniciales(nombre: string): string {
   return letras.join('') || '·';
 }
 
-function Circulo({ nombre, grande }: { nombre: string; grande?: boolean }) {
+function Circulo({ nombre }: { nombre: string }) {
   return (
-    <span className={`flex shrink-0 items-center justify-center rounded-full bg-violet-600 font-semibold text-white ${grande ? 'h-9 w-9 text-sm' : 'h-8 w-8 text-xs'}`} aria-hidden="true">
+    <span className={`flex shrink-0 items-center justify-center rounded-full bg-violet-600 font-semibold text-white h-8 w-8 text-xs`} aria-hidden="true">
       {iniciales(nombre)}
     </span>
   );
@@ -226,7 +225,6 @@ function Circulo({ nombre, grande }: { nombre: string; grande?: boolean }) {
 
 function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
   const [abierto, setAbierto] = useState(false);
-  const [ventana, setVentana] = useState<'perfil' | 'ajustes' | null>(null);
   const caja = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!abierto) return;
@@ -248,51 +246,17 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
         <Circulo nombre={sesion.negocio.nombre} />
       </button>
       {abierto ? (
-        <div role="menu" className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          <div className="flex items-center gap-3 px-3 py-2.5">
-            <Circulo nombre={sesion.negocio.nombre} grande />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-900">{sesion.negocio.nombre}</p>
-              <p className="truncate text-xs text-slate-500">{sesion.email}</p>
-            </div>
-          </div>
-          <div className="my-1 border-t border-slate-100" />
-          <button role="menuitem" type="button" className={opcion} onClick={() => { setAbierto(false); setVentana('perfil'); }}><IconoPerfil />Perfil</button>
-          <button role="menuitem" type="button" className={opcion} onClick={() => { setAbierto(false); setVentana('ajustes'); }}><IconoAjustes />Ajustes</button>
+        <div role="menu" aria-label="Tu cuenta" className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg">
+          {/* La cuenta se ve aquí mismo, como datos: no se pincha ni abre nada (Mariana, 20/11/2026). */}
+          <section aria-label="Cuenta" className="px-3 pb-2.5 pt-2">
+            <p className="text-xs font-medium text-slate-400">Cuenta</p>
+            <p className="mt-1.5 truncate text-sm font-medium text-slate-900">{sesion.negocio.nombre}</p>
+            <p className="truncate text-sm text-slate-500">{sesion.email}</p>
+          </section>
           <div className="my-1 border-t border-slate-100" />
           <button role="menuitem" type="button" className={opcion} onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
         </div>
       ) : null}
-      {ventana === 'perfil' ? <Ventana titulo="Perfil" cerrar={() => setVentana(null)}><Perfil sesion={sesion} /></Ventana> : null}
-      {ventana === 'ajustes' ? <Ventana titulo="Ajustes" cerrar={() => setVentana(null)}><Ajustes /></Ventana> : null}
-    </div>
-  );
-}
-
-/**
- * Una ventana encima de todo (Perfil, Ajustes). Se cierra con la ✕, con Esc o
- * pinchando fuera, y quien la abrió sigue exactamente donde estaba.
- */
-function Ventana({ titulo, cerrar, children }: { titulo: string; cerrar: () => void; children: ReactNode }) {
-  const caja = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && cerrar();
-    document.addEventListener('keydown', tecla);
-    caja.current?.focus();
-    return () => document.removeEventListener('keydown', tecla);
-  }, [cerrar]);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Cerrar" tabIndex={-1} className="absolute inset-0 cursor-default bg-black/40" onClick={cerrar} />
-      <div ref={caja} tabIndex={-1} role="dialog" aria-modal="true" aria-label={titulo} className="relative w-full max-w-lg rounded-2xl bg-white shadow-xl focus:outline-none">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-semibold">{titulo}</h2>
-          <button type="button" aria-label={`Cerrar ${titulo.toLowerCase()}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" onClick={cerrar}>
-            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" /></svg>
-          </button>
-        </div>
-        <div className="px-5 py-5">{children}</div>
-      </div>
     </div>
   );
 }
@@ -467,44 +431,6 @@ function InicioPortal({ negocio: n, alta }: { negocio: Negocio; alta: { terminad
         )
       ) : null}
     </div>
-  );
-}
-
-function Perfil({ sesion }: { sesion: SesionPortal }) {
-  return (
-    <div>
-      <div className="flex items-center gap-3">
-        <Circulo nombre={sesion.negocio.nombre} grande />
-        <div className="min-w-0">
-          <p className="truncate font-semibold">{sesion.negocio.nombre}</p>
-          <p className="text-sm text-slate-500">{sesion.email}</p>
-        </div>
-      </div>
-      <p className="mt-4 text-sm text-slate-600">Entras con <strong>{sesion.email}</strong> y tu contraseña.</p>
-      <p className="mt-2 text-sm text-slate-500">¿Necesitas cambiar el email o la contraseña, o que entre otra persona de tu equipo? Escríbele a MAZZMKT y te lo resuelven.</p>
-    </div>
-  );
-}
-
-function Ajustes() {
-  return <p className="text-sm text-slate-500">Próximamente.</p>;
-}
-
-function IconoPerfil() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="10" cy="7" r="3.2" />
-      <path d="M3.8 16.5c1.2-2.8 3.5-4.2 6.2-4.2s5 1.4 6.2 4.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconoAjustes() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="10" cy="10" r="2.6" />
-      <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" strokeLinecap="round" />
-    </svg>
   );
 }
 

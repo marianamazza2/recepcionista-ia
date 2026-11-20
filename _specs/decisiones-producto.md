@@ -1776,13 +1776,14 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   borra, y su gasto sigue registrado (PC-14). El texto caduca como el resto
   de los chats (PD-13).
 - **Arriba a la derecha, un círculo con las iniciales del negocio**
-  («Clínica Aurora» → CA). Al pincharlo se ve el nombre completo y tres
-  opciones: **Perfil** (su email y cómo cambiarlo), **Ajustes** («Próximamente»,
-  se decide más adelante) y **Cerrar sesión**.
-- **Perfil y Ajustes se abren en una ventana encima**, como en ChatGPT
-  (Mariana, 20/11/2026): al cerrarla (✕, Esc o pinchando fuera) sigue donde
-  estaba. Ni el selector «Agente | Portal» ni la barra de la izquierda se
-  mueven. Sin segunda barra de iconos: con dos secciones, el selector basta.
+  («Clínica Aurora» → CA). Al pincharlo se despliega, ahí mismo, **Cuenta**:
+  el nombre del negocio y el email con el que entra, **como datos** (no se
+  pinchan ni abren nada), y debajo **Cerrar sesión**. Sin ventanas ni
+  páginas de Perfil o Ajustes (Mariana, 20/11/2026): de momento no hay más
+  información que enseñar, así que abrir algo no tiene sentido. Si algún día
+  hay ajustes de verdad, se decide entonces dónde van. El menú se cierra con
+  Esc o pinchando fuera y se sigue donde se estaba. Sin segunda barra de
+  iconos: con dos secciones, el selector «Agente | Portal» basta.
 - En el móvil, el historial se abre con el botón ☰.
 
 **Construido el 20/11/2026** (Fase 9b).
