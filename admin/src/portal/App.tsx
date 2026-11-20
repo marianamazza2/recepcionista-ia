@@ -12,7 +12,10 @@
 //     cargado… Pídeselo al agente», y ese botón abre un chat nuevo con el
 //     mensaje ya enviado.
 //   · Arriba a la derecha, un círculo con las iniciales del negocio. Al
-//     pincharlo: el nombre completo, Perfil, Ajustes y Cerrar sesión.
+//     pincharlo: el nombre completo, Perfil, Ajustes y Cerrar sesión. Perfil
+//     y Ajustes se abren en una VENTANA encima (como ChatGPT, Mariana
+//     20/11/2026): al cerrarla sigue donde estaba; ni el selector ni la barra
+//     de la izquierda se mueven.
 //
 //   #/invitacion/:token   crear la cuenta con el enlace (PC-02)
 //   #/                    un chat nuevo: el saludo y las sugerencias
@@ -21,7 +24,6 @@
 //   #/portal              el inicio del portal: lo que falta del alta
 //   #/agenda              su agenda visual (PC-16)
 //   #/configuracion       su configuración (la MISMA ficha que ve Mariana)
-//   #/perfil · #/ajustes  desde el menú del círculo
 // =============================================================================
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -53,7 +55,7 @@ export function App() {
   return <Dentro sesion={sesion} ruta={ruta} />;
 }
 
-const VISTA_PORTAL = new Set(['portal', 'agenda', 'configuracion', 'perfil', 'ajustes']);
+const VISTA_PORTAL = new Set(['portal', 'agenda', 'configuracion']);
 
 function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
   const pantalla = ruta[0] ?? '';
@@ -128,10 +130,6 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
         alResponder={() => void cargarHistorial()}
       />
     );
-  } else if (pantalla === 'perfil') {
-    contenido = <Perfil sesion={sesion} />;
-  } else if (pantalla === 'ajustes') {
-    contenido = <Ajustes />;
   } else {
     contenido = error ? (
       <Aviso error={error} />
@@ -228,6 +226,7 @@ function Circulo({ nombre, grande }: { nombre: string; grande?: boolean }) {
 
 function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
   const [abierto, setAbierto] = useState(false);
+  const [ventana, setVentana] = useState<'perfil' | 'ajustes' | null>(null);
   const caja = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!abierto) return;
@@ -258,12 +257,42 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
             </div>
           </div>
           <div className="my-1 border-t border-slate-100" />
-          <a role="menuitem" href="#/perfil" className={opcion} onClick={() => setAbierto(false)}><IconoPerfil />Perfil</a>
-          <a role="menuitem" href="#/ajustes" className={opcion} onClick={() => setAbierto(false)}><IconoAjustes />Ajustes</a>
+          <button role="menuitem" type="button" className={opcion} onClick={() => { setAbierto(false); setVentana('perfil'); }}><IconoPerfil />Perfil</button>
+          <button role="menuitem" type="button" className={opcion} onClick={() => { setAbierto(false); setVentana('ajustes'); }}><IconoAjustes />Ajustes</button>
           <div className="my-1 border-t border-slate-100" />
           <button role="menuitem" type="button" className={opcion} onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
         </div>
       ) : null}
+      {ventana === 'perfil' ? <Ventana titulo="Perfil" cerrar={() => setVentana(null)}><Perfil sesion={sesion} /></Ventana> : null}
+      {ventana === 'ajustes' ? <Ventana titulo="Ajustes" cerrar={() => setVentana(null)}><Ajustes /></Ventana> : null}
+    </div>
+  );
+}
+
+/**
+ * Una ventana encima de todo (Perfil, Ajustes). Se cierra con la ✕, con Esc o
+ * pinchando fuera, y quien la abrió sigue exactamente donde estaba.
+ */
+function Ventana({ titulo, cerrar, children }: { titulo: string; cerrar: () => void; children: ReactNode }) {
+  const caja = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && cerrar();
+    document.addEventListener('keydown', tecla);
+    caja.current?.focus();
+    return () => document.removeEventListener('keydown', tecla);
+  }, [cerrar]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Cerrar" tabIndex={-1} className="absolute inset-0 cursor-default bg-black/40" onClick={cerrar} />
+      <div ref={caja} tabIndex={-1} role="dialog" aria-modal="true" aria-label={titulo} className="relative w-full max-w-lg rounded-2xl bg-white shadow-xl focus:outline-none">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <h2 className="text-lg font-semibold">{titulo}</h2>
+          <button type="button" aria-label={`Cerrar ${titulo.toLowerCase()}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" onClick={cerrar}>
+            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" /></svg>
+          </button>
+        </div>
+        <div className="px-5 py-5">{children}</div>
+      </div>
     </div>
   );
 }
@@ -443,11 +472,11 @@ function InicioPortal({ negocio: n, alta }: { negocio: Negocio; alta: { terminad
 
 function Perfil({ sesion }: { sesion: SesionPortal }) {
   return (
-    <div className="tarjeta mx-auto max-w-md">
+    <div>
       <div className="flex items-center gap-3">
         <Circulo nombre={sesion.negocio.nombre} grande />
-        <div>
-          <h1 className="text-lg font-semibold">{sesion.negocio.nombre}</h1>
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{sesion.negocio.nombre}</p>
           <p className="text-sm text-slate-500">{sesion.email}</p>
         </div>
       </div>
@@ -459,12 +488,7 @@ function Perfil({ sesion }: { sesion: SesionPortal }) {
 }
 
 function Ajustes() {
-  return (
-    <div className="tarjeta mx-auto max-w-md">
-      <h1 className="text-lg font-semibold">Ajustes</h1>
-      <p className="mt-2 text-sm text-slate-500">Próximamente.</p>
-    </div>
-  );
+  return <p className="text-sm text-slate-500">Próximamente.</p>;
 }
 
 function IconoPerfil() {

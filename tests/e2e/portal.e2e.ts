@@ -397,6 +397,15 @@ describe('de la invitación a la primera cita', () => {
     const [s] = await sql<{ d: number }[]>`select duracion_min as d from public.services where business_id = ${negocioId}`;
     expect(s!.d).toBe(75);
     await portal.screenshot({ path: join(CAPTURAS, '12-portal-chat-cambio.png'), fullPage: true });
+    // Perfil se abre en una ventana encima: al cerrarla sigue en el mismo chat.
+    const aqui = portal.url();
+    await portal.getByLabel('Tu perfil').click();
+    await portal.getByRole('menuitem', { name: 'Perfil' }).click();
+    await expect.poll(() => portal.getByRole('dialog', { name: 'Perfil' }).isVisible(), ESPERA).toBe(true);
+    expect(portal.url()).toBe(aqui);
+    expect(await portal.getByRole('link', { name: 'Agente' }).getAttribute('aria-current')).toBe('page');
+    await portal.keyboard.press('Escape');
+    await expect.poll(() => portal.getByRole('dialog').count(), ESPERA).toBe(0);
 
     // El agente de las clientas lo sabe ya: su configuración y su prompt.
     const config = await loadBusinessConfig(sql, { id: negocioId! });

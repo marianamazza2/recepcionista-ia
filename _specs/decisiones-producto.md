@@ -1779,6 +1779,10 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   («Clínica Aurora» → CA). Al pincharlo se ve el nombre completo y tres
   opciones: **Perfil** (su email y cómo cambiarlo), **Ajustes** («Próximamente»,
   se decide más adelante) y **Cerrar sesión**.
+- **Perfil y Ajustes se abren en una ventana encima**, como en ChatGPT
+  (Mariana, 20/11/2026): al cerrarla (✕, Esc o pinchando fuera) sigue donde
+  estaba. Ni el selector «Agente | Portal» ni la barra de la izquierda se
+  mueven. Sin segunda barra de iconos: con dos secciones, el selector basta.
 - En el móvil, el historial se abre con el botón ☰.
 
 **Construido el 20/11/2026** (Fase 9b).
