@@ -13,7 +13,7 @@
 //     mensaje ya enviado.
 //   · Arriba a la derecha, un círculo con las iniciales del negocio. Al
 //     pincharlo: «Cuenta» (icono de perfil) con el nombre del negocio y el
-//     email debajo como datos, «Ajustes» (engranaje, «Próximamente») y
+//     email debajo como datos (los dos en gris), «Ajustes» (engranaje) y
 //     Cerrar sesión. Nada abre ventanas ni páginas aparte (Mariana,
 //     20/11/2026): de momento no hay más que enseñar.
 //
@@ -252,13 +252,13 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
           <section aria-label="Cuenta" className="px-3 py-2">
             <p className="flex items-center gap-3 text-sm text-slate-700"><IconoPerfil />Cuenta</p>
             <div className="min-w-0 pl-[30px] pt-1">
-              <p className="truncate text-xs font-medium text-slate-900">{sesion.negocio.nombre}</p>
+              <p className="truncate text-xs text-slate-500">{sesion.negocio.nombre}</p>
               <p className="truncate text-xs text-slate-500">{sesion.email}</p>
             </div>
           </section>
           {/* Ajustes: todavía no hay ninguno, así que no abre nada; se decide qué lleva más adelante (PC-17). */}
           <p aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700">
-            <IconoAjustes />Ajustes<span className="ml-auto text-xs text-slate-400">Próximamente</span>
+            <IconoAjustes />Ajustes
           </p>
           <div className="my-1 border-t border-slate-100" />
           <button role="menuitem" type="button" className={opcion} onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
@@ -452,9 +452,10 @@ function IconoPerfil() {
 
 function IconoAjustes() {
   return (
-    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <circle cx="10" cy="10" r="2.6" />
-      <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" strokeLinecap="round" />
+    // Un engranaje (el de Heroicons, MIT), no un sol (Mariana, 20/11/2026).
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+      <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
     </svg>
   );
 }

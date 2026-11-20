@@ -1779,9 +1779,10 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   («Clínica Aurora» → CA). Al pincharlo se despliega, ahí mismo, un menú
   con tres filas (Mariana, 20/11/2026):
   - **Cuenta**, con el icono de perfil, y debajo el nombre del negocio y el
-    email con el que entra, **como datos**: no se pinchan ni abren nada.
-  - **Ajustes**, con el icono del engranaje y «Próximamente»: todavía no hay
-    ninguno, así que no abre nada. Qué lleva se decide más adelante.
+    email con el que entra, los dos en gris, **como datos**: no se pinchan ni
+    abren nada.
+  - **Ajustes**, con el icono del engranaje: todavía no hay ninguno, así que
+    no abre nada. Qué lleva se decide más adelante.
   - **Cerrar sesión**.
 
   Sin ventanas encima: de momento no hay más información que enseñar. El menú se cierra con
