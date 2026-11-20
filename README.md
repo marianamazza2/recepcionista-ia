@@ -14,9 +14,14 @@ configuraciones. Spec completo en [`_specs/`](_specs/).
 > esquema está como está y las trampas conocidas (zonas horarias, buffers,
 > `service_role` y RLS).
 
-**Estado: Fase 9 (portal del cliente y alta por chat) construida el
-19/11/2026** en la rama `fase-9-spec`, a falta de que Mariana revise el
-informe de pruebas y mergee. Un negocio nuevo se da de alta **hablando con un
+**Estado: Fase 9 (portal del cliente y alta por chat) cerrada el
+20/11/2026**, en local y en la nube, con el portal publicado en
+https://recepcionista-ia-api.vercel.app/portal/ (solo con el enlace de
+invitación o con cuenta). Probada con los 76 casos del plan de aceptación,
+los 3 de la nube incluidos («Informe de pruebas · Fase 9», Research Desk).
+Antes del primer cliente real falta conectar un proveedor de email de verdad
+(PC-15): sin él, el código para crear la cuenta no le llega. Lo siguiente es
+la Fase 5 (conocimiento del negocio). Un negocio nuevo se da de alta **hablando con un
 chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
 crea su cuenta con el código que le llega al email (PC-11), el chat le
 pregunta una cosa cada vez siguiendo el guion que dictó ella y, al terminar,
