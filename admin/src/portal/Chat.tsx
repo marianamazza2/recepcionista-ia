@@ -172,11 +172,12 @@ function Saludo({ saludo }: { saludo: string }) {
   const corte = saludo.indexOf('¿');
   const arriba = (corte > 0 ? saludo.slice(0, corte) : saludo).trim().replace(/\.$/, '');
   const abajo = corte > 0 ? saludo.slice(corte).trim() : '';
+  // El saludo es el título (h1); la pregunta, su subtítulo (h2).
   return (
-    <h1 className="mb-10 max-w-3xl text-center text-3xl font-medium leading-tight text-slate-800 sm:text-[2.5rem]">
-      <span className="block break-words">{arriba}</span>
-      {abajo ? <span className="mt-2 block">{abajo}</span> : null}
-    </h1>
+    <div className="mb-10 max-w-3xl text-center leading-tight text-slate-800">
+      <h1 className="break-words text-3xl font-medium sm:text-[2.5rem]">{arriba}</h1>
+      {abajo ? <h2 className="mt-2 text-3xl font-medium sm:text-[2.5rem]">{abajo}</h2> : null}
+    </div>
   );
 }
 

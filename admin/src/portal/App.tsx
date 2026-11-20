@@ -66,7 +66,8 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
     api<Historial>('GET', 'chats').then(
       (h) => {
         setHistorial(h);
-        guardarSesion({ ...sesion, alta: h.alta });
+        // El nombre del negocio, al día: si se cambia, el círculo y el menú lo enseñan sin volver a entrar.
+        guardarSesion({ ...sesion, alta: h.alta, negocio: { ...sesion.negocio, nombre: h.negocio.nombre } });
       },
       (e: unknown) => setErrorHistorial(e instanceof Error ? e.message : 'No se ha podido cargar el historial.'),
     );
