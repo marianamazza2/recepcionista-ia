@@ -362,9 +362,13 @@ describe('de la invitación a la primera cita', () => {
 
   it('7. el negocio la ve en su agenda y carga otra a mano pinchando un hueco', async () => {
     await portal.goto(`${servidores.panelUrl}/portal/#/agenda`);
+    await expect.poll(() => portal.getByRole('navigation', { name: 'Dónde estás' }).isVisible(), ESPERA).toBe(true);
+    await portal.evaluate(() => { const g = globalThis as unknown as { scrollTo: (x: number, y: number) => void; document: { querySelector: (q: string) => { scrollTop: number } | null } }; g.scrollTo(0, 0); const m = g.document.querySelector('main'); if (m) m.scrollTop = 0; });
+    await portal.screenshot({ path: join(CAPTURAS, '9a-portal-agenda-arriba.png') });
     await portal.locator('input[type=date]').fill('2030-10-15');
     await expect.poll(() => portal.getByRole('button', { name: /10:00 Clienta del Portal/ }).isVisible(), ESPERA).toBe(true);
     await portal.screenshot({ path: join(CAPTURAS, '9-portal-agenda-dia.png'), fullPage: true });
+    expect(await portal.getByRole('navigation', { name: 'Dónde estás' }).innerText()).toMatch(/Inicio\s*Agenda/);
 
     await portal.getByRole('button', { name: /^Abierto de/ }).first().click();
     const dialogo = portal.getByRole('dialog', { name: 'Cargar una cita a mano' });
@@ -452,12 +456,20 @@ describe('de la invitación a la primera cita', () => {
     await movil.goto(`${servidores.panelUrl}/portal/#/configuracion`);
     await expect.poll(() => movil.locator('#servicios').getByLabel('Nombre').first().inputValue(), ESPERA).toBe('Limpieza facial');
     await movil.screenshot({ path: join(CAPTURAS, 'movil-3-configuracion.png'), fullPage: true });
+    // «⌂ Inicio › Configuración»: se vuelve al inicio del portal sin abrir el menú (Mariana, 20/11/2026).
+    const migas = movil.getByRole('navigation', { name: 'Dónde estás' });
+    await movil.evaluate(() => { const g = globalThis as unknown as { scrollTo: (x: number, y: number) => void; document: { querySelector: (q: string) => { scrollTop: number } | null } }; g.scrollTo(0, 0); const m = g.document.querySelector('main'); if (m) m.scrollTop = 0; });
+    await movil.screenshot({ path: join(CAPTURAS, 'movil-3b-configuracion-arriba.png') });
+    expect(await migas.innerText()).toContain('Configuración');
     // No se desborda en horizontal.
     const ancho = await movil.evaluate(() => {
       const g = globalThis as unknown as { document: { documentElement: { scrollWidth: number } }; innerWidth: number };
       return { scroll: g.document.documentElement.scrollWidth, ventana: g.innerWidth };
     });
     expect(ancho.scroll).toBeLessThanOrEqual(ancho.ventana + 1);
+    await migas.getByRole('link', { name: 'Inicio' }).click();
+    await expect.poll(() => movil.getByRole('heading', { name: 'Tu portal' }).isVisible(), ESPERA).toBe(true);
+    expect(movil.url()).toMatch(/#\/portal$/);
     await movil.close();
   });
 

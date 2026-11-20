@@ -139,11 +139,15 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
       <ProveedorNegocio valor={apiDelPortal}>
         {pantalla === 'agenda' ? (
           <>
+            <VolverAlInicio aqui="Agenda" />
             {n.profesionales.filter((p) => p.activo).length === 0 ? <Pidelo seccion="profesionales" /> : null}
             <Agenda negocio={n} />
           </>
         ) : pantalla === 'configuracion' ? (
-          <Ficha negocio={n} poner={poner} />
+          <>
+            <VolverAlInicio aqui="Configuración" />
+            <Ficha negocio={n} poner={poner} />
+          </>
         ) : (
           <InicioPortal negocio={n} alta={alta} />
         )}
@@ -191,6 +195,32 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
         </main>
       </div>
     </div>
+  );
+}
+
+/**
+ * «⌂ Inicio › Agenda»: en Agenda y Configuración, la vuelta al inicio del
+ * portal a la vista, no solo en la barra de la izquierda (que en el móvil está
+ * escondida). Mariana, 20/11/2026.
+ */
+function VolverAlInicio({ aqui }: { aqui: string }) {
+  return (
+    <nav aria-label="Dónde estás" className="mb-4 flex items-center gap-1.5 text-sm">
+      <a href="#/portal" className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 -ml-1.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800">
+        <IconoInicio />Inicio
+      </a>
+      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-slate-300" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 5l5 5-5 5" /></svg>
+      <span aria-current="page" className="text-slate-800">{aqui}</span>
+    </nav>
+  );
+}
+
+function IconoInicio() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 9.2L10 3.5l7 5.7" />
+      <path d="M5 8v7.5a1 1 0 0 0 1 1h2.8v-4.5h2.4v4.5H14a1 1 0 0 0 1-1V8" />
+    </svg>
   );
 }
 

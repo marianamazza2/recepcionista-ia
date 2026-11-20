@@ -1789,6 +1789,9 @@ IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
   Esc o pinchando fuera y se sigue donde se estaba. Sin segunda barra de
   iconos: con dos secciones, el selector «Agente | Portal» basta.
 - En el móvil, el historial se abre con el botón ☰.
+- **En Agenda y en Configuración, arriba, «⌂ Inicio › Agenda»** (Mariana,
+  20/11/2026): la vuelta al inicio del portal a la vista, con una casita, y
+  no solo en la barra de la izquierda (que en el móvil está escondida).
 
 **Construido el 20/11/2026** (Fase 9b).
 
