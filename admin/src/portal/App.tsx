@@ -4,8 +4,9 @@
 // Desde la Fase 9b se ve como los chats de IA que todo el mundo conoce
 // (Mariana, 20/11/2026):
 //
-//   · A la izquierda, «Nuevo chat» y el historial de chats (PC-17). En la
-//     vista Portal, las secciones del portal.
+//   · A la izquierda, arriba el nombre del negocio con la lupa que busca
+//     chats (como «ChatGPT» en ChatGPT, Mariana 20/11/2026); debajo «Nuevo
+//     chat» y el historial (PC-17). En la vista Portal, las secciones del portal.
 //   · Arriba en el centro, «Agente | Portal». El portal está SIEMPRE
 //     disponible, con o sin datos (PC-19, reemplaza la parte de PC-11 que lo
 //     escondía hasta terminar el alta). Lo vacío dice «Todavía no has
@@ -169,14 +170,14 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
 
   return (
     <div className="flex h-dvh bg-[#f9f9f9] text-slate-900">
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200/70 bg-[#f3f3f3] md:flex md:flex-col">
-        <BarraLateral {...propsBarra} nuevoChat={nuevoChat} />
+      <aside aria-label="Barra lateral" className="hidden w-64 shrink-0 border-r border-slate-200/70 bg-[#f3f3f3] md:flex md:flex-col">
+        <BarraLateral {...propsBarra} sesion={sesion} nuevoChat={nuevoChat} />
       </aside>
       {menuMovil ? (
         <div className="fixed inset-0 z-30 md:hidden">
           <button type="button" aria-label="Cerrar el menú" className="absolute inset-0 bg-black/30" onClick={() => setMenuMovil(false)} />
           <aside aria-label="Menú" className="relative flex h-full w-72 max-w-[85%] flex-col bg-[#f3f3f3] shadow-xl">
-            <BarraLateral {...propsBarra} sesion={sesion} cerrar={() => setMenuMovil(false)} nuevoChat={() => { setMenuMovil(false); nuevoChat(); }} />
+            <BarraLateral {...propsBarra} sesion={sesion} movil cerrar={() => setMenuMovil(false)} nuevoChat={() => { setMenuMovil(false); nuevoChat(); }} />
           </aside>
         </div>
       ) : null}
@@ -325,6 +326,7 @@ function BarraLateral({
   nuevoChat,
   recargar,
   sesion,
+  movil,
   cerrar,
 }: {
   vista: 'agente' | 'portal';
@@ -333,19 +335,22 @@ function BarraLateral({
   chats: ChatResumido[];
   nuevoChat: () => void;
   recargar: () => void;
+  sesion: SesionPortal;
   /**
-   * Solo en el menú ☰ del móvil, como ChatGPT (Mariana, 20/11/2026): arriba el
-   * nombre del negocio, su email y la lupa para buscar chats; luego Agente y
-   * Portal; la raya; el historial; y «Nuevo chat» abajo del todo.
+   * Como ChatGPT (Mariana, 20/11/2026), arriba siempre el nombre del negocio
+   * en negrita y, a su derecha, la lupa que busca chats. En el ordenador,
+   * debajo «Nuevo chat», las secciones del portal y el historial. En el menú
+   * ☰ del móvil, además el email; luego Agente y Portal, la raya, el
+   * historial y «Nuevo chat» abajo del todo.
    */
-  sesion?: SesionPortal;
+  movil?: boolean;
   cerrar?: () => void;
 }) {
   const [buscando, setBuscando] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const fila = (activo: boolean) => `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${activo ? 'bg-slate-200/80 text-slate-900' : 'text-slate-700 hover:bg-slate-200/50'}`;
   const botonNuevo = (
-    <button type="button" className={`${fila(false)} font-medium ${sesion ? '' : 'mt-1'}`} onClick={nuevoChat}>
+    <button type="button" className={`${fila(false)} font-medium ${movil ? '' : 'mt-2'}`} onClick={nuevoChat}>
       <IconoNuevoChat />
       Nuevo chat
     </button>
@@ -361,50 +366,52 @@ function BarraLateral({
       ['configuracion', 'Configuración'],
     ] as const
   ).map(([clave, texto]) => (
-    <a key={clave} href={`#/${clave}`} className={`${fila(pantalla === clave)} ${sesion ? 'pl-7' : ''}`} onClick={cerrar}>{texto}</a>
+    <a key={clave} href={`#/${clave}`} className={`${fila(pantalla === clave)} ${movil ? 'pl-7' : ''}`} onClick={cerrar}>{texto}</a>
   ));
   return (
     <div className="flex h-full flex-col p-2">
-      {sesion ? (
-        <div className="pt-1">
-          <div className="flex items-start gap-2 pl-3 pt-1">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-900">{sesion.negocio.nombre}</p>
-              <p className="truncate text-xs text-slate-500">{sesion.email}</p>
-            </div>
-            <button
-              type="button"
-              aria-label={buscando ? 'Dejar de buscar' : 'Buscar chats'}
-              aria-pressed={buscando}
-              className="-mt-1 rounded-lg p-2 text-slate-600 hover:bg-slate-200/60"
-              onClick={() => { setBuscando((b) => !b); setBusqueda(''); }}
-            >
-              <IconoBuscar />
-            </button>
+      <div className="pt-1">
+        <div className={`flex gap-2 pl-3 pt-1 ${movil ? 'items-start' : 'items-center'}`}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-900" title={sesion.negocio.nombre}>{sesion.negocio.nombre}</p>
+            {movil ? <p className="truncate text-xs text-slate-500">{sesion.email}</p> : null}
           </div>
-          {buscando ? (
-            <input
-              type="search"
-              aria-label="Buscar en tus chats"
-              placeholder="Buscar chats"
-              autoFocus
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Escape') { setBuscando(false); setBusqueda(''); } }}
-              className="mx-1 mt-2 w-[calc(100%-0.5rem)] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-slate-300 focus:outline-none"
-            />
-          ) : null}
-          <nav className="mt-3" aria-label="Ir a">
-            <a href="#/" className={fila(vista === 'agente')} onClick={cerrar}>Agente</a>
-            <a href="#/portal" className={fila(vista === 'portal' && pantalla === 'portal')} onClick={cerrar}>Portal</a>
-            {vista === 'portal' ? secciones.slice(1) : null}
-          </nav>
-          <div className="mx-3 mt-2 border-t border-slate-200" />
+          <button
+            type="button"
+            aria-label={buscando ? 'Dejar de buscar' : 'Buscar chats'}
+            aria-pressed={buscando}
+            className={`rounded-lg p-2 text-slate-600 hover:bg-slate-200/60 ${movil ? '-mt-1' : ''}`}
+            onClick={() => { setBuscando((b) => !b); setBusqueda(''); }}
+          >
+            <IconoBuscar />
+          </button>
         </div>
-      ) : (
-        botonNuevo
-      )}
-      {vista === 'portal' && !sesion ? (
+        {buscando ? (
+          <input
+            type="search"
+            aria-label="Buscar en tus chats"
+            placeholder="Buscar chats"
+            autoFocus
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') { setBuscando(false); setBusqueda(''); } }}
+            className="mx-1 mt-2 w-[calc(100%-0.5rem)] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-slate-300 focus:outline-none"
+          />
+        ) : null}
+        {movil ? (
+          <>
+            <nav className="mt-3" aria-label="Ir a">
+              <a href="#/" className={fila(vista === 'agente')} onClick={cerrar}>Agente</a>
+              <a href="#/portal" className={fila(vista === 'portal' && pantalla === 'portal')} onClick={cerrar}>Portal</a>
+              {vista === 'portal' ? secciones.slice(1) : null}
+            </nav>
+            <div className="mx-3 mt-2 border-t border-slate-200" />
+          </>
+        ) : (
+          botonNuevo
+        )}
+      </div>
+      {vista === 'portal' && !movil ? (
         <nav className="mt-4" aria-label="Secciones del portal">
           <p className="px-3 pb-1 text-xs font-medium text-slate-400">Portal</p>
           {secciones}
@@ -418,7 +425,7 @@ function BarraLateral({
           {visibles.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
         </ul>
       </div>
-      {sesion ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
+      {movil ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
     </div>
   );
 }

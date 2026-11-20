@@ -417,6 +417,15 @@ describe('de la invitación a la primera cita', () => {
     expect(await portal.getByRole('link', { name: 'Agente' }).getAttribute('aria-current')).toBe('page');
     await portal.keyboard.press('Escape');
     await expect.poll(() => cuenta.count(), ESPERA).toBe(0);
+    // Arriba de la barra, como «ChatGPT» en ChatGPT: el nombre del negocio y la lupa (Mariana, 20/11/2026).
+    const barra = portal.getByRole('complementary', { name: 'Barra lateral' });
+    expect((await barra.innerText()).trim().startsWith('Clínica Portal')).toBe(true);
+    await barra.getByRole('button', { name: 'Buscar chats' }).click();
+    await barra.getByLabel('Buscar en tus chats').fill('límpiezá');
+    await expect.poll(() => barra.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(1);
+    await portal.screenshot({ path: join(CAPTURAS, '12c-portal-buscar.png') });
+    await barra.getByRole('button', { name: 'Dejar de buscar' }).click();
+    await expect.poll(() => barra.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
 
     // El agente de las clientas lo sabe ya: su configuración y su prompt.
     const config = await loadBusinessConfig(sql, { id: negocioId! });

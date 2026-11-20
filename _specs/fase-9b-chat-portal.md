@@ -11,7 +11,7 @@ Mariana, 20/11/2026: el chat del portal tiene que **verse y usarse como ChatGPT*
 ### Criterio de "terminada" (Definition of Done)
 
 1. **Pantalla de inicio** (PC-19): «Buenos días / Buenas tardes / Buenas noches, [negocio]. ¿En qué te puedo ayudar?» según la hora del negocio; la caja blanca en el centro sobre el fondo gris claro; sugerencias debajo según lo que falte. Al escribir, la caja baja al pie.
-2. **Historial** (PC-17): «Nuevo chat» y la lista de chats a la izquierda; cada chat con su título (lo pone la IA con el primer mensaje); se puede renombrar y borrar (borrar lo oculta). En el móvil, detrás del ☰.
+2. **Historial** (PC-17): arriba el nombre del negocio y la lupa que busca chats por el título (retoque del 20/11/2026); debajo «Nuevo chat» y la lista de chats a la izquierda; cada chat con su título (lo pone la IA con el primer mensaje); se puede renombrar y borrar (borrar lo oculta). En el móvil, detrás del ☰.
 3. **«Agente | Portal»** arriba en el centro (en el móvil, dentro del menú ☰); el portal disponible siempre (PC-19).
 4. **El círculo del perfil** arriba a la derecha con las iniciales; al pincharlo, Cuenta (el nombre y el email como datos), Ajustes y Cerrar sesión, sin ventanas (retocado con Mariana el 20/11/2026, PC-17).
 4b. **En el móvil, como ChatGPT** (retoque del 20/11/2026, PC-17): chat vacío sin saludo y con la caja abajo; el menú ☰ con el nombre del negocio, el email y la lupa que busca chats, Agente y Portal, el historial y «Nuevo chat» abajo. En Agenda y Configuración, «⌂ Inicio › …» para volver.
@@ -32,4 +32,4 @@ Mariana, 20/11/2026: el chat del portal tiene que **verse y usarse como ChatGPT*
 
 - Qué va en **Ajustes** (Mariana lo verá más adelante).
 - Respuestas que se escriben letra a letra (streaming): el chat contesta de una vez, como ahora.
-- Buscar dentro del historial en el ordenador (en el móvil sí hay lupa, por el título del chat).
+- Buscar dentro del texto de los chats: la lupa busca solo por el título.

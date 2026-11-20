@@ -1763,7 +1763,10 @@ otra.
 Mariana, 20/11/2026: el chat del portal tiene que verse **como los chats de
 IA que todos conocemos** (ChatGPT), porque es lo más familiar para cualquiera.
 
-- **A la izquierda, el historial**: «Nuevo chat» y la lista de chats, el más
+- **A la izquierda, el historial**: arriba del todo el **nombre del negocio**
+  en negrita, como «ChatGPT» en ChatGPT, y a su derecha **la lupa**, que
+  busca en el historial por el título del chat, sin mirar mayúsculas ni
+  tildes (Mariana, 20/11/2026). Debajo, «Nuevo chat» y la lista de chats, el más
   reciente arriba. El cliente puede tener uno para cada tema: en uno empieza
   el alta con los datos del negocio, en otro carga los horarios, en otro da de
   alta a su equipo.
