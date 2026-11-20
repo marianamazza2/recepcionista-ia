@@ -176,7 +176,8 @@ function Saludo({ saludo }: { saludo: string }) {
   return (
     <div className="mb-10 max-w-3xl text-center leading-tight text-slate-800">
       <h1 className="break-words text-3xl font-medium sm:text-[2.5rem]">{arriba}</h1>
-      {abajo ? <h2 className="mt-3 text-xl font-normal text-slate-500 sm:text-2xl">{abajo}</h2> : null}
+      {/* Mismo estilo que el h1, apenas más chica (como la captura de Mariana, 20/11/2026). */}
+      {abajo ? <h2 className="mt-2 text-[1.625rem] font-medium sm:text-[2.25rem]">{abajo}</h2> : null}
     </div>
   );
 }
