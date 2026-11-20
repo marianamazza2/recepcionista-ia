@@ -16,6 +16,9 @@
 //     email debajo como datos (los dos en gris), «Ajustes» (engranaje) y
 //     Cerrar sesión. Nada abre ventanas ni páginas aparte (Mariana,
 //     20/11/2026): de momento no hay más que enseñar.
+//   · En el móvil, como ChatGPT (Mariana, 20/11/2026): ☰ a la izquierda, el
+//     lápiz de nuevo chat a la derecha (el círculo no se ve), y el menú ☰
+//     con la cuenta arriba, el historial y «Nuevo chat» abajo del todo.
 //
 //   #/invitacion/:token   crear la cuenta con el enlace (PC-02)
 //   #/                    un chat nuevo: el saludo y las sugerencias
@@ -155,24 +158,25 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
     );
   }
 
-  const barraLateral = (
-    <BarraLateral
-      vista={vista}
-      pantalla={pantalla}
-      chatId={chatId}
-      chats={historial?.chats ?? []}
-      nuevoChat={nuevoChat}
-      recargar={() => void cargarHistorial()}
-    />
-  );
+  const propsBarra = {
+    vista,
+    pantalla,
+    chatId,
+    chats: historial?.chats ?? [],
+    recargar: () => void cargarHistorial(),
+  };
 
   return (
     <div className="flex h-dvh bg-[#f9f9f9] text-slate-900">
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200/70 bg-[#f3f3f3] md:flex md:flex-col">{barraLateral}</aside>
+      <aside className="hidden w-64 shrink-0 border-r border-slate-200/70 bg-[#f3f3f3] md:flex md:flex-col">
+        <BarraLateral {...propsBarra} nuevoChat={nuevoChat} />
+      </aside>
       {menuMovil ? (
         <div className="fixed inset-0 z-30 md:hidden">
           <button type="button" aria-label="Cerrar el menú" className="absolute inset-0 bg-black/30" onClick={() => setMenuMovil(false)} />
-          <aside className="relative flex h-full w-72 max-w-[85%] flex-col bg-[#f3f3f3] shadow-xl">{barraLateral}</aside>
+          <aside aria-label="Menú" className="relative flex h-full w-72 max-w-[85%] flex-col bg-[#f3f3f3] shadow-xl">
+            <BarraLateral {...propsBarra} sesion={sesion} nuevoChat={() => { setMenuMovil(false); nuevoChat(); }} />
+          </aside>
         </div>
       ) : null}
 
@@ -187,7 +191,11 @@ function Dentro({ sesion, ruta }: { sesion: SesionPortal; ruta: string[] }) {
             <Selector vista={vista} />
           </div>
           <div className="flex w-24 justify-end">
-            <MenuPerfil sesion={sesion} />
+            {/* En el móvil la cuenta va dentro del menú ☰ y aquí, como en ChatGPT, «Nuevo chat». */}
+            <div className="hidden md:block"><MenuPerfil sesion={sesion} /></div>
+            <button type="button" aria-label="Nuevo chat" className="rounded-lg p-2 text-slate-600 hover:bg-slate-200/60 md:hidden" onClick={nuevoChat}>
+              <IconoNuevoChat />
+            </button>
           </div>
         </header>
         <main className={`min-h-0 flex-1 ${vista === 'agente' ? '' : 'overflow-y-auto'}`}>
@@ -278,23 +286,35 @@ function MenuPerfil({ sesion }: { sesion: SesionPortal }) {
       </button>
       {abierto ? (
         <div role="menu" aria-label="Tu cuenta" className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          {/* Cuenta: el nombre y el email se ven aquí mismo, como datos; no se pincha ni abre nada (Mariana, 20/11/2026). */}
-          <section aria-label="Cuenta" className="px-3 py-2">
-            <p className="flex items-center gap-3 text-sm text-slate-700"><IconoPerfil />Cuenta</p>
-            <div className="min-w-0 pl-[30px] pt-1">
-              <p className="truncate text-xs text-slate-500">{sesion.negocio.nombre}</p>
-              <p className="truncate text-xs text-slate-500">{sesion.email}</p>
-            </div>
-          </section>
-          {/* Ajustes: todavía no hay ninguno, así que no abre nada; se decide qué lleva más adelante (PC-17). */}
-          <p aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700">
-            <IconoAjustes />Ajustes
-          </p>
+          <CuentaYAjustes sesion={sesion} />
           <div className="my-1 border-t border-slate-100" />
           <button role="menuitem" type="button" className={opcion} onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * «Cuenta» (el nombre y el email como datos: no se pinchan ni abren nada) y
+ * «Ajustes» (todavía no hay ninguno, así que no abre nada; se decide qué
+ * lleva más adelante). Las mismas filas en el desplegable del círculo y
+ * arriba del menú ☰ del móvil (PC-17, Mariana, 20/11/2026).
+ */
+function CuentaYAjustes({ sesion }: { sesion: SesionPortal }) {
+  return (
+    <>
+      <section aria-label="Cuenta" className="px-3 py-2">
+        <p className="flex items-center gap-3 text-sm text-slate-700"><IconoPerfil />Cuenta</p>
+        <div className="min-w-0 pl-[30px] pt-1">
+          <p className="truncate text-xs text-slate-500">{sesion.negocio.nombre}</p>
+          <p className="truncate text-xs text-slate-500">{sesion.email}</p>
+        </div>
+      </section>
+      <p aria-disabled="true" className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700">
+        <IconoAjustes />Ajustes
+      </p>
+    </>
   );
 }
 
@@ -305,6 +325,7 @@ function BarraLateral({
   chats,
   nuevoChat,
   recargar,
+  sesion,
 }: {
   vista: 'agente' | 'portal';
   pantalla: string;
@@ -312,17 +333,27 @@ function BarraLateral({
   chats: ChatResumido[];
   nuevoChat: () => void;
   recargar: () => void;
+  /** Solo en el menú ☰ del móvil: la cuenta va arriba y «Nuevo chat» abajo, como en ChatGPT (Mariana, 20/11/2026). */
+  sesion?: SesionPortal;
 }) {
   const fila = (activo: boolean) => `flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${activo ? 'bg-slate-200/80 text-slate-900' : 'text-slate-700 hover:bg-slate-200/50'}`;
+  const botonNuevo = (
+    <button type="button" className={`${fila(false)} font-medium ${sesion ? '' : 'mt-1'}`} onClick={nuevoChat}>
+      <IconoNuevoChat />
+      Nuevo chat
+    </button>
+  );
   return (
     <div className="flex h-full flex-col p-2">
-      <button type="button" className={`${fila(false)} mt-1 font-medium`} onClick={nuevoChat}>
-        <svg viewBox="0 0 20 20" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M11.5 3.5h-6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-6" />
-          <path d="M14.5 2.5l3 3-7 7H7.5v-3z" />
-        </svg>
-        Nuevo chat
-      </button>
+      {sesion ? (
+        <div className="pt-1">
+          <CuentaYAjustes sesion={sesion} />
+          <button type="button" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-200/50" onClick={() => void salir()}><IconoSalir />Cerrar sesión</button>
+          <div className="mx-3 mt-2 border-t border-slate-200" />
+        </div>
+      ) : (
+        botonNuevo
+      )}
       {vista === 'portal' ? (
         <nav className="mt-4" aria-label="Secciones del portal">
           <p className="px-3 pb-1 text-xs font-medium text-slate-400">Portal</p>
@@ -342,7 +373,17 @@ function BarraLateral({
           {chats.map((c) => <FilaChat key={c.id} chat={c} activo={vista === 'agente' && c.id === chatId} recargar={recargar} />)}
         </ul>
       </div>
+      {sesion ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
     </div>
+  );
+}
+
+function IconoNuevoChat() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11.5 3.5h-6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-6" />
+      <path d="M14.5 2.5l3 3-7 7H7.5v-3z" />
+    </svg>
   );
 }
 

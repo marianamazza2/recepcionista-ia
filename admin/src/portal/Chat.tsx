@@ -8,6 +8,8 @@
 //     el nombre del negocio («Buenas tardes, Clínica Aurora. ¿En qué te puedo
 //     ayudar?»), la caja para escribir EN EL CENTRO y, debajo, sugerencias
 //     que se tocan (PC-19). Ya no se manda un «Hola» solo al entrar.
+//     En el móvil, como ChatGPT (Mariana, 20/11/2026): sin saludo, la caja
+//     abajo del todo y las sugerencias justo encima.
 //   · En cuanto escribe, la conversación ocupa el centro y la caja baja al
 //     pie.
 //   · El primer mensaje abre el chat en el servidor (PC-17) y avisa a quien
@@ -110,15 +112,17 @@ export function Chat({ chatId, saludo, sugerencias, mensajeInicial, alCrear, alR
   const caja = <Caja texto={texto} setTexto={setTexto} enviando={enviando} mandar={() => mandar()} />;
 
   // La pantalla de inicio: saludo, la caja en el centro y las sugerencias.
+  // En el móvil, como ChatGPT (Mariana, 20/11/2026): sin saludo, la caja
+  // abajo del todo y las sugerencias justo encima.
   if (lineas.length === 0 && !enviando) {
     return (
-      <div className="flex h-full flex-col items-center justify-center px-4 pb-24">
+      <div className="flex h-full flex-col items-center justify-end px-4 pb-4 md:justify-center md:pb-24">
         <Saludo saludo={saludo} />
-        <div className="w-full max-w-3xl">
+        <div className="flex w-full max-w-3xl flex-col">
           {caja}
           {error ? <div className="mt-3"><Aviso error={error} /></div> : null}
           {sugerencias.length > 0 ? (
-            <ul className="mt-6 space-y-1" aria-label="Sugerencias">
+            <ul className="order-first mb-3 space-y-1 md:order-none md:mb-0 md:mt-6" aria-label="Sugerencias">
               {sugerencias.map((p) => (
                 <li key={p}>
                   <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] text-slate-600 hover:bg-slate-200/50" onClick={() => mandar(PEDIDOS[p].mensaje)}>
@@ -174,7 +178,7 @@ function Saludo({ saludo }: { saludo: string }) {
   const abajo = corte > 0 ? saludo.slice(corte).trim() : '';
   // El saludo es el título (h1); la pregunta, su subtítulo (h2).
   return (
-    <div className="mb-10 max-w-3xl text-center leading-tight text-slate-800">
+    <div className="mb-10 hidden max-w-3xl text-center leading-tight text-slate-800 md:block">
       <h1 className="break-words text-[24px] font-medium">{arriba}</h1>
       {/* Mismo estilo que el h1: el saludo a 24 px y la pregunta a 20 px (Mariana, 20/11/2026). */}
       {abajo ? <h2 className="mt-1 text-[20px] font-medium">{abajo}</h2> : null}

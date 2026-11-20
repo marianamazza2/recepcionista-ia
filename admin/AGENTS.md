@@ -84,7 +84,7 @@ pantalla.
     exactamente lo que el motor considera cerrado.
 11. **El portal se ve como un chat de IA** (Fase 9b, PC-17 y PC-19): a la
     izquierda «Nuevo chat» y el historial; arriba «Agente | Portal» y el
-    círculo del perfil (despliega «Cuenta» con el nombre y el email como datos, «Ajustes» —todavía no abre nada— y Cerrar sesión; sin ventanas). En Agenda y Configuración, arriba, «⌂ Inicio › …» (`VolverAlInicio`) para volver al inicio del portal. El portal está
+    círculo del perfil (despliega «Cuenta» con el nombre y el email como datos, «Ajustes» —todavía no abre nada— y Cerrar sesión; sin ventanas). En Agenda y Configuración, arriba, «⌂ Inicio › …» (`VolverAlInicio`) para volver al inicio del portal. En el móvil se ve como ChatGPT: chat vacío sin saludo y con la caja abajo, el lápiz de nuevo chat arriba a la derecha y, en el menú ☰, la cuenta arriba (`CuentaYAjustes`, las mismas filas que el círculo) y «Nuevo chat» abajo. El portal está
     **siempre**, con o sin datos; lo vacío ofrece «Pídeselo al agente»,
     que abre `#/nuevo/:pedido` (un chat nuevo con el mensaje de
     `src/portal/pedir.ts` ya enviado). En la ficha compartida, ese aviso

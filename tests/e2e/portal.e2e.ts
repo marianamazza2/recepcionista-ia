@@ -441,9 +441,24 @@ describe('de la invitación a la primera cita', () => {
     await movil.getByRole('button', { name: 'Entrar' }).click();
     await expect.poll(() => movil.getByLabel('Escribe tu mensaje').isVisible(), ESPERA).toBe(true);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1-portada.png'), fullPage: true });
-    // El historial, detrás del botón de menú.
+    // Como ChatGPT en el móvil (Mariana, 20/11/2026): sin saludo, la caja abajo
+    // del todo, y arriba a la derecha «Nuevo chat» en vez del círculo.
+    expect(await movil.getByRole('heading', { level: 1 }).count()).toBe(0);
+    const caja = (await movil.getByLabel('Escribe tu mensaje').boundingBox())!;
+    expect(caja.y).toBeGreaterThan(844 - 140);
+    expect(await movil.getByLabel('Tu perfil').isVisible()).toBe(false);
+    expect(await movil.getByRole('banner').getByRole('button', { name: 'Nuevo chat' }).isVisible()).toBe(true);
+    // El menú ☰: la cuenta arriba (Cuenta, Ajustes, Cerrar sesión), la raya, el historial y «Nuevo chat» abajo del todo.
     await movil.getByRole('button', { name: 'Abrir el menú' }).click();
     await expect.poll(() => movil.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
+    const menu = movil.getByRole('complementary', { name: 'Menú' });
+    expect(await menu.getByRole('region', { name: 'Cuenta' }).innerText()).toContain(EMAIL_CLIENTE);
+    const texto = await menu.innerText();
+    const orden = ['Cuenta', 'Ajustes', 'Cerrar sesión', 'Chats', 'Nuevo chat'].map((t) => texto.indexOf(t));
+    expect(orden.every((x) => x >= 0)).toBe(true);
+    expect([...orden].sort((x, y) => x - y)).toEqual(orden);
+    const nuevo = (await menu.getByRole('button', { name: 'Nuevo chat' }).boundingBox())!;
+    expect(nuevo.y).toBeGreaterThan(844 - 100);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1b-historial.png') });
     // Se cierra tocando fuera, a la derecha del menú.
     await movil.getByRole('button', { name: 'Cerrar el menú' }).click({ position: { x: 370, y: 400 } });
