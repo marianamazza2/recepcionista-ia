@@ -419,6 +419,16 @@ describe('de la invitación a la primera cita', () => {
     await expect.poll(() => cuenta.count(), ESPERA).toBe(0);
     // Arriba de la barra, como «ChatGPT» en ChatGPT: el nombre del negocio y la lupa (Mariana, 20/11/2026).
     const barra = portal.getByRole('complementary', { name: 'Barra lateral' });
+    // La manita en todo lo que se pincha (Mariana, 20/11/2026).
+    const cursor = (l: ReturnType<Page['locator']>) => l.evaluate((e) => (globalThis as unknown as { getComputedStyle: (x: unknown) => { cursor: string } }).getComputedStyle(e).cursor);
+    for (const l of [
+      barra.getByRole('button', { name: 'Buscar chats' }),
+      barra.getByRole('button', { name: 'Nuevo chat' }),
+      portal.getByLabel('Tu perfil'),
+      barra.getByRole('button', { name: /^Opciones de / }).first(),
+    ]) expect(await cursor(l)).toBe('pointer');
+    // Enviar sin nada escrito está desactivado: enseña que no se puede.
+    expect(await cursor(portal.getByRole('button', { name: 'Enviar' }))).toBe('not-allowed');
     expect((await barra.innerText()).trim().startsWith('Clínica Portal')).toBe(true);
     // La lupa abre una ventana en el centro, como ChatGPT: «Chats recientes» y,
     // al escribir, los que coinciden (sin mirar tildes). Pinchar uno lo abre.

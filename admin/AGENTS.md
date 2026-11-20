@@ -94,6 +94,13 @@ pantalla.
 12. **Selectores de test estables**: las respuestas del chat llevan
     `data-rol="asistente"` (y las del cliente `data-rol="cliente"`); la caja
     es «Escribe tu mensaje». Usá eso, no clases de Tailwind.
+13. **La manita en todo lo que se pincha** (Mariana, 20/11/2026): Tailwind 4
+    deja los botones con la flecha normal, así que `estilos.css` devuelve
+    `cursor: pointer` a botones, desplegables, casillas y fechas (y
+    `not-allowed` a lo desactivado), en el panel y en el portal a la vez. Un
+    botón nuevo no necesita `cursor-pointer`; lo que se pincha y no es un
+    `button` ni un enlace (un `div` con `onClick`), sí. El e2e del portal lo
+    comprueba.
 
 ## Tests
 
