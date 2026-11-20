@@ -83,7 +83,7 @@ pantalla.
     aquí**: viene de la API (`app.tramos_efectivos`), así que lo sombreado es
     exactamente lo que el motor considera cerrado.
 11. **El portal se ve como un chat de IA** (Fase 9b, PC-17 y PC-19): a la
-    izquierda, arriba el nombre del negocio con la lupa que busca chats por el título, y debajo «Nuevo chat» y el historial; arriba «Agente | Portal» y el
+    izquierda, arriba el nombre del negocio con la lupa que busca chats por el título (en el ordenador, una ventana en el centro, `BuscarChats`), y debajo «Nuevo chat» y el historial; arriba «Agente | Portal» y el
     círculo del perfil (despliega «Cuenta» con el nombre y el email como datos, «Ajustes» —todavía no abre nada— y Cerrar sesión; sin ventanas). En Agenda y Configuración, arriba, «⌂ Inicio › …» (`VolverAlInicio`) para volver al inicio del portal. En el móvil se ve como ChatGPT: chat vacío sin saludo y con la caja abajo, el círculo arriba a la derecha y sin selector arriba; en el menú ☰, el nombre del negocio, su email y la lupa que busca chats, luego Agente y Portal, el historial y «Nuevo chat» abajo (`BarraLateral` con `sesion`). El portal está
     **siempre**, con o sin datos; lo vacío ofrece «Pídeselo al agente»,
     que abre `#/nuevo/:pedido` (un chat nuevo con el mensaje de

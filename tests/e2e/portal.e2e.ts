@@ -420,12 +420,25 @@ describe('de la invitación a la primera cita', () => {
     // Arriba de la barra, como «ChatGPT» en ChatGPT: el nombre del negocio y la lupa (Mariana, 20/11/2026).
     const barra = portal.getByRole('complementary', { name: 'Barra lateral' });
     expect((await barra.innerText()).trim().startsWith('Clínica Portal')).toBe(true);
+    // La lupa abre una ventana en el centro, como ChatGPT: «Chats recientes» y,
+    // al escribir, los que coinciden (sin mirar tildes). Pinchar uno lo abre.
     await barra.getByRole('button', { name: 'Buscar chats' }).click();
-    await barra.getByLabel('Buscar en tus chats').fill('límpiezá');
-    await expect.poll(() => barra.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(1);
+    const buscar = portal.getByRole('dialog', { name: 'Buscar chats' });
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    expect(await buscar.innerText()).toContain('Chats recientes');
+    expect(await buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li').count()).toBe(2);
     await portal.screenshot({ path: join(CAPTURAS, '12c-portal-buscar.png') });
-    await barra.getByRole('button', { name: 'Dejar de buscar' }).click();
-    await expect.poll(() => barra.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
+    await buscar.getByLabel('Buscar en tus chats').fill('límpiezá');
+    await expect.poll(() => buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li').count(), ESPERA).toBe(1);
+    await portal.screenshot({ path: join(CAPTURAS, '12d-portal-buscar-escrito.png') });
+    expect(await barra.getByRole('list', { name: 'Tus chats' }).locator('li').count()).toBe(2);
+    await buscar.getByRole('button', { name: /limpieza facial/i }).click();
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
+    expect(portal.url()).toMatch(/#\/chat\/[0-9a-f-]+$/);
+    await barra.getByRole('button', { name: 'Buscar chats' }).click();
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    await portal.keyboard.press('Escape');
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
 
     // El agente de las clientas lo sabe ya: su configuración y su prompt.
     const config = await loadBusinessConfig(sql, { id: negocioId! });

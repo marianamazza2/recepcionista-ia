@@ -355,10 +355,9 @@ function BarraLateral({
       Nuevo chat
     </button>
   );
-  // La lupa busca por el título del chat, sin mirar mayúsculas ni tildes.
-  const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const buscado = plano(busqueda.trim());
-  const visibles = buscando && buscado ? chats.filter((c) => plano(c.titulo).includes(buscado)) : chats;
+  // En el móvil la lupa filtra la lista ahí mismo; en el ordenador abre una
+  // ventana en el centro, como ChatGPT (Mariana, 20/11/2026), y la lista no cambia.
+  const visibles = movil && buscando ? filtrarChats(chats, busqueda) : chats;
   const secciones = (
     [
       ['portal', 'Inicio'],
@@ -386,7 +385,10 @@ function BarraLateral({
             <IconoBuscar />
           </button>
         </div>
-        {buscando ? (
+        {buscando && !movil ? (
+          <BuscarChats chats={chats} cerrar={() => setBuscando(false)} />
+        ) : null}
+        {buscando && movil ? (
           <input
             type="search"
             aria-label="Buscar en tus chats"
@@ -427,6 +429,78 @@ function BarraLateral({
       </div>
       {movil ? <div className="border-t border-slate-200 pt-2">{botonNuevo}</div> : null}
     </div>
+  );
+}
+
+/** La lupa busca por el título del chat, sin mirar mayúsculas ni tildes. */
+function filtrarChats(chats: ChatResumido[], busqueda: string): ChatResumido[] {
+  const plano = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const buscado = plano(busqueda.trim());
+  return buscado ? chats.filter((c) => plano(c.titulo).includes(buscado)) : chats;
+}
+
+/**
+ * La búsqueda del ordenador, como ChatGPT (Mariana, 20/11/2026): una ventana
+ * en el centro con «Buscar…» y la ✕ arriba, «Chats recientes» debajo y los
+ * chats que coinciden mientras se escribe. Pinchar uno lo abre; Intro abre el
+ * primero; Esc, la ✕ o pinchar fuera la cierran.
+ */
+function BuscarChats({ chats, cerrar }: { chats: ChatResumido[]; cerrar: () => void }) {
+  const [busqueda, setBusqueda] = useState('');
+  const encontrados = filtrarChats(chats, busqueda);
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && cerrar();
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [cerrar]);
+  const abrir = (id: string) => {
+    cerrar();
+    ir(`chat/${id}`);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[18vh]">
+      <button type="button" aria-label="Cerrar la búsqueda" tabIndex={-1} className="absolute inset-0 cursor-default bg-black/5" onClick={cerrar} />
+      <div role="dialog" aria-modal="true" aria-label="Buscar chats" className="relative flex max-h-[60vh] min-h-[320px] w-full max-w-2xl flex-col rounded-2xl border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center gap-3 px-6 pb-2 pt-5">
+          <input
+            type="search"
+            aria-label="Buscar en tus chats"
+            placeholder="Buscar…"
+            autoFocus
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && encontrados[0]) abrir(encontrados[0].id); }}
+            className="min-w-0 flex-1 bg-transparent text-[15px] text-slate-900 placeholder:text-slate-400 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          />
+          <button type="button" aria-label="Cerrar" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" onClick={cerrar}>
+            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" /></svg>
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-3">
+          {!busqueda.trim() ? <p className="px-3 pb-2 text-sm text-slate-500">Chats recientes</p> : null}
+          {chats.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Todavía no hay ninguno.</p> : null}
+          {chats.length > 0 && encontrados.length === 0 ? <p className="px-3 py-2 text-sm text-slate-400">Ningún chat con «{busqueda.trim()}».</p> : null}
+          <ul aria-label="Chats encontrados">
+            {encontrados.map((c) => (
+              <li key={c.id}>
+                <button type="button" className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => abrir(c.id)}>
+                  <IconoChat />
+                  <span className="min-w-0 truncate">{c.titulo}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IconoChat() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-slate-700" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 3.5c3.9 0 7 2.7 7 6s-3.1 6-7 6c-.9 0-1.8-.1-2.6-.4L4 16.5l1-3c-1.2-1.1-2-2.5-2-4 0-3.3 3.1-6 7-6z" />
+    </svg>
   );
 }
 
