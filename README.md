@@ -22,8 +22,8 @@ los 3 de la nube incluidos («Informe de pruebas · Fase 9», Research Desk).
 Antes del primer cliente real falta conectar un proveedor de email de verdad
 (PC-15): sin él, el código para crear la cuenta no le llega. **Fase 9b** (el
 chat del portal como los chats de IA conocidos: historial de chats, alta por
-temas, portal siempre visible; PC-17 a PC-20) construida en local el
-20/11/2026, en la rama `fase-9b-chat-portal`. Lo siguiente es la Fase 5
+temas, portal siempre visible; PC-17 a PC-20) publicada el 21/11/2026 (PR #10
+y su migración en la nube). Lo siguiente es la Fase 5
 (conocimiento del negocio). Un negocio nuevo se da de alta **hablando con un
 chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
 crea su cuenta con el código que le llega al email (PC-11), el chat le
@@ -133,7 +133,7 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `20261102120000_horarios_sin_solape` | Fase 4, aceptación 31: exclusiones por local/profesional y día; tramos contiguos permitidos (PD-01). Aplicada en local y en la nube (12/11/2026) |
 | `20261113120000_email_y_codigo` | PA-16, PA-17, PW-18: `customers.email` en minúsculas, único por negocio (y el teléfono, único solo entre las fichas sin email); `conversations.verificada_at`; `codigos_verificacion` (solo el hash, 3 intentos) y `email_messages`, con RLS. Aplicada en local y en la nube (13/11/2026: SQL 13/13 y TypeScript 210/210 por los dos modos del pooler) |
 | `20261113130000_borrado_y_avisos` | PD-13: `app.borrar_conversaciones_vencidas()` (el texto del chat caduca a los 6 meses; la conversación, la ficha, las citas y el consumo se quedan) y `app.borrar_clienta()` (derecho de supresión: su texto fuera, sus conversaciones desligadas, su ficha anónima y sus citas en pie). PI-20: `app.profesional_trabaja_algun_dia()` y `negocio_lo_que_falta()` ya no cuenta a quien no trabaja ningún día. Aplicada en local y en la nube (13/11/2026: SQL 14/14 y TypeScript 222/222 por los dos modos del pooler) |
-| `20261121120000_chats_del_portal` | Fase 9b: `conversations.titulo`, `oculta_at` y `continua_de` (varios chats en el portal, PC-17) y `portal.alta.secciones_hechas` (el alta por temas, PC-18). Aplicada en local |
+| `20261121120000_chats_del_portal` | Fase 9b: `conversations.titulo`, `oculta_at` y `continua_de` (varios chats en el portal, PC-17) y `portal.alta.secciones_hechas` (el alta por temas, PC-18). Aplicada en local y en la nube (21/11/2026: SQL 16/16 y TypeScript 261/261 en la nube; el portal publicado, probado con un negocio inventado) |
 | `20261119120000_portal_cliente` | Fase 9: esquema `portal` (invitaciones con hash y caducidad, códigos, cuentas, sesiones y estado del alta), `staff_turnos_sueltos` (PC-06) y `conversations.alta` (PC-14); `tramos_efectivos` y `slot_es_valido` aplican los turnos sueltos. Aplicada en local y en la nube (20/11/2026: SQL 15/15 y TypeScript 256/256 por los dos modos del pooler) |
 
 ### Las dos garantías que ya están puestas
