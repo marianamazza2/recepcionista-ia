@@ -131,6 +131,9 @@ const modelo = new ModeloSimulado([
 
   // --- El widget otra vez: el agente ya lo sabe ------------------------------
   texto('La limpieza facial dura 75 minutos.'),
+
+  // --- PC-21: una foto adjunta, sin texto --------------------------------------
+  texto('He reconocido el horario del local. ¿Qué quieres que haga con esta información?'),
 ]);
 
 let servidores: Awaited<ReturnType<typeof iniciarServidores>>;
@@ -581,5 +584,25 @@ describe('de la invitación a la primera cita', () => {
     } finally {
       await sql`delete from public.businesses where id = ${otro.id}`;
     }
+  });
+
+  it('11. adjunta una foto con el «+», sin texto: se ve en el chat y el agente la recibe (PC-21)', async () => {
+    const foto = join(CAPTURAS, 'horario.png');
+    // Una foto de verdad (una captura de la propia página): el portal la abre, la achica y la sube.
+    await portal.screenshot({ path: foto, clip: { x: 0, y: 0, width: 400, height: 240 } });
+    await portal.goto(`${servidores.panelUrl}/portal/#/`);
+    await portal.getByRole('button', { name: 'Nuevo chat' }).first().click();
+    await portal.getByLabel('Adjuntar fotos o documentos').click();
+    // El aviso de los datos de clientas va debajo del «+».
+    expect(await portal.getByRole('menu').textContent()).toContain('No subas datos de tus clientas');
+    await portal.keyboard.press('Escape');
+    await portal.getByLabel('Elegir archivos').setInputFiles(foto);
+    await expect.poll(() => portal.getByRole('button', { name: 'Enviar' }).isEnabled(), ESPERA).toBe(true);
+    const antes = await portal.locator(RESPUESTAS).count();
+    await portal.getByRole('button', { name: 'Enviar' }).click();
+    await expect.poll(() => portal.locator(RESPUESTAS).count(), ESPERA).toBe(antes + 1);
+    expect(await portal.getByRole('list', { name: 'Archivos del mensaje' }).getByRole('img').count()).toBe(1);
+    expect(JSON.stringify(modelo.peticiones.at(-1)!.messages)).toContain('"type":"image"');
+    await portal.screenshot({ path: join(CAPTURAS, '13-portal-adjunto.png') });
   });
 });

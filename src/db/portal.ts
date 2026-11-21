@@ -678,3 +678,32 @@ export function recortarTitulo(t: string): string {
   if (!limpio) return 'Chat nuevo';
   return limpio.length <= 80 ? limpio : `${limpio.slice(0, 77).trimEnd()}…`;
 }
+
+/**
+ * Lo que el portal enseña de un chat: los mensajes del cliente y del agente,
+ * de todas sus conversaciones, y (PC-21) los archivos que iban con cada uno.
+ */
+export async function mensajesDelChat(
+  sql: Sql,
+  businessId: string,
+  conversaciones: string[],
+): Promise<{ rol: 'cliente' | 'asistente'; texto: string; adjuntos?: { id: string; nombre: string; tipo: string }[] }[]> {
+  if (conversaciones.length === 0) return [];
+  const filas = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ rol: 'user' | 'assistant'; contenido: string | null; adjuntos: { id: string; nombre: string; tipo: string }[] | null }[]>`
+      select m.rol, m.contenido, m.tool_calls -> 'adjuntos' as adjuntos
+        from public.messages m
+        join unnest(${conversaciones}::uuid[]) with ordinality as c(id, orden) on c.id = m.conversation_id
+       where m.business_id = ${businessId}::uuid and m.rol in ('user', 'assistant')
+       order by c.orden, m.created_at, m.id`,
+  );
+  return filas
+    .filter((f) => f.contenido || (f.adjuntos && f.adjuntos.length))
+    .map((f) => ({
+      rol: f.rol === 'user' ? ('cliente' as const) : ('asistente' as const),
+      texto: f.contenido ?? '',
+      ...(f.adjuntos && f.adjuntos.length ? { adjuntos: f.adjuntos } : {}),
+    }));
+}

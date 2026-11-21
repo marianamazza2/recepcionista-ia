@@ -91,6 +91,12 @@ pantalla.
     sale solo si el contexto trae `pedirAlAgente` (el panel no lo pone). El
     resumen para confirmar lo dibuja `src/portal/Chat.tsx` con los datos
     que manda el agente: **el formato no lo inventa el modelo**.
+13. **Adjuntos (PC-21)**: el «+» de la caja (`Chat.tsx`) abre «Añadir fotos y
+    documentos» con el aviso de no subir datos de clientas; también se arrastra o
+    se pega. Las fotos se achican en el navegador antes de subir (`adjuntar.ts`:
+    2000 px, JPEG) porque Vercel no acepta peticiones de más de 4,5 MB. Las
+    miniaturas se piden con la sesión en la cabecera (`urlDeAdjunto`), nunca con
+    una `<img src>` a la API.
 12. **Selectores de test estables**: las respuestas del chat llevan
     `data-rol="asistente"` (y las del cliente `data-rol="cliente"`); la caja
     es «Escribe tu mensaje». Usá eso, no clases de Tailwind.

@@ -19,7 +19,8 @@ Mariana, 20/11/2026: el chat del portal tiene que **verse y usarse como ChatGPT*
 6. **«Pídeselo al agente»** (PC-19): en el inicio del portal y en lo vacío de la configuración; abre un chat nuevo con el mensaje de esa sección ya enviado.
 7. **Mensaje sin sentido** (PC-20): «Disculpa, no he comprendido tu mensaje.» y lo que puede hacer, calculado con lo que ya está cargado.
 8. Un chat de otro negocio no existe para el portal (404), ni por la dirección ni por la API.
-9. Tests: SQL (16), TypeScript (alta-chat, portal-api), e2e del portal adaptado, y `npm run alta:eval` con el escenario nuevo.
+8b. **El «+» para adjuntar** (PC-21, 21/11/2026): fotos (achicadas en el navegador) y PDF de hasta 4 MB, hasta 5 por mensaje; también arrastrando o pegando. El agente los lee: sin texto, cuenta lo que reconoció y pregunta qué hacer; con instrucciones, lo hace y pregunta lo dudoso; siempre con el resumen para confirmar. Se guardan en `portal.adjuntos` y caducan con el chat (PD-13). Aviso de no subir datos de clientas debajo del «+».
+9. Tests: SQL (16 y 17), TypeScript (alta-chat, portal-api), e2e del portal adaptado, y `npm run alta:eval` con el escenario nuevo.
 
 ## TAREAS (hechas en la misma sesión, 20/11/2026)
 
@@ -28,7 +29,11 @@ Mariana, 20/11/2026: el chat del portal tiene que **verse y usarse como ChatGPT*
 - **9b.3 Pantalla** — `admin/src/portal/App.tsx` (marco, historial, selector, perfil, inicio del portal), `Chat.tsx` (inicio y conversación), `pedir.ts` (mensajes de cada sección); «Pídeselo al agente» en la ficha compartida, solo en el portal.
 - **9b.4 Pruebas y documentación** — tests, e2e, `alta:eval`, AGENTS.md, README, manual de Research Desk y guion.
 
+- **9b.5 Adjuntos (PC-21)** — migración `20261122120000_adjuntos_del_portal.sql` y test `17_adjuntos_del_portal.sql`; `src/db/adjuntos.ts` (tipo por los bytes, ligar solo los propios), `src/alta/adjuntos.ts` (marca en el historial y expansión para el modelo), rutas `POST adjuntos`, `GET adjuntos/:id` y `adjuntos` en `POST chat`; `admin/src/portal/adjuntar.ts` y el «+» en `Chat.tsx`; `tests/adjuntos.test.ts` y el paso 11 del e2e.
+
 ## FUERA DE ALCANCE
+
+- Adjuntar Word o Excel (PC-21: más adelante, si alguien lo pide).
 
 - Qué va en **Ajustes** (Mariana lo verá más adelante).
 - Respuestas que se escriben letra a letra (streaming): el chat contesta de una vez, como ahora.

@@ -27,6 +27,8 @@ import type { EmailProvider } from '../adapters/email/types.js';
 import { BETA_FALLBACKS, type AgentSettings, type ModelClient } from '../core/agent.js';
 import { appendMessages, conversationUsage, loadHistory, type MessageRow, type UsageDetalle } from '../db/conversations.js';
 import { leerNegocio, type NegocioPanel } from '../db/negocios.js';
+import { expandirAdjuntos, marcaDeAdjunto } from './adjuntos.js';
+import { ligarAdjuntos, MAX_ADJUNTOS_POR_MENSAJE, type AdjuntoResumido } from '../db/adjuntos.js';
 import { cadenaDelChat, chatDelMensaje, continuarChat, crearChat, estadoDelAlta, recortarTitulo, renombrarChat, type SeccionDelAlta } from '../db/portal.js';
 import { eventosDelTurno, registrarUso, type LlamadaRegistrada } from '../db/usage.js';
 import { conLockDeConversacion, filasDelTurno, findUserMessage } from '../db/widget.js';
@@ -101,6 +103,13 @@ export interface RespuestaPortal {
 const TEXTO_ERROR = 'Perdona, ha habido un problema y no he podido responderte. Inténtalo de nuevo en un momento.';
 const TEXTO_OCUPADO = 'Sigo con tu mensaje anterior. Espera un momento y vuelve a enviarlo.';
 
+/** PC-21: los archivos del mensaje no se pueden mandar (de otro negocio, ya mandados o demasiados). */
+export class AdjuntosNoValidos extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+  }
+}
+
 /** El chat no es de este negocio, no existe o se borró: para el portal, no existe (PC-02). */
 export class ChatNoEncontrado extends Error {
   constructor() {
@@ -153,11 +162,15 @@ function textoDe(m: Anthropic.Beta.BetaMessage): string {
  */
 export async function turnoDelPortal(
   deps: PortalChatDeps,
-  p: { businessId: string; texto: string; clientMessageId: string; chatId?: string | null },
+  p: { businessId: string; texto: string; clientMessageId: string; chatId?: string | null; adjuntos?: string[] },
 ): Promise<RespuestaPortal> {
   const now = deps.now ?? (() => new Date());
   const onError = deps.onError ?? (() => {});
   const texto = p.texto.trim();
+  // PC-21: los archivos que van con el mensaje (ya subidos). Puede ir solo con archivos.
+  const adjuntos = [...new Set(p.adjuntos ?? [])];
+  if (adjuntos.length > MAX_ADJUNTOS_POR_MENSAJE) throw new AdjuntosNoValidos(`Puedes mandar hasta ${MAX_ADJUNTOS_POR_MENSAJE} archivos por mensaje.`);
+  if (!texto && adjuntos.length === 0) throw new AdjuntosNoValidos('Escribe algo o adjunta un archivo.');
 
   const ficha = await leerNegocio(deps.sql, p.businessId);
   if (!ficha) throw new Error(`El negocio ${p.businessId} no existe`);
@@ -185,10 +198,12 @@ export async function turnoDelPortal(
   let titulo = '';
   let titulando: Promise<void> = Promise.resolve();
   if (!chatId) {
-    titulo = recortarTitulo(texto);
+    // Solo con archivos, el título sale de lo que diga después el modelo… o del archivo.
+    const paraTitulo = texto || 'Archivos adjuntos';
+    titulo = recortarTitulo(paraTitulo);
     chatId = await crearChat(deps.sql, p.businessId, titulo);
     const id = chatId;
-    if (deps.titulador) {
+    if (deps.titulador && texto) {
       titulando = deps.titulador(texto).then(
         async (t) => {
           titulo = recortarTitulo(t);
@@ -217,9 +232,23 @@ export async function turnoDelPortal(
         chat: { id: chatId, titulo },
       } satisfies RespuestaPortal;
     }
-    return ejecutarTurno(deps, { businessId: p.businessId, chatId, conversationId, texto, externalId, ficha, modo, faltan: estado.faltan, now, onError });
+    return ejecutarTurno(deps, { businessId: p.businessId, chatId, conversationId, texto, adjuntos, externalId, ficha, modo, faltan: estado.faltan, now, onError });
   });
 
+  // PC-21: un chat que empieza solo con archivos se titula con lo que el
+  // agente reconoció en ellos («He reconocido el horario del local…»).
+  if (deps.titulador && r && !texto && !p.chatId && r.valor.respuesta && !r.valor.aviso) {
+    const id = chatId;
+    titulando = titulando.then(() =>
+      deps.titulador!(r.valor.respuesta).then(
+        async (t) => {
+          titulo = recortarTitulo(t);
+          await renombrarChat(deps.sql, p.businessId, id, titulo);
+        },
+        (e: unknown) => onError(e),
+      ),
+    );
+  }
   await titulando;
   if (!r) return { respuesta: TEXTO_OCUPADO, resumen: null, ...base, chat: { id: chatId, titulo }, aviso: 'ocupado' };
   return { ...r.valor, chat: { id: chatId, titulo: titulo || r.valor.chat.titulo } };
@@ -232,6 +261,7 @@ async function ejecutarTurno(
     chatId: string;
     conversationId: string;
     texto: string;
+    adjuntos: string[];
     externalId: string;
     ficha: NegocioPanel;
     modo: ModoChat;
@@ -268,9 +298,23 @@ async function ejecutarTurno(
     onError,
   };
 
+  // PC-21: los archivos quedan ligados a esta conversación (solo los de este
+  // negocio y sin mandar). En el historial va su marca, no sus bytes.
+  let mandados: AdjuntoResumido[] = [];
+  if (p.adjuntos.length > 0) {
+    const ligados = await ligarAdjuntos(sql, businessId, conversationId, p.adjuntos);
+    if (!ligados) throw new AdjuntosNoValidos('No he podido leer esos archivos. Vuelve a adjuntarlos.');
+    mandados = ligados;
+  }
   const historial = await loadHistory(sql, businessId, conversationId);
   const turno: MessageParam[] = [
-    { role: 'user', content: [{ type: 'text', text: p.texto }] },
+    {
+      role: 'user',
+      content: [
+        ...mandados.map(marcaDeAdjunto),
+        ...(p.texto ? [{ type: 'text' as const, text: p.texto }] : mandados.length ? [{ type: 'text' as const, text: '(Sin texto: solo estos archivos.)' }] : []),
+      ],
+    },
     {
       role: 'system',
       content: [
@@ -285,8 +329,17 @@ async function ejecutarTurno(
       ],
     },
   ];
-  await appendMessages(sql, businessId, conversationId, [{ rol: 'user', contenido: p.texto, mensajes: turno, externalId: p.externalId }]);
-  const mensajes = [...historial, ...turno];
+  await appendMessages(sql, businessId, conversationId, [
+    {
+      rol: 'user',
+      contenido: p.texto,
+      mensajes: turno,
+      externalId: p.externalId,
+      ...(mandados.length ? { extra: { adjuntos: mandados.map(({ id, nombre, tipo }) => ({ id, nombre, tipo })) } } : {}),
+    },
+  ]);
+  // Al modelo, con los archivos de verdad en lugar de sus marcas.
+  const mensajes = await expandirAdjuntos(sql, businessId, [...historial, ...turno]);
 
   const usage = vacio();
   const yaGastado = total(await usageAcumulado(sql, businessId, conversationId));

@@ -1888,6 +1888,39 @@ lo que necesites. ¿Por dónde quieres empezar?»*
 
 **Construido el 20/11/2026** (Fase 9b).
 
+### PC-21 · Adjuntar imágenes y documentos en el chat del portal · ✅ decidida el 21/11/2026
+
+Mariana, 21/11/2026: el chat del portal lleva el **«+»**, como ChatGPT, para
+subir imágenes o documentos. *«Si un cliente ya tiene los horarios escritos,
+tiene una foto, lo que sea, lo tira ahí.»* Aceptó las seis propuestas:
+
+1. **Qué se puede subir:** fotos e imágenes (JPG, PNG, WebP; las del iPhone se
+   convierten solas) y **PDF**. Word y Excel, más adelante si alguien los pide.
+2. **Qué hace el agente** (en palabras de Mariana):
+   - **Si lo sube sin decir nada**, le cuenta lo que reconoció y pregunta qué
+     hacer: «He reconocido el horario del local y el de Núria y Olga. ¿Qué
+     quieres que haga con esta información?».
+   - **Si dice qué hacer** («acá te doy los horarios de todos mis empleados,
+     cárgalos»), lo hace; **si algo no está claro, pregunta**.
+   - Siempre con el resumen para confirmar: **nada se guarda sin que diga que
+     sí** (PC-03).
+3. **Límites:** hasta **5 archivos por mensaje**. Las fotos se achican solas
+   antes de subir (se leen igual de bien). Los **PDF, hasta 4 MB**: es el
+   máximo que acepta el servidor publicado (Vercel) en una petición; casi
+   cualquier carta de precios o folleto cabe. Además del «+», se pueden
+   arrastrar a la caja o pegar.
+4. **Dónde se guardan:** en nuestra base, aparte para cada negocio y solo
+   accesibles con su sesión. Se ven en el chat como miniatura. **Caducan a
+   los 6 meses**, con el texto del chat (PD-13); los que se suben y no se
+   llegan a mandar, al día siguiente.
+5. **Lo que cuesta:** una foto, 1–2 céntimos; un PDF de 10 páginas, 10–20
+   céntimos. **Lo paga MAZZMKT, no el cliente**: como todo el chat del portal,
+   no cuenta para el tope mensual del negocio (PC-14).
+6. **⚠️ Datos de salud (por confirmar con el RGPD, PD-11):** debajo del «+»
+   dice «No subas datos de tus clientas: solo información de tu negocio». Si
+   el agente ve datos de personas que no son del negocio (una lista de
+   clientas, un historial), no los usa y lo avisa.
+
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
 Sale de PD-11 (el RGPD). Mariana lo decidió el 13/11/2026 con una idea clara
