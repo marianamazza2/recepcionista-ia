@@ -131,6 +131,9 @@ const modelo = new ModeloSimulado([
 
   // --- El widget otra vez: el agente ya lo sabe ------------------------------
   texto('La limpieza facial dura 75 minutos.'),
+
+  // --- PC-21: una foto adjunta, sin texto --------------------------------------
+  texto('He reconocido el horario del local. ¿Qué quieres que haga con esta información?'),
 ]);
 
 let servidores: Awaited<ReturnType<typeof iniciarServidores>>;
@@ -417,6 +420,38 @@ describe('de la invitación a la primera cita', () => {
     expect(await portal.getByRole('link', { name: 'Agente' }).getAttribute('aria-current')).toBe('page');
     await portal.keyboard.press('Escape');
     await expect.poll(() => cuenta.count(), ESPERA).toBe(0);
+    // Arriba de la barra, como «ChatGPT» en ChatGPT: el nombre del negocio y la lupa (Mariana, 20/11/2026).
+    const barra = portal.getByRole('complementary', { name: 'Barra lateral' });
+    // La manita en todo lo que se pincha (Mariana, 20/11/2026).
+    const cursor = (l: ReturnType<Page['locator']>) => l.evaluate((e) => (globalThis as unknown as { getComputedStyle: (x: unknown) => { cursor: string } }).getComputedStyle(e).cursor);
+    for (const l of [
+      barra.getByRole('button', { name: 'Buscar chats' }),
+      barra.getByRole('button', { name: 'Nuevo chat' }),
+      portal.getByLabel('Tu perfil'),
+      barra.getByRole('button', { name: /^Opciones de / }).first(),
+    ]) expect(await cursor(l)).toBe('pointer');
+    // Enviar sin nada escrito está desactivado: enseña que no se puede.
+    expect(await cursor(portal.getByRole('button', { name: 'Enviar' }))).toBe('not-allowed');
+    expect((await barra.innerText()).trim().startsWith('Clínica Portal')).toBe(true);
+    // La lupa abre una ventana en el centro, como ChatGPT: «Chats recientes» y,
+    // al escribir, los que coinciden (sin mirar tildes). Pinchar uno lo abre.
+    await barra.getByRole('button', { name: 'Buscar chats' }).click();
+    const buscar = portal.getByRole('dialog', { name: 'Buscar chats' });
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    expect(await buscar.innerText()).toContain('Chats recientes');
+    expect(await buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li').count()).toBe(2);
+    await portal.screenshot({ path: join(CAPTURAS, '12c-portal-buscar.png') });
+    await buscar.getByLabel('Buscar en tus chats').fill('límpiezá');
+    await expect.poll(() => buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li').count(), ESPERA).toBe(1);
+    await portal.screenshot({ path: join(CAPTURAS, '12d-portal-buscar-escrito.png') });
+    expect(await barra.getByRole('list', { name: 'Tus chats' }).locator('li').count()).toBe(2);
+    await buscar.getByRole('button', { name: /limpieza facial/i }).click();
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
+    expect(portal.url()).toMatch(/#\/chat\/[0-9a-f-]+$/);
+    await barra.getByRole('button', { name: 'Buscar chats' }).click();
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    await portal.keyboard.press('Escape');
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
 
     // El agente de las clientas lo sabe ya: su configuración y su prompt.
     const config = await loadBusinessConfig(sql, { id: negocioId! });
@@ -464,16 +499,33 @@ describe('de la invitación a la primera cita', () => {
     expect(texto).not.toContain('Cerrar sesión');
     const nuevo = (await menu.getByRole('button', { name: 'Nuevo chat' }).boundingBox())!;
     expect(nuevo.y).toBeGreaterThan(844 - 100);
-    // La lupa busca en el historial por el título, sin mirar tildes ni mayúsculas.
-    await menu.getByRole('button', { name: 'Buscar chats' }).click();
-    await menu.getByLabel('Buscar en tus chats').fill('LIMPIEZA');
-    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(1);
-    await movil.screenshot({ path: join(CAPTURAS, 'movil-1c-buscar.png') });
-    await menu.getByLabel('Buscar en tus chats').fill('zzz');
-    await expect.poll(() => menu.getByText('Ningún chat con «zzz».').isVisible(), ESPERA).toBe(true);
-    await menu.getByRole('button', { name: 'Dejar de buscar' }).click();
-    await expect.poll(() => menu.getByRole('list', { name: 'Tus chats' }).locator('li').count(), ESPERA).toBe(2);
     await movil.screenshot({ path: join(CAPTURAS, 'movil-1b-historial.png') });
+    // La lupa abre la búsqueda a pantalla completa, como ChatGPT: «Últimos
+    // abiertos», cada chat con su último mensaje en gris, y abajo «Buscar» y la ✕.
+    await menu.getByRole('button', { name: 'Buscar chats' }).click();
+    const buscar = movil.getByRole('dialog', { name: 'Buscar chats' });
+    await expect.poll(() => buscar.isVisible(), ESPERA).toBe(true);
+    expect(await buscar.getByRole('heading', { name: 'Últimos abiertos' }).isVisible()).toBe(true);
+    const filas = buscar.getByRole('list', { name: 'Chats encontrados' }).locator('li');
+    expect(await filas.count()).toBe(2);
+    expect(await filas.first().innerText()).toContain('Hecho: la limpieza facial dura ahora 75 minutos.');
+    const campo = (await buscar.getByLabel('Buscar en tus chats').boundingBox())!;
+    expect(campo.y).toBeGreaterThan(844 - 100);
+    await movil.screenshot({ path: join(CAPTURAS, 'movil-1c-buscar.png') });
+    await buscar.getByLabel('Buscar en tus chats').fill('LIMPIEZA');
+    await expect.poll(() => filas.count(), ESPERA).toBe(1);
+    expect(await buscar.getByRole('heading', { name: 'Últimos abiertos' }).count()).toBe(0);
+    await buscar.getByLabel('Buscar en tus chats').fill('zzz');
+    await expect.poll(() => buscar.getByText('Ningún chat con «zzz».').isVisible(), ESPERA).toBe(true);
+    // La ✕ vuelve al menú; pinchar un chat lo abre y cierra todo.
+    await buscar.getByRole('button', { name: 'Cerrar la búsqueda' }).click();
+    await expect.poll(() => buscar.count(), ESPERA).toBe(0);
+    expect(await menu.isVisible()).toBe(true);
+    await menu.getByRole('button', { name: 'Buscar chats' }).click();
+    await buscar.getByRole('button', { name: /limpieza facial/i }).click();
+    await expect.poll(() => menu.count(), ESPERA).toBe(0);
+    expect(movil.url()).toMatch(/#\/chat\/[0-9a-f-]+$/);
+    await movil.getByRole('button', { name: 'Abrir el menú' }).click();
     // Se cierra tocando fuera, a la derecha del menú.
     await movil.getByRole('button', { name: 'Cerrar el menú' }).click({ position: { x: 370, y: 400 } });
 
@@ -532,5 +584,25 @@ describe('de la invitación a la primera cita', () => {
     } finally {
       await sql`delete from public.businesses where id = ${otro.id}`;
     }
+  });
+
+  it('11. adjunta una foto con el «+», sin texto: se ve en el chat y el agente la recibe (PC-21)', async () => {
+    const foto = join(CAPTURAS, 'horario.png');
+    // Una foto de verdad (una captura de la propia página): el portal la abre, la achica y la sube.
+    await portal.screenshot({ path: foto, clip: { x: 0, y: 0, width: 400, height: 240 } });
+    await portal.goto(`${servidores.panelUrl}/portal/#/`);
+    await portal.getByRole('button', { name: 'Nuevo chat' }).first().click();
+    await portal.getByLabel('Adjuntar fotos o documentos').click();
+    // El aviso de los datos de clientas va debajo del «+».
+    expect(await portal.getByRole('menu').textContent()).toContain('No subas datos de tus clientas');
+    await portal.keyboard.press('Escape');
+    await portal.getByLabel('Elegir archivos').setInputFiles(foto);
+    await expect.poll(() => portal.getByRole('button', { name: 'Enviar' }).isEnabled(), ESPERA).toBe(true);
+    const antes = await portal.locator(RESPUESTAS).count();
+    await portal.getByRole('button', { name: 'Enviar' }).click();
+    await expect.poll(() => portal.locator(RESPUESTAS).count(), ESPERA).toBe(antes + 1);
+    expect(await portal.getByRole('list', { name: 'Archivos del mensaje' }).getByRole('img').count()).toBe(1);
+    expect(JSON.stringify(modelo.peticiones.at(-1)!.messages)).toContain('"type":"image"');
+    await portal.screenshot({ path: join(CAPTURAS, '13-portal-adjunto.png') });
   });
 });

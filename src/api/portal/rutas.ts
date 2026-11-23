@@ -19,15 +19,18 @@
 //   · PC-09: el tope no se ve ni se cambia desde aquí (lo quita `ver: portal`).
 //   · Los chats (PC-17, Fase 9b): un chat de otro negocio, o borrado, da 404
 //     igual que uno que no existe.
+//   · Los adjuntos (PC-21): se suben de uno en uno, en binario (no en JSON),
+//     hasta 4 MB; el tipo se mira en los bytes. Un adjunto de otro negocio da
+//     404. Se mandan después con el mensaje, por su id.
 // =============================================================================
 
 import { randomUUID } from 'node:crypto';
 
-import { ChatNoEncontrado, turnoDelPortal, type PortalChatDeps } from '../../alta/agente.js';
+import { AdjuntosNoValidos, ChatNoEncontrado, turnoDelPortal, type PortalChatDeps } from '../../alta/agente.js';
 import { saludoDelPortal } from '../../alta/prompt.js';
 import { utcToLocal } from '../../core/time.js';
 import { normalizarEmail } from '../../core/email.js';
-import { filasParaHistorial } from '../../db/widget.js';
+import { guardarAdjunto, leerAdjunto, limpiarNombre, MAX_BYTES_ADJUNTO, tipoPorContenido } from '../../db/adjuntos.js';
 import {
   abrirSesion,
   cadenaDelChat,
@@ -39,6 +42,7 @@ import {
   estadoDelAlta,
   guardarCodigoPortal,
   invitacionPorToken,
+  mensajesDelChat,
   ocultarChat,
   renombrarChat,
   sesionPorToken,
@@ -196,13 +200,7 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
         if (req.method === 'GET') {
           const cadena = await cadenaDelChat(deps.sql, sesion.businessId, chatId);
           if (cadena.length === 0) return json({ error: 'no_encontrado', mensaje: 'Ese chat no existe.' }, 404);
-          const mensajes: { rol: 'cliente' | 'asistente'; texto: string }[] = [];
-          for (const id of cadena) {
-            for (const f of await filasParaHistorial(deps.sql, sesion.businessId, id)) {
-              if ((f.rol === 'user' || f.rol === 'assistant') && f.contenido) mensajes.push({ rol: f.rol === 'user' ? 'cliente' : 'asistente', texto: f.contenido });
-            }
-          }
-          return json({ mensajes });
+          return json({ mensajes: await mensajesDelChat(deps.sql, sesion.businessId, cadena) });
         }
         if (req.method === 'PUT') {
           const e = new Entrada(await leerJson(req));
@@ -218,20 +216,64 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
         return json({ error: 'metodo_no_permitido' }, 405);
       }
 
+      // --- Adjuntos del chat (PC-21) ---------------------------------------------------
+      if (ruta === 'adjuntos') {
+        if (req.method !== 'POST') return json({ error: 'metodo_no_permitido' }, 405);
+        const declarado = Number(req.headers.get('content-length'));
+        if (Number.isFinite(declarado) && declarado > MAX_BYTES_ADJUNTO) return json({ error: 'demasiado_grande', mensaje: 'Ese archivo pasa de 4 MB.' }, 413);
+        const datos = Buffer.from(await req.arrayBuffer());
+        if (datos.length === 0) return json({ error: 'vacio', mensaje: 'El archivo está vacío.' }, 400);
+        if (datos.length > MAX_BYTES_ADJUNTO) return json({ error: 'demasiado_grande', mensaje: 'Ese archivo pasa de 4 MB.' }, 413);
+        const tipo = tipoPorContenido(datos);
+        if (!tipo) return json({ error: 'tipo_no_valido', mensaje: 'Solo se pueden adjuntar imágenes (JPG, PNG, WebP) y PDF.' }, 415);
+        let nombre = 'archivo';
+        try {
+          nombre = limpiarNombre(decodeURIComponent(req.headers.get('x-nombre') ?? 'archivo'));
+        } catch {
+          nombre = 'archivo';
+        }
+        return json(await guardarAdjunto(deps.sql, sesion.businessId, { nombre, tipo, datos }), 201);
+      }
+
+      const deAdjunto = /^adjuntos\/([0-9a-f-]{36})$/.exec(ruta);
+      if (deAdjunto) {
+        if (req.method !== 'GET') return json({ error: 'metodo_no_permitido' }, 405);
+        const a = await leerAdjunto(deps.sql, sesion.businessId, deAdjunto[1]!);
+        if (!a) return json({ error: 'no_encontrado', mensaje: 'Ese archivo no existe.' }, 404);
+        return new Response(new Uint8Array(a.datos), {
+          status: 200,
+          headers: {
+            'content-type': a.tipo,
+            'content-length': String(a.bytes),
+            // Solo para quien lo pidió con su sesión; nada de cachés compartidas.
+            'cache-control': 'private, max-age=3600',
+            'x-content-type-options': 'nosniff',
+            'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(a.nombre)}`,
+          },
+        });
+      }
+
       // --- Un mensaje al chat (PC-03, PC-04, PC-17) --------------------------------------
       if (ruta === 'chat') {
         if (req.method !== 'POST') return json({ error: 'metodo_no_permitido' }, 405);
         const e = new Entrada(await leerJson(req));
         try {
+          const adjuntos = e.valor('adjuntos');
+          if (adjuntos !== undefined && (!Array.isArray(adjuntos) || adjuntos.some((x) => typeof x !== 'string' || !/^[0-9a-f-]{36}$/.test(x)))) {
+            return json({ error: 'no_valido', mensaje: 'Los archivos no son válidos.' }, 400);
+          }
           const r = await turnoDelPortal(chatDeps, {
             businessId: sesion.businessId,
-            texto: e.texto('texto', 'el mensaje', 5000),
+            // PC-21: con archivos, el texto puede ir vacío.
+            texto: Array.isArray(adjuntos) && adjuntos.length ? (e.textoOpcional('texto', 'el mensaje', 5000) ?? '') : e.texto('texto', 'el mensaje', 5000),
+            ...(Array.isArray(adjuntos) ? { adjuntos: adjuntos as string[] } : {}),
             clientMessageId: e.valor('clientMessageId') === undefined ? randomUUID() : e.uuid('clientMessageId', 'el id del mensaje'),
             chatId: e.uuidOpcional('chatId', 'el chat'),
           });
           return json(r);
         } catch (err) {
           if (err instanceof ChatNoEncontrado) return json({ error: 'no_encontrado', mensaje: 'Ese chat ya no existe. Abre uno nuevo.' }, 404);
+          if (err instanceof AdjuntosNoValidos) return json({ error: 'adjuntos_no_validos', mensaje: err.message }, 400);
           throw err;
         }
       }

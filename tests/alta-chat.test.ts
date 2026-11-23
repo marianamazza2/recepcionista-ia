@@ -311,8 +311,20 @@ describe('el alta por chat (PC-03)', () => {
     expect(b.chat.titulo).toBe('Festivo de diciembre');
     const { chatsDelPortal } = await import('../src/db/portal.js');
     expect((await chatsDelPortal(sql, mio)).map((c) => c.titulo).sort()).toEqual(['Festivo de diciembre', 'Quiero cargar un festivo']);
+    // Cada chat trae su último mensaje en una línea (la búsqueda del móvil, PC-17).
+    expect((await chatsDelPortal(sql, mio)).map((c) => c.ultimo)).toEqual(['Vale.', 'Vale.']);
     // El chat de otro negocio no se puede usar (PC-02).
     await expect(turnoDelPortal(deps(new ModeloSimulado([texto('x')])), { businessId: ajeno, texto: 'Hola', clientMessageId: randomUUID(), chatId: a.chat.id })).rejects.toThrow('Ese chat no existe');
+  });
+
+  it('PC-17: la línea del último mensaje va en una línea, sin negritas y recortada', async () => {
+    const { lineaDeVistazo } = await import('../src/db/portal.js');
+    expect(lineaDeVistazo(null)).toBeNull();
+    expect(lineaDeVistazo('   ')).toBeNull();
+    expect(lineaDeVistazo('Si lo que preguntas es **qué te conviene**,\n\nmira esto')).toBe('Si lo que preguntas es qué te conviene, mira esto');
+    const largo = lineaDeVistazo('a'.repeat(300))!;
+    expect(largo).toHaveLength(140);
+    expect(largo.endsWith('…')).toBe(true);
   });
 
   it('PC-20: el prompt pide disculpas ante lo que no entiende y solo ofrece lo que tiene sentido', async () => {

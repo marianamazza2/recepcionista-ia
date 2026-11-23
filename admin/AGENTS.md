@@ -83,7 +83,7 @@ pantalla.
     aquí**: viene de la API (`app.tramos_efectivos`), así que lo sombreado es
     exactamente lo que el motor considera cerrado.
 11. **El portal se ve como un chat de IA** (Fase 9b, PC-17 y PC-19): a la
-    izquierda «Nuevo chat» y el historial; arriba «Agente | Portal» y el
+    izquierda, arriba el nombre del negocio con la lupa que busca chats por el título (`BuscarChats`: en el ordenador, una ventana en el centro; en el móvil, a pantalla completa con el último mensaje de cada chat, que trae `chatsDelPortal` en `ultimo`), y debajo «Nuevo chat» y el historial; arriba «Agente | Portal» y el
     círculo del perfil (despliega «Cuenta» con el nombre y el email como datos, «Ajustes» —todavía no abre nada— y Cerrar sesión; sin ventanas). En Agenda y Configuración, arriba, «⌂ Inicio › …» (`VolverAlInicio`) para volver al inicio del portal. En el móvil se ve como ChatGPT: chat vacío sin saludo y con la caja abajo, el círculo arriba a la derecha y sin selector arriba; en el menú ☰, el nombre del negocio, su email y la lupa que busca chats, luego Agente y Portal, el historial y «Nuevo chat» abajo (`BarraLateral` con `sesion`). El portal está
     **siempre**, con o sin datos; lo vacío ofrece «Pídeselo al agente»,
     que abre `#/nuevo/:pedido` (un chat nuevo con el mensaje de
@@ -91,9 +91,22 @@ pantalla.
     sale solo si el contexto trae `pedirAlAgente` (el panel no lo pone). El
     resumen para confirmar lo dibuja `src/portal/Chat.tsx` con los datos
     que manda el agente: **el formato no lo inventa el modelo**.
+13. **Adjuntos (PC-21)**: el «+» de la caja (`Chat.tsx`) abre «Añadir fotos y
+    documentos» con el aviso de no subir datos de clientas; también se arrastra o
+    se pega. Las fotos se achican en el navegador antes de subir (`adjuntar.ts`:
+    2000 px, JPEG) porque Vercel no acepta peticiones de más de 4,5 MB. Las
+    miniaturas se piden con la sesión en la cabecera (`urlDeAdjunto`), nunca con
+    una `<img src>` a la API.
 12. **Selectores de test estables**: las respuestas del chat llevan
     `data-rol="asistente"` (y las del cliente `data-rol="cliente"`); la caja
     es «Escribe tu mensaje». Usá eso, no clases de Tailwind.
+13. **La manita en todo lo que se pincha** (Mariana, 20/11/2026): Tailwind 4
+    deja los botones con la flecha normal, así que `estilos.css` devuelve
+    `cursor: pointer` a botones, desplegables, casillas y fechas (y
+    `not-allowed` a lo desactivado), en el panel y en el portal a la vez. Un
+    botón nuevo no necesita `cursor-pointer`; lo que se pincha y no es un
+    `button` ni un enlace (un `div` con `onClick`), sí. El e2e del portal lo
+    comprueba.
 
 ## Tests
 

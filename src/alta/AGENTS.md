@@ -9,6 +9,7 @@ herramientas y su loop, y `core/` no se toca (Fase 9, PC-03).
 |---|---|
 | `prompt.ts` | El system prompt. Incluye **el guion que dictó Mariana** el 18/11/2026 (nota «Guion del alta por chat» de Research Desk), sección por sección, y la configuración de ahora en palabras |
 | `herramientas.ts` | Lo que el chat puede hacer. Todas escriben llamando a `src/db/negocios.ts`, las mismas funciones que el panel |
+| `adjuntos.ts` | Las fotos y PDF del chat (PC-21) tal como los ve el modelo: la marca del historial y su expansión |
 | `agente.ts` | El loop (tool use manual, historial solo-añadir, lock e idempotencia) y `turnoDelPortal` |
 
 ## Dos modos, un agente
@@ -52,6 +53,12 @@ Lo que no se puede romper se comprueba en el código, aquí:
    (null = uno nuevo) y un chat de otro negocio lanza `ChatNoEncontrado`. El
    id de un chat es el de su **primera** conversación; si se hace largo sigue
    en otra con `continua_de` y para el cliente es el mismo chat.
+9. **Los adjuntos (PC-21)**: fotos y PDF se suben aparte (`POST /api/portal/adjuntos`,
+   binario, el tipo se mira en los bytes, hasta 4 MB) y van con el mensaje por su id.
+   `ligarAdjuntos` solo acepta los de este negocio y sin mandar. En el historial se
+   guarda una **marca** (`⟦adjunto:id|tipo|nombre⟧`, `adjuntos.ts`), no los bytes;
+   `expandirAdjuntos` la cambia por el archivo de verdad en cada llamada al modelo, así
+   el agente lo sigue viendo en los mensajes siguientes del chat.
 8. **Lo que puede ofrecer lo calcula el código** (PC-20):
    `loQuePuedoHacer()` en `prompt.ts`, con lo que ya está cargado. El prompt
    dice que ante un mensaje sin sentido empiece por «Disculpa, no he

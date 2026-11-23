@@ -515,6 +515,20 @@ export interface ChatDelPortal {
   titulo: string;
   /** El último mensaje (o cuándo se creó, si no tiene). */
   actualizado: Date;
+  /**
+   * El texto del último mensaje que se ve (de quien sea), en una línea y
+   * recortado: la línea gris de la búsqueda del móvil, como ChatGPT (PC-17,
+   * Mariana 20/11/2026). Null si el chat no tiene ninguno.
+   */
+  ultimo: string | null;
+}
+
+/** El último mensaje en una línea, sin las marcas de negrita y recortado. */
+export function lineaDeVistazo(texto: string | null, largo = 140): string | null {
+  if (!texto) return null;
+  const limpio = texto.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+  if (!limpio) return null;
+  return limpio.length > largo ? `${limpio.slice(0, largo - 1).trimEnd()}…` : limpio;
 }
 
 /** Los chats del historial, el más reciente primero. */
@@ -522,7 +536,7 @@ export async function chatsDelPortal(sql: Sql, businessId: string, limite = 100)
   const rows = await inTenant(
     sql,
     businessId,
-    (tx) => tx<{ id: string; titulo: string | null; actualizado: Date }[]>`
+    (tx) => tx<{ id: string; titulo: string | null; actualizado: Date; ultimo: string | null }[]>`
       with recursive cadena as (
         select c.id as raiz, c.id
           from public.conversations c
@@ -531,18 +545,28 @@ export async function chatsDelPortal(sql: Sql, businessId: string, limite = 100)
         select k.raiz, n.id
           from cadena k
           join public.conversations n on n.business_id = ${businessId}::uuid and n.continua_de = k.id
+      ),
+      -- El último mensaje que el portal enseña (los mismos que GET chats/:id).
+      ultimos as (
+        select distinct on (k.raiz) k.raiz, m.contenido
+          from cadena k
+          join public.messages m on m.business_id = ${businessId}::uuid and m.conversation_id = k.id
+         where m.rol in ('user', 'assistant') and coalesce(m.contenido, '') <> ''
+         order by k.raiz, m.created_at desc, m.id desc
       )
       select r.id, r.titulo,
-             greatest(r.created_at, coalesce(max(m.created_at), r.created_at)) as actualizado
+             greatest(r.created_at, coalesce(max(m.created_at), r.created_at)) as actualizado,
+             u.contenido as ultimo
         from public.conversations r
         join cadena k on k.raiz = r.id
         left join public.messages m on m.business_id = ${businessId}::uuid and m.conversation_id = k.id
+        left join ultimos u on u.raiz = r.id
        where r.business_id = ${businessId}::uuid
-       group by r.id, r.titulo, r.created_at
+       group by r.id, r.titulo, r.created_at, u.contenido
        order by actualizado desc
        limit ${limite}`,
   );
-  return rows.map((r) => ({ id: r.id, titulo: r.titulo ?? 'Chat nuevo', actualizado: r.actualizado }));
+  return rows.map((r) => ({ id: r.id, titulo: r.titulo ?? 'Chat nuevo', actualizado: r.actualizado, ultimo: lineaDeVistazo(r.ultimo) }));
 }
 
 /**
@@ -653,4 +677,33 @@ export function recortarTitulo(t: string): string {
   const limpio = t.replace(/\s+/g, ' ').trim().replace(/^["«']+|["»'.]+$/g, '').trim();
   if (!limpio) return 'Chat nuevo';
   return limpio.length <= 80 ? limpio : `${limpio.slice(0, 77).trimEnd()}…`;
+}
+
+/**
+ * Lo que el portal enseña de un chat: los mensajes del cliente y del agente,
+ * de todas sus conversaciones, y (PC-21) los archivos que iban con cada uno.
+ */
+export async function mensajesDelChat(
+  sql: Sql,
+  businessId: string,
+  conversaciones: string[],
+): Promise<{ rol: 'cliente' | 'asistente'; texto: string; adjuntos?: { id: string; nombre: string; tipo: string }[] }[]> {
+  if (conversaciones.length === 0) return [];
+  const filas = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<{ rol: 'user' | 'assistant'; contenido: string | null; adjuntos: { id: string; nombre: string; tipo: string }[] | null }[]>`
+      select m.rol, m.contenido, m.tool_calls -> 'adjuntos' as adjuntos
+        from public.messages m
+        join unnest(${conversaciones}::uuid[]) with ordinality as c(id, orden) on c.id = m.conversation_id
+       where m.business_id = ${businessId}::uuid and m.rol in ('user', 'assistant')
+       order by c.orden, m.created_at, m.id`,
+  );
+  return filas
+    .filter((f) => f.contenido || (f.adjuntos && f.adjuntos.length))
+    .map((f) => ({
+      rol: f.rol === 'user' ? ('cliente' as const) : ('asistente' as const),
+      texto: f.contenido ?? '',
+      ...(f.adjuntos && f.adjuntos.length ? { adjuntos: f.adjuntos } : {}),
+    }));
 }

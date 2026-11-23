@@ -32,6 +32,8 @@ export interface ChatResumido {
   id: string;
   titulo: string;
   actualizado: string;
+  /** El último mensaje, en una línea (la línea gris de la búsqueda del móvil). */
+  ultimo: string | null;
 }
 
 export interface Historial {
@@ -133,6 +135,44 @@ export async function api<T>(metodo: 'GET' | 'POST' | 'PUT' | 'DELETE', ruta: st
 export interface MensajeChat {
   rol: 'cliente' | 'asistente';
   texto: string;
+  /** PC-21: los archivos que iban con el mensaje. */
+  adjuntos?: AdjuntoChat[];
+}
+
+/** PC-21: un archivo del chat (imagen o PDF). */
+export interface AdjuntoChat {
+  id: string;
+  nombre: string;
+  tipo: string;
+}
+
+/**
+ * PC-21: sube un archivo (en binario, no en JSON) y devuelve su id para
+ * mandarlo después con el mensaje. El tipo lo comprueba el servidor en los bytes.
+ */
+export async function subirAdjunto(datos: Blob, nombre: string): Promise<AdjuntoChat & { bytes: number }> {
+  const r = await fetch('/api/portal/adjuntos', {
+    method: 'POST',
+    headers: { 'content-type': datos.type || 'application/octet-stream', 'x-nombre': encodeURIComponent(nombre), ...(sesion ? { authorization: `Bearer ${sesion.sessionToken}` } : {}) },
+    credentials: 'omit',
+    body: datos,
+  });
+  if (r.status === 401) {
+    caducada = sesion !== null;
+    guardarSesion(null);
+    throw new ErrorApi(401, 'Tu sesión ha caducado. Vuelve a entrar.');
+  }
+  return leer(r);
+}
+
+/**
+ * PC-21: el archivo para enseñarlo. Va con la sesión en la cabecera (una
+ * <img src> no la mandaría), así que se pide y se enseña como URL local.
+ */
+export async function urlDeAdjunto(id: string): Promise<string> {
+  const r = await fetch(`/api/portal/adjuntos/${id}`, { headers: sesion ? { authorization: `Bearer ${sesion.sessionToken}` } : {}, credentials: 'omit' });
+  if (!r.ok) throw new ErrorApi(r.status, 'No se ha podido abrir el archivo.');
+  return URL.createObjectURL(await r.blob());
 }
 
 /** El bloque que el chat devuelve para confirmar antes de guardar (PC-03). */
