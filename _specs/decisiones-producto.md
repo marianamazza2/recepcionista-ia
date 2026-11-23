@@ -41,6 +41,8 @@ Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al const
 
 Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026; PI-20, el 13/11/2026.
 
+Las propuestas de la base de conocimiento (PB-01 a PB-09, Fase 5) están al final: todas ⚠️ **por confirmar** (23/11/2026).
+
 ---
 
 ## PD-01 · Horarios del local y de cada profesional
@@ -2059,3 +2061,155 @@ con email y los tests. Detalle de implementación: sin el código, si pide una
 hora en que ya tiene cita (PR-08), el agente le dice que ya tiene una cita a
 esa hora pero **no cuál** (eso solo con el código).
 
+
+---
+
+## La base de conocimiento (Fase 5) · ⚠️ POR CONFIRMAR
+
+Propuestas del 23/11/2026, al escribir el spec (`_specs/fase-5-conocimiento.md`).
+**Ninguna está decidida**: la fase no se construye hasta que Mariana las
+confirme o las cambie. La más importante es **PB-09** (cómo busca el agente),
+porque decide si se suma un proveedor nuevo.
+
+| # | Tema | Propuesta | ¿Ajuste por negocio? | Decidido |
+|---|---|---|---|---|
+| PB-01 | Qué sabe el agente y de dónde | La **ficha** (servicios, precios, horarios, política) y las **preguntas frecuentes**, en el prompt, siempre. Los **documentos**, se buscan solo cuando hace falta. Si chocan, **manda la ficha** | No | ⚠️ por confirmar |
+| PB-02 | Qué se puede subir | **PDF** (también escaneados), **fotos** (folletos, carteles) y **texto escrito** en el portal. Word y webs, más adelante | No | ⚠️ por confirmar |
+| PB-03 | Dónde se sube | **Configuración → Documentos**, en el portal y en el panel interno (la misma pantalla, PC-05), y desde el **chat del portal** con el «+», con confirmación (PC-03, PC-21) | No | ⚠️ por confirmar |
+| PB-04 | Lo que ve el negocio al subir | El **título**, **una línea de qué trata** y, si hace falta, **avisos**: precios distintos a la ficha, páginas que no se pudieron leer | No | ⚠️ por confirmar |
+| PB-05 | Cómo contesta el agente con un documento | Con lo que dice el documento, en sus palabras, **sin inventar ni completar**. **Sin consejo médico ni promesas de resultados**. Si no está, lo dice y ofrece pasar con una persona (PA-05) | No | ⚠️ por confirmar |
+| PB-06 | Límites | Hasta **20 documentos** y unas **100 páginas** por negocio; cada PDF, hasta **4 MB** | No (de serie para todos) | ⚠️ por confirmar |
+| PB-07 | Quién paga | **Preparar** un documento al subirlo: MAZZMKT, fuera del tope (como PC-14). **Buscar** cuando pregunta una clienta: dentro del tope del negocio | No | ⚠️ por confirmar |
+| PB-08 | Datos de personas | «No subas datos de tus clientas». Un documento con datos de personas **no se guarda** y se avisa | No | ⚠️ por confirmar (RGPD, PD-11) |
+| PB-09 | Cómo busca el agente | **A (recomendada):** sin proveedor nuevo, búsqueda de texto en español en nuestra base. **B:** *embeddings* con Voyage AI y `pgvector` | No | ⚠️ por confirmar |
+
+### PB-01 · Qué sabe el agente y de dónde · ⚠️ por confirmar
+
+Hoy el agente sabe lo que hay en la **ficha** del negocio y unas 20
+**preguntas frecuentes** cortas (PI-08), y todo eso va en cada mensaje (en el
+prompt). Lo largo —cómo es un tratamiento, los cuidados de después, qué
+incluye un bono— no cabe ahí: va en **documentos** que el agente **busca solo
+cuando le preguntan** algo que no está en la ficha (maestro §8).
+
+**Propuesta: si chocan, manda la ficha.** Ejemplo: la carta en PDF de
+Estética Aurora dice que la limpieza facial cuesta 55 €, pero en la ficha
+está a 60 € porque la subieron hace un mes. El agente dice **60 €**. El
+documento nunca cambia un precio, una duración ni un horario: eso se cambia en
+la ficha (a mano o pidiéndoselo al chat del portal). Al subir el PDF, el
+negocio ya ve el aviso de que hay precios distintos (PB-04).
+
+### PB-02 · Qué se puede subir · ⚠️ por confirmar
+
+- **PDF**, también los escaneados (se leen como una foto).
+- **Fotos**: un folleto, un cartel, la carta colgada en la recepción.
+- **Texto escrito** directamente en el portal, para quien no tiene nada en
+  papel («Después del láser: no tomar el sol en 15 días…»).
+
+Word, Excel y páginas web, **más adelante**, si alguien los pide (leer la web
+del negocio es PC-07). Casi todo el mundo puede guardar un Word como PDF.
+
+### PB-03 · Dónde se sube · ⚠️ por confirmar
+
+- En **Configuración → Documentos**, una sección más del portal. Tú la ves y
+  la tocas igual desde tu panel (un solo sitio para los datos, PC-05). Vacía,
+  ofrece «Pídeselo al agente» (PC-19).
+- Desde el **chat del portal**, con el «+» (PC-21): «esta es mi carta de
+  tratamientos, que el agente la sepa». El chat enseña el resumen y pregunta
+  «¿está todo bien?»: **no se guarda sin que diga que sí** (PC-03).
+
+Cada documento se puede **renombrar**, **reemplazar** (por la versión nueva) y
+**borrar**. Borrar o reemplazar cambia lo que sabe el agente **al momento**.
+
+### PB-04 · Lo que ve el negocio al subir · ⚠️ por confirmar
+
+En la lista de Documentos, cada uno con:
+
+- el **título** (lo propone la IA y se puede cambiar): «Carta de tratamientos
+  2026»;
+- **una línea de qué trata**: «Precios y descripción de 18 tratamientos
+  faciales y corporales»;
+- **cuándo se subió**;
+- y, si hace falta, un **aviso** en amarillo: «Este documento dice que la
+  limpieza facial cuesta 55 €, pero en tu ficha está a 60 €. El agente dirá
+  60 €: si el precio bueno es el del documento, cámbialo en Servicios.» O
+  «No se pudo leer la página 4».
+
+*Propuesta:* no se guarda el archivo original, solo su texto. Para cambiarlo,
+«Reemplazar» con el archivo nuevo.
+
+### PB-05 · Cómo contesta el agente con un documento · ⚠️ por confirmar
+
+- Contesta **con lo que dice el documento, en sus palabras**, corto, como
+  recepcionista. No manda el PDF ni dice «según la página 3».
+- **No inventa ni completa.** Si el documento dice que la recuperación es de
+  «unos días», no dice «tres días».
+- **Sin consejo médico** (sigue PA-05): explica lo que dice el documento sobre
+  un tratamiento, pero si la clienta pregunta si **le conviene a ella** («tengo
+  rosácea, ¿me puedo hacer el láser?»), le ofrece hablar con el equipo.
+- **Sin promesas de resultados**, aunque el folleto las haga («resultados
+  desde la primera sesión»): es publicidad sanitaria.
+- **Si no está en ningún sitio**, lo dice y ofrece pasar con una persona.
+
+Ejemplo: *«¿Qué cuidados hay después del peeling?»* → *«Después del peeling
+conviene no tomar el sol ni usar maquillaje durante 48 horas, e hidratar bien
+la piel. Si quieres, te busco cita.»*
+
+### PB-06 · Límites · ⚠️ por confirmar
+
+Hasta **20 documentos** y unas **100 páginas** en total por negocio. Cada PDF,
+hasta **4 MB** (el máximo que acepta el servidor publicado en una petición,
+como en el «+», PC-21). Una clínica normal tiene 3–5 documentos y menos de 30
+páginas; el límite está para que nadie suba el manual entero de una máquina.
+Al pasarse, un mensaje claro: «Ya tienes 20 documentos: borra alguno o
+júntalos».
+
+### PB-07 · Quién paga · ⚠️ por confirmar
+
+- **Preparar un documento al subirlo** (leerlo, sacar el título, la línea de
+  qué trata, las palabras de búsqueda y los avisos): unos céntimos por
+  documento. **Lo paga MAZZMKT**, fuera del tope mensual, como el chat del
+  portal (PC-14): es parte de dejar el negocio listo.
+- **Buscar cuando pregunta una clienta**: es parte de la conversación y
+  **cuenta para el tope** del negocio, como todo lo que hace el agente. Sube
+  un poco lo que cuesta ese mensaje (lee unos trozos más).
+
+### PB-08 · Datos de personas · ⚠️ por confirmar (RGPD, PD-11)
+
+Como en el «+» (PC-21): en Documentos dice **«No subas datos de tus clientas:
+solo información de tu negocio»**. Si al leer un documento aparecen datos de
+personas que no son del negocio —una lista de clientas, un historial, un
+consentimiento firmado—, **no se guarda** y se avisa: «Este documento tiene
+datos de clientas y no lo hemos guardado». Queda pendiente de cerrar con el
+RGPD (PD-11).
+
+### PB-09 · Cómo busca el agente · ⚠️ por confirmar
+
+Es la decisión que más cambia la fase. Dos formas:
+
+**A · Sin proveedor nuevo (recomendada).** La búsqueda de texto en español de
+nuestra propia base (Supabase). Para que «lo del bótox» encuentre «toxina
+botulínica», al subir cada documento la IA apunta **las palabras con que una
+clienta lo pediría** (sinónimos, cómo se dice en la calle, faltas típicas), y
+cuando busca, el agente usa también sus propias palabras.
+- ✅ Nada nuevo que contratar ni que configurar: ni cuenta, ni clave.
+- ✅ Las preguntas de las clientas no salen hacia otro proveedor más (hoy solo
+  las ve Anthropic). Mejor para el RGPD (PD-11).
+- ✅ Una clínica tiene pocas páginas: buscar en el texto alcanza.
+- ⚠️ Si una clienta lo pregunta de una forma muy rara, puede no encontrarlo.
+  Lo comprobamos en las pruebas con el modelo real; si falla, se pasa a B sin
+  tocar el agente (queda preparado para eso).
+
+**B · *Embeddings* con Voyage AI**, como decía el plan original. Un servicio
+que convierte cada trozo en «significado» y busca por parecido, aunque no
+coincidan las palabras. Es el que recomienda Anthropic (que no tiene uno
+propio).
+- ✅ Encuentra mejor lo que se pregunta con otras palabras.
+- ⚠️ Un proveedor más (de MongoDB, en EE. UU.), con su cuenta y su clave (la
+  pones tú en `.env` y en Vercel).
+- ⚠️ Recibiría las preguntas de las clientas, que pueden traer datos de salud
+  («tengo rosácea…»): otro encargado de tratamiento para el RGPD.
+- 💶 Casi gratis: la cuenta trae 200 millones de *tokens* gratis (una clínica
+  entera son unas decenas de miles) y después son céntimos por millón.
+
+*Propuesta:* **A**, y pasar a B solo si las pruebas muestran que A no
+encuentra lo que debería.
