@@ -41,7 +41,7 @@ Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al const
 
 Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026; PI-20, el 13/11/2026.
 
-Las propuestas de la base de conocimiento (PB-01 a PB-09, Fase 5) están al final: siete ✅ decididas el 23/11/2026; **PB-01 y PB-04 ⚠️ por confirmar**. Y **PC-22** (el tope del chat del portal), ⚠️ por confirmar.
+Las propuestas de la base de conocimiento (PB-01 a PB-09, Fase 5) están al final: ocho ✅ decididas el 23/11/2026; **PB-01 ⚠️ por confirmar**. Y **PC-22** (el tope del chat del portal), ✅ decidida el 23/11/2026.
 
 ---
 
@@ -1485,8 +1485,8 @@ escribe el spec de la fase, ella lo aprueba y entonces se construye.
 | PC-11 | Qué ve el cliente al entrar por primera vez | **Solo el chat.** El portal (las secciones que se ven y se editan a mano) **aparece al terminar el chat**, ya con los datos que cargó | — | ✅ decidida 13/11/2026 (cuándo aparece: al terminar, Mariana 18/11/2026) |
 | PC-12 | Lo que el chat del alta no pregunta | Las **preguntas frecuentes**, **el chat en su web** (color, logo, dominios y privacidad), los **horarios de quien cambia cada semana** y los **festivos y ausencias** se cargan en el portal; el **tono** y la **bienvenida** del agente y **cada cuánto se ofrecen horarios** (30 min) van de serie. El cierre del chat recuerda lo que falta | — | ✅ decidida 18/11/2026 |
 | PC-13 | Aviso cuando un cliente termina el alta | Le llega a Mariana **un aviso en su panel interno** | — | ✅ decidida 18/11/2026 |
-| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta. El chat del portal de después va por el mismo camino, con su propio tope: **PC-22** (⚠️ por confirmar) | — | ✅ decidida 18/11/2026 (el matiz, 19/11/2026) |
-| PC-22 | Tope del chat del portal | El chat del portal (el alta y los cambios de después) tiene **su propio tope al mes**, aparte del de las clientas. De serie, **5 US$** (unos 100 mensajes). Al 80 %, aviso a Mariana; al llegar, el chat se pausa hasta el mes siguiente y **Configuración a mano sigue funcionando** | Sí (lo cambia Mariana) | ⚠️ por confirmar |
+| PC-14 | Quién paga la IA del chat del alta | **No cuenta para el tope** del negocio; se registra aparte, como coste de alta. El chat del portal de después va por el mismo camino, con su propio tope: **PC-22** | — | ✅ decidida 18/11/2026 (el matiz, 19/11/2026) |
+| PC-22 | Tope del chat del portal | El chat del portal (el alta y los cambios de después) tiene **su propio tope al mes**, aparte del de las clientas. De serie, **5 US$** (unos 100 mensajes). Al 80 %, aviso a Mariana; al llegar, el chat se pausa hasta el mes siguiente y **Configuración a mano sigue funcionando** | Sí (lo cambia Mariana) | ✅ decidida 23/11/2026 |
 | PC-15 | Proveedor de email antes del primer cliente | Se elige y se conecta **antes de mandar el primer enlace a un cliente real** (la cuenta se confirma con un código al email) | — | ✅ decidida 18/11/2026 |
 | PC-16 | Dónde ve el negocio sus citas | Una **agenda visual en su portal**, en esta fase: el día con una columna por profesional y la semana; pinchar un hueco para cargar una cita y una cita para verla o cancelarla. La agenda del panel interno pasa a ser igual de visual. Su Google Calendar, en la Fase 7; su programa de gestión, cuando un cliente lo traiga | — | ✅ decidida 18/11/2026 |
 
@@ -1927,7 +1927,9 @@ tiene una foto, lo que sea, lo tira ahí.»* Aceptó las seis propuestas:
    el agente ve datos de personas que no son del negocio (una lista de
    clientas, un historial), no los usa y lo avisa.
 
-### PC-22 · Tope del chat del portal · ⚠️ por confirmar
+### PC-22 · Tope del chat del portal · ✅ decidida el 23/11/2026
+
+**Decidido (Mariana, 23/11/2026): «me parece perfecto»**, tal como se proponía. Se construye con la Fase 5 (tarea 5.5b).
 
 *Mariana, 23/11/2026, al decidir PB-07: «como este no es el chat para el
 cliente final, es el chat del portal, ¿cómo gestiono yo mi gasto, el gasto
@@ -1967,8 +1969,6 @@ corto.
 cambios (≈ 1 US$): le quedan 3 US$ del mes. Una clínica que charla sin parar
 llega a los 100 mensajes el día 12: el chat se pausa hasta el 1 de diciembre;
 tú lo ves en el panel y decides si se lo amplías.
-
-*Se construye* con la Fase 5 (toca el mismo chat), si se decide antes.
 
 ### PD-13 · Qué se guarda y qué se borra · ✅ decidida el 13/11/2026
 
@@ -2111,51 +2111,58 @@ esa hora pero **no cuál** (eso solo con el código).
 
 ---
 
-## La base de conocimiento (Fase 5) · siete ✅ decididas, dos ⚠️ por confirmar
+## La base de conocimiento (Fase 5) · ocho ✅ decididas, PB-01 ⚠️ por confirmar
 
 Propuestas del 23/11/2026, al escribir el spec (`_specs/fase-5-conocimiento.md`).
-**Mariana decidió el 23/11/2026 PB-02, PB-03 y PB-05 a PB-09** (PB-09: la A,
-sin proveedor nuevo). **PB-01 y PB-04 siguen por confirmar**: hablaban de «la
-ficha» y no se entendía; ahora dicen **«la configuración»** (lo que el negocio
-tiene en *Configuración*). La fase no se construye hasta que estén las nueve.
+**Mariana decidió el 23/11/2026 PB-02 a PB-09** (PB-09: la A, sin proveedor
+nuevo; PB-04, con su propia regla: ante una contradicción, **se pregunta cuál
+es el valor correcto**). **PB-01 sigue por confirmar**, ya reducida a lo que
+pasa con las clientas. Hablaban de «la ficha» y no se entendía: ahora dicen
+**«la configuración»** (lo que el negocio tiene en *Configuración*). La fase
+no se construye hasta que estén las nueve.
 
 Al decidir PB-07, Mariana preguntó cómo controlar lo que gasta el **chat del
-portal**, que paga MAZZMKT: de ahí sale **PC-22** (⚠️ por confirmar, en la
+portal**, que paga MAZZMKT: de ahí sale **PC-22** (✅ decidida el 23/11/2026, en la
 sección del portal).
 
 | # | Tema | Propuesta | ¿Ajuste por negocio? | Decidido |
 |---|---|---|---|---|
-| PB-01 | Qué sabe el agente y de dónde | La **configuración** del negocio (servicios, precios, duraciones, equipo, horarios, reglas) y las **preguntas frecuentes**, siempre. Los **documentos**, se buscan solo cuando hace falta. Si chocan, **manda la configuración** | No | ⚠️ por confirmar (reescrita 23/11/2026) |
+| PB-01 | Con las clientas, qué manda | El agente tiene siempre delante la **configuración** (servicios, precios, duraciones, equipo, horarios, reglas, preguntas frecuentes); los **documentos** los busca solo cuando hace falta. Si aun así un documento dice otra cosa, **con las clientas manda la configuración**: la red de seguridad de PB-04 | No | ⚠️ por confirmar (reescrita 23/11/2026) |
 | PB-02 | Qué se puede subir | **PDF** (también escaneados), **fotos** (folletos, carteles) y **texto escrito** en el portal. Word y webs, más adelante | No | ✅ decidida 23/11/2026 |
 | PB-03 | Dónde se sube | **Configuración → Documentos**, en el portal y en el panel interno (la misma pantalla, PC-05), y desde el **chat del portal** con el «+», con confirmación (PC-03, PC-21) | No | ✅ decidida 23/11/2026 |
-| PB-04 | Lo que ve el negocio al subir | El **título**, **una línea de qué trata** y, si hace falta, **avisos**: precios distintos a los de su configuración, páginas que no se pudieron leer | No | ⚠️ por confirmar (reescrita 23/11/2026) |
+| PB-04 | Al subir, si el documento contradice la configuración | **Se le dice al negocio y se le pregunta cuál es el valor correcto**: si es el del documento, se cambia la configuración (con su «sí»); si es el de la configuración, se queda. Además ve el título, una línea de qué trata y las páginas que no se pudieron leer | No | ✅ decidida 23/11/2026 |
 | PB-05 | Cómo contesta el agente con un documento | Con lo que dice el documento, en sus palabras, **sin inventar ni completar**. **Sin consejo médico ni promesas de resultados**. Si no está, lo dice y ofrece pasar con una persona (PA-05) | No | ✅ decidida 23/11/2026 |
 | PB-06 | Límites | Hasta **20 documentos** y unas **100 páginas** por negocio; cada PDF, hasta **4 MB** | No (de serie para todos) | ✅ decidida 23/11/2026 |
 | PB-07 | Quién paga | **Preparar** un documento al subirlo: MAZZMKT, fuera del tope (como PC-14). **Buscar** cuando pregunta una clienta: dentro del tope del negocio | No | ✅ decidida 23/11/2026 (y abre PC-22) |
 | PB-08 | Datos de personas | «No subas datos de tus clientas». Un documento con datos de personas **no se guarda** y se avisa | No | ✅ decidida 23/11/2026 (el RGPD sigue abierto, PD-11) |
 | PB-09 | Cómo busca el agente | **La A:** sin proveedor nuevo, búsqueda de texto en español en nuestra base. Si en las pruebas no encuentra bien, se propone pasar a la B (*embeddings* con Voyage AI) | No | ✅ decidida 23/11/2026: la A |
 
-### PB-01 · Qué sabe el agente y de dónde · ⚠️ por confirmar (reescrita el 23/11/2026)
+### PB-01 · Con las clientas, qué manda · ⚠️ por confirmar (reescrita el 23/11/2026)
 
-*Mariana, 23/11/2026: «cuando hablas de ficha, ¿a qué te refieres?».* Decía
-«ficha» por la pantalla del panel; para el negocio es **su configuración**:
-lo que tiene en **Configuración** del portal (o cargó con el chat del alta).
-Es decir: los datos del negocio, los **servicios con su precio y su
-duración**, el **equipo**, los **horarios**, festivos y ausencias, las
-**reglas** de reserva y cancelación, y las **preguntas frecuentes** cortas.
+*Mariana, 23/11/2026: «cuando hablas de ficha, ¿a qué te refieres?» y «no
+entiendo la diferencia entre el 01 y el 04».* Decía «ficha» por la pantalla
+del panel; para el negocio es **su configuración**: lo que tiene en
+**Configuración** del portal (o cargó con el chat del alta): los datos del
+negocio, los **servicios con su precio y su duración**, el **equipo**, los
+**horarios**, festivos y ausencias, las **reglas** de reserva y cancelación, y
+las **preguntas frecuentes** cortas.
 
-Hoy el agente sabe **solo eso**, y lo tiene delante en cada mensaje. Lo largo
-—cómo es un tratamiento, los cuidados de después, qué incluye un bono— no cabe
-ahí: va en **documentos** que el agente **busca solo cuando le preguntan**
-algo que no está en la configuración (maestro §8).
+**La diferencia con PB-04 es el momento y con quién habla:**
 
-**Propuesta: si chocan, manda la configuración.** Ejemplo: la carta en PDF de
-Estética Aurora dice que la limpieza facial cuesta 55 €, pero en
-*Configuración → Servicios* está a 60 € porque la subieron hace un mes. El
-agente dice **60 €**. Un documento nunca cambia un precio, una duración ni
-un horario: eso se cambia en Configuración (a mano o pidiéndoselo al chat del
-portal). Al subir el PDF, el negocio ya ve el aviso de que hay precios
-distintos (PB-04).
+- **PB-04 es al subir el documento**, hablando con **el negocio**: si el
+  documento contradice la configuración, se lo dice y le pregunta cuál es el
+  valor correcto. Lo normal es que ahí quede resuelto.
+- **PB-01 es después, hablando con una clienta**: el agente tiene siempre
+  delante la configuración y busca en los documentos solo lo que no está ahí
+  (maestro §8). Si aun así un documento dice otra cosa —porque el negocio
+  eligió que el bueno era el de la configuración y no cambió su PDF—, **el
+  agente dice el de la configuración**. Es la red de seguridad: con una
+  clienta nunca duda ni da dos precios.
+
+*Ejemplo:* la carta en PDF de Estética Aurora dice 55 € y en *Configuración →
+Servicios* pone 60 €. Al subirla, el negocio contesta «el bueno es 60 €»
+(PB-04). Meses después una clienta pregunta el precio: el agente dice **60 €**,
+aunque el PDF siga diciendo 55 € (PB-01).
 
 ### PB-02 · Qué se puede subir · ✅ decidida el 23/11/2026
 
@@ -2181,25 +2188,43 @@ del negocio es PC-07). Casi todo el mundo puede guardar un Word como PDF.
 Cada documento se puede **renombrar**, **reemplazar** (por la versión nueva) y
 **borrar**. Borrar o reemplazar cambia lo que sabe el agente **al momento**.
 
-### PB-04 · Lo que ve el negocio al subir · ⚠️ por confirmar (reescrita el 23/11/2026)
+### PB-04 · Al subir, si el documento contradice la configuración · ✅ decidida el 23/11/2026
 
-Depende de PB-01: compara el documento con **su configuración** (antes decía
-«la ficha»).
+*Mariana, 23/11/2026: «si el cliente le está pasando un documento que se
+contradice con lo de la configuración, el recepcionista le tiene que decir
+que hay una contradicción, cuál es el valor correcto».* Se lee como una
+**pregunta al negocio**: es él quien sabe cuál es su precio de verdad.
 
-En la lista de Documentos, cada uno con:
+- **Desde el chat del portal** (con el «+»), el chat lo dice y pregunta:
+  *«Tu carta dice que la limpieza facial cuesta 55 €, pero en tu
+  configuración está a 60 €. ¿Cuál es el correcto?»*
+  - «55» → enseña el cambio y pregunta «¿está todo bien?»; con su «sí», cambia
+    el precio en Servicios (PC-03).
+  - «60» → se queda así; el documento se guarda igual y, con las clientas,
+    manda la configuración (PB-01).
+- **Desde Configuración → Documentos** (a mano, sin chat), la misma pregunta
+  sale en un recuadro con un botón por valor: **«Es 60 € (lo de mi
+  configuración)»** o **«Es 55 € (lo del documento): cámbialo»**. Cambiar
+  pide confirmación, como cualquier cambio de la configuración.
+- Se pregunta por lo que el agente usa con las clientas: **precios,
+  duraciones, horarios y datos del local** (dirección, teléfono). Un
+  tratamiento que el documento explica pero que no está en Servicios **no es
+  una contradicción**: el agente lo puede explicar pero no reservar, y se le
+  sugiere al negocio darlo de alta.
+- Hasta que contesta, el documento ya vale para todo lo demás, y en lo que
+  choca manda la configuración (PB-01).
+
+Además, en la lista de Documentos cada uno lleva:
 
 - el **título** (lo propone la IA y se puede cambiar): «Carta de tratamientos
   2026»;
 - **una línea de qué trata**: «Precios y descripción de 18 tratamientos
   faciales y corporales»;
 - **cuándo se subió**;
-- y, si hace falta, un **aviso** en amarillo: «Este documento dice que la
-  limpieza facial cuesta 55 €, pero en tus Servicios está a 60 €. El agente
-  dirá 60 €: si el precio bueno es el del documento, cámbialo en Servicios.» O
-  «No se pudo leer la página 4».
+- y, si hace falta, «No se pudo leer la página 4».
 
-*Propuesta:* no se guarda el archivo original, solo su texto. Para cambiarlo,
-«Reemplazar» con el archivo nuevo.
+No se guarda el archivo original, solo su texto. Para cambiarlo, «Reemplazar»
+con el archivo nuevo.
 
 ### PB-05 · Cómo contesta el agente con un documento · ✅ decidida el 23/11/2026
 
