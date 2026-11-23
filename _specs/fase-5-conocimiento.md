@@ -2,7 +2,7 @@
 ### Spec de ejecución · Recepcionista IA
 **Depende de:** `mazzmkt-recepcionista-ia-spec.md` (maestro: §5.4 las tablas, §6 la herramienta `buscar_en_conocimiento` y la regla dura, §8 qué va al prompt y qué se busca, §11 la Fase 5), `decisiones-producto.md` (sobre todo **PB-01 a PB-09**, las propuestas de esta fase, y las que se cruzan: **PA-05** cuándo deriva, **PI-08** preguntas frecuentes, **PC-05** un solo sitio para los datos, **PC-14** quién paga la IA del portal, **PC-21** adjuntar en el chat del portal, **PD-11** RGPD y **PD-13** qué se borra), `fase-9-portal-cliente.md` y `fase-9b-chat-portal.md` (cerradas: el portal, su chat y el «+») y `docs/DECISIONES.md`. Leer todos antes de empezar.
 
-> **Estado de las decisiones (23/11/2026):** ✅ PB-02 a PB-09 decididas (**PB-09: la A**, sin proveedor nuevo; **PB-04: ante una contradicción, se pregunta al negocio cuál es el valor correcto**). ✅ **PC-22** (el tope del chat del portal) decidida: entra en esta fase (5.5b). ⚠️ **PB-01 por confirmar** (un solo valor siempre: al subir se corrige el texto del documento si gana la configuración; si después cambia la configuración, el documento avisa de que quedó viejo). **No se construye hasta que esté.**
+> **Estado de las decisiones (23/11/2026):** ✅ PB-02 a PB-09 decididas (**PB-09: la A**, sin proveedor nuevo; **PB-04: ante una contradicción, se pregunta al negocio cuál es el valor correcto**). ✅ **PC-22** (el tope del chat del portal) decidida: entra en esta fase (5.5b). ✅ **PB-01 decidida** (un solo valor siempre: al subir se corrige el texto del documento si gana la configuración; si después cambia la configuración, el documento avisa de que quedó viejo). **Todas decididas: se puede construir.**
 
 ---
 
@@ -33,11 +33,11 @@ Es la prueba del maestro: *preguntás por un tratamiento que está solo en un PD
 
 ## DECISIONES DE PRODUCTO DE ESTA FASE
 
-Todas en `decisiones-producto.md` (sección *La base de conocimiento (Fase 5)*), con el detalle y un ejemplo. **Decididas el 23/11/2026 salvo PB-01.** En el texto, «la configuración» es lo que el negocio tiene en *Configuración* del portal (la pantalla que en el código es `Ficha.tsx`).
+Todas en `decisiones-producto.md` (sección *La base de conocimiento (Fase 5)*), con el detalle y un ejemplo. **Todas decididas el 23/11/2026.** En el texto, «la configuración» es lo que el negocio tiene en *Configuración* del portal (la pantalla que en el código es `Ficha.tsx`).
 
 | # | Tema | Propuesta |
 |---|---|---|
-| PB-01 | Un solo valor, siempre | La configuración y las preguntas frecuentes **en el prompt**, siempre; los documentos, **se buscan** solo cuando hace falta. Si al subir gana la configuración, se corrige el texto del documento; si después cambia la configuración, el documento avisa de que quedó viejo · ⚠️ por confirmar |
+| PB-01 | Un solo valor, siempre | La configuración y las preguntas frecuentes **en el prompt**, siempre; los documentos, **se buscan** solo cuando hace falta. Si al subir gana la configuración, se corrige el texto del documento; si después cambia la configuración, el documento avisa de que quedó viejo |
 | PB-02 | Qué se puede subir | PDF (también escaneados), fotos (folletos, carteles) y texto escrito en el portal. Word y páginas web, más adelante (PC-07) |
 | PB-03 | Dónde se sube | En **Configuración → Documentos**, en el portal y en tu panel; y desde el **chat del portal** con el «+», con confirmación |
 | PB-04 | Al subir, si contradice la configuración | **Se le dice al negocio y se le pregunta cuál es el valor correcto**; si es el del documento, se cambia la configuración con su «sí». Además: título, una línea de qué trata y las páginas ilegibles |

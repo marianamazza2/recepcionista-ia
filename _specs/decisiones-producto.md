@@ -41,7 +41,7 @@ Las propuestas del widget (PW-01 a PW-08, Fase 3) y las que aparecieron al const
 
 Las propuestas del panel interno (PI-01 a PI-14, Fase 4) están al final: todas ✅ decididas el 28/10/2026. Las que aparecieron al construirlo (PI-15 a PI-17) y al probarlo (PI-18), ✅ decididas el 29/10/2026; PI-19, el 30/10/2026; PI-20, el 13/11/2026.
 
-Las propuestas de la base de conocimiento (PB-01 a PB-09, Fase 5) están al final: ocho ✅ decididas el 23/11/2026; **PB-01 ⚠️ por confirmar**. Y **PC-22** (el tope del chat del portal), ✅ decidida el 23/11/2026.
+Las propuestas de la base de conocimiento (PB-01 a PB-09, Fase 5) están al final: todas ✅ decididas el 23/11/2026. Y **PC-22** (el tope del chat del portal), ✅ decidida el 23/11/2026.
 
 ---
 
@@ -2111,15 +2111,16 @@ esa hora pero **no cuál** (eso solo con el código).
 
 ---
 
-## La base de conocimiento (Fase 5) · ocho ✅ decididas, PB-01 ⚠️ por confirmar
+## La base de conocimiento (Fase 5) · ✅ DECIDIDAS el 23/11/2026
 
 Propuestas del 23/11/2026, al escribir el spec (`_specs/fase-5-conocimiento.md`).
 **Mariana decidió el 23/11/2026 PB-02 a PB-09** (PB-09: la A, sin proveedor
 nuevo; PB-04, con su propia regla: ante una contradicción, **se pregunta cuál
-es el valor correcto**). **PB-01 sigue por confirmar**, reescrita: un solo
-valor siempre, también cuando la configuración cambia después. Hablaban de «la ficha» y no se entendía: ahora dicen
-**«la configuración»** (lo que el negocio tiene en *Configuración*). La fase
-no se construye hasta que estén las nueve.
+es el valor correcto**) y, después de reescribirla dos veces, **PB-01: un
+solo valor siempre**, también cuando la configuración cambia después.
+**Las nueve están decididas**: la fase se puede construir. Donde decía «la
+ficha» (no se entendía), ahora dice **«la configuración»**: lo que el negocio
+tiene en *Configuración*.
 
 Al decidir PB-07, Mariana preguntó cómo controlar lo que gasta el **chat del
 portal**, que paga MAZZMKT: de ahí sale **PC-22** (✅ decidida el 23/11/2026, en la
@@ -2127,7 +2128,7 @@ sección del portal).
 
 | # | Tema | Propuesta | ¿Ajuste por negocio? | Decidido |
 |---|---|---|---|---|
-| PB-01 | Un solo valor, siempre | Al subir, PB-04 deja **un solo valor**: si gana el del documento, cambia la configuración; si gana el de la configuración, **se corrige también lo que el agente lee del documento**. Si **después** cambias un precio en Configuración y un documento dice el viejo, el agente dice el nuevo y en Documentos se avisa de que ese documento quedó viejo | No | ⚠️ por confirmar (reescrita otra vez 23/11/2026) |
+| PB-01 | Un solo valor, siempre | Al subir, PB-04 deja **un solo valor**: si gana el del documento, cambia la configuración; si gana el de la configuración, **se corrige también lo que el agente lee del documento**. Si **después** cambias un precio en Configuración y un documento dice el viejo, el agente dice el nuevo y en Documentos se avisa de que ese documento quedó viejo | No | ✅ decidida 23/11/2026 |
 | PB-02 | Qué se puede subir | **PDF** (también escaneados), **fotos** (folletos, carteles) y **texto escrito** en el portal. Word y webs, más adelante | No | ✅ decidida 23/11/2026 |
 | PB-03 | Dónde se sube | **Configuración → Documentos**, en el portal y en el panel interno (la misma pantalla, PC-05), y desde el **chat del portal** con el «+», con confirmación (PC-03, PC-21) | No | ✅ decidida 23/11/2026 |
 | PB-04 | Al subir, si el documento contradice la configuración | **Se le dice al negocio y se le pregunta cuál es el valor correcto**: si es el del documento, se cambia la configuración (con su «sí»); si es el de la configuración, se queda. Además ve el título, una línea de qué trata y las páginas que no se pudieron leer | No | ✅ decidida 23/11/2026 |
@@ -2137,7 +2138,9 @@ sección del portal).
 | PB-08 | Datos de personas | «No subas datos de tus clientas». Un documento con datos de personas **no se guarda** y se avisa | No | ✅ decidida 23/11/2026 (el RGPD sigue abierto, PD-11) |
 | PB-09 | Cómo busca el agente | **La A:** sin proveedor nuevo, búsqueda de texto en español en nuestra base. Si en las pruebas no encuentra bien, se propone pasar a la B (*embeddings* con Voyage AI) | No | ✅ decidida 23/11/2026: la A |
 
-### PB-01 · Un solo valor, siempre · ⚠️ por confirmar (reescrita otra vez el 23/11/2026)
+### PB-01 · Un solo valor, siempre · ✅ decidida el 23/11/2026
+
+**Decidido (Mariana, 23/11/2026): «PB-01 sí»**, tal como queda abajo.
 
 *Mariana, 23/11/2026: «sigo sin entender el 01. Si le pasan un documento que
 cambia el precio, se aplica el 04 […] entonces va a haber un valor siempre,

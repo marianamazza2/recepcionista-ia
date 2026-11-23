@@ -688,7 +688,7 @@ tests siguen en Aurora.
 | Proveedor real de email (hoy, uno de prueba que escribe en la consola y en los logs de Vercel) | cuando Mariana lo elija (PW-18) |
 | SMS (apagado desde PW-18) | 6, para los recordatorios, o si un negocio lo pide (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) | 5: spec escrito (`_specs/fase-5-conocimiento.md`, rama `fase-5-spec`), propuestas por confirmar |
+| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) y tope del chat del portal (PC-22) | 5: spec escrito y decidido (`_specs/fase-5-conocimiento.md`, rama `fase-5-spec`) |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
 
