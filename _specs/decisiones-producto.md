@@ -2116,8 +2116,8 @@ esa hora pero **no cuál** (eso solo con el código).
 Propuestas del 23/11/2026, al escribir el spec (`_specs/fase-5-conocimiento.md`).
 **Mariana decidió el 23/11/2026 PB-02 a PB-09** (PB-09: la A, sin proveedor
 nuevo; PB-04, con su propia regla: ante una contradicción, **se pregunta cuál
-es el valor correcto**). **PB-01 sigue por confirmar**, ya reducida a lo que
-pasa con las clientas. Hablaban de «la ficha» y no se entendía: ahora dicen
+es el valor correcto**). **PB-01 sigue por confirmar**, reescrita: un solo
+valor siempre, también cuando la configuración cambia después. Hablaban de «la ficha» y no se entendía: ahora dicen
 **«la configuración»** (lo que el negocio tiene en *Configuración*). La fase
 no se construye hasta que estén las nueve.
 
@@ -2127,7 +2127,7 @@ sección del portal).
 
 | # | Tema | Propuesta | ¿Ajuste por negocio? | Decidido |
 |---|---|---|---|---|
-| PB-01 | Con las clientas, qué manda | El agente tiene siempre delante la **configuración** (servicios, precios, duraciones, equipo, horarios, reglas, preguntas frecuentes); los **documentos** los busca solo cuando hace falta. Si aun así un documento dice otra cosa, **con las clientas manda la configuración**: la red de seguridad de PB-04 | No | ⚠️ por confirmar (reescrita 23/11/2026) |
+| PB-01 | Un solo valor, siempre | Al subir, PB-04 deja **un solo valor**: si gana el del documento, cambia la configuración; si gana el de la configuración, **se corrige también lo que el agente lee del documento**. Si **después** cambias un precio en Configuración y un documento dice el viejo, el agente dice el nuevo y en Documentos se avisa de que ese documento quedó viejo | No | ⚠️ por confirmar (reescrita otra vez 23/11/2026) |
 | PB-02 | Qué se puede subir | **PDF** (también escaneados), **fotos** (folletos, carteles) y **texto escrito** en el portal. Word y webs, más adelante | No | ✅ decidida 23/11/2026 |
 | PB-03 | Dónde se sube | **Configuración → Documentos**, en el portal y en el panel interno (la misma pantalla, PC-05), y desde el **chat del portal** con el «+», con confirmación (PC-03, PC-21) | No | ✅ decidida 23/11/2026 |
 | PB-04 | Al subir, si el documento contradice la configuración | **Se le dice al negocio y se le pregunta cuál es el valor correcto**: si es el del documento, se cambia la configuración (con su «sí»); si es el de la configuración, se queda. Además ve el título, una línea de qué trata y las páginas que no se pudieron leer | No | ✅ decidida 23/11/2026 |
@@ -2137,32 +2137,33 @@ sección del portal).
 | PB-08 | Datos de personas | «No subas datos de tus clientas». Un documento con datos de personas **no se guarda** y se avisa | No | ✅ decidida 23/11/2026 (el RGPD sigue abierto, PD-11) |
 | PB-09 | Cómo busca el agente | **La A:** sin proveedor nuevo, búsqueda de texto en español en nuestra base. Si en las pruebas no encuentra bien, se propone pasar a la B (*embeddings* con Voyage AI) | No | ✅ decidida 23/11/2026: la A |
 
-### PB-01 · Con las clientas, qué manda · ⚠️ por confirmar (reescrita el 23/11/2026)
+### PB-01 · Un solo valor, siempre · ⚠️ por confirmar (reescrita otra vez el 23/11/2026)
 
-*Mariana, 23/11/2026: «cuando hablas de ficha, ¿a qué te refieres?» y «no
-entiendo la diferencia entre el 01 y el 04».* Decía «ficha» por la pantalla
-del panel; para el negocio es **su configuración**: lo que tiene en
-**Configuración** del portal (o cargó con el chat del alta): los datos del
-negocio, los **servicios con su precio y su duración**, el **equipo**, los
-**horarios**, festivos y ausencias, las **reglas** de reserva y cancelación, y
-las **preguntas frecuentes** cortas.
+*Mariana, 23/11/2026: «sigo sin entender el 01. Si le pasan un documento que
+cambia el precio, se aplica el 04 […] entonces va a haber un valor siempre,
+no hay dos».* Tiene razón: **al subir, PB-04 deja un solo valor**. La
+explicación anterior lo complicaba. Lo que queda de PB-01 son dos cosas:
 
-**La diferencia con PB-04 es el momento y con quién habla:**
+**1. Al subir, cuando gana el valor de la configuración.** Si el negocio dice
+«el bueno es 60 €» (lo de su configuración), el PDF sigue diciendo 55 €. Como
+no guardamos el archivo, solo su texto (PB-04), **se corrige también ese
+texto**: donde el agente leería «55 €», lee «60 €». Así, en todo el sistema
+hay un solo precio.
 
-- **PB-04 es al subir el documento**, hablando con **el negocio**: si el
-  documento contradice la configuración, se lo dice y le pregunta cuál es el
-  valor correcto. Lo normal es que ahí quede resuelto.
-- **PB-01 es después, hablando con una clienta**: el agente tiene siempre
-  delante la configuración y busca en los documentos solo lo que no está ahí
-  (maestro §8). Si aun así un documento dice otra cosa —porque el negocio
-  eligió que el bueno era el de la configuración y no cambió su PDF—, **el
-  agente dice el de la configuración**. Es la red de seguridad: con una
-  clienta nunca duda ni da dos precios.
+**2. Después, cuando cambias la configuración.** El único momento en que un
+documento puede volver a decir otra cosa. *Ejemplo:* la carta se subió en
+noviembre con la limpieza facial a 60 €. En marzo la subes a 65 € en
+*Configuración → Servicios*. La carta sigue diciendo 60 €.
+- **El agente dice 65 €**: lo que está en Configuración es siempre lo que
+  vale.
+- En **Documentos**, esa carta muestra un aviso: «Este documento tiene un
+  precio que ya no es el de tu configuración (limpieza facial: 60 € → 65 €)»,
+  con «Corregirlo» (se corrige su texto, como en el punto 1) o «Reemplazar»
+  (subir la carta nueva).
 
-*Ejemplo:* la carta en PDF de Estética Aurora dice 55 € y en *Configuración →
-Servicios* pone 60 €. Al subirla, el negocio contesta «el bueno es 60 €»
-(PB-04). Meses después una clienta pregunta el precio: el agente dice **60 €**,
-aunque el PDF siga diciendo 55 € (PB-01).
+En resumen: **siempre hay un solo valor, el de Configuración**; los
+documentos sirven para todo lo que no está ahí (cómo es un tratamiento, los
+cuidados, qué incluye un bono).
 
 ### PB-02 · Qué se puede subir · ✅ decidida el 23/11/2026
 
@@ -2200,8 +2201,8 @@ que hay una contradicción, cuál es el valor correcto».* Se lee como una
   configuración está a 60 €. ¿Cuál es el correcto?»*
   - «55» → enseña el cambio y pregunta «¿está todo bien?»; con su «sí», cambia
     el precio en Servicios (PC-03).
-  - «60» → se queda así; el documento se guarda igual y, con las clientas,
-    manda la configuración (PB-01).
+  - «60» → se queda así, y se corrige lo que el agente lee del documento
+    (PB-01): un solo precio.
 - **Desde Configuración → Documentos** (a mano, sin chat), la misma pregunta
   sale en un recuadro con un botón por valor: **«Es 60 € (lo de mi
   configuración)»** o **«Es 55 € (lo del documento): cámbialo»**. Cambiar
@@ -2212,7 +2213,7 @@ que hay una contradicción, cuál es el valor correcto».* Se lee como una
   una contradicción**: el agente lo puede explicar pero no reservar, y se le
   sugiere al negocio darlo de alta.
 - Hasta que contesta, el documento ya vale para todo lo demás, y en lo que
-  choca manda la configuración (PB-01).
+  choca el agente usa lo de Configuración (PB-01).
 
 Además, en la lista de Documentos cada uno lleva:
 
