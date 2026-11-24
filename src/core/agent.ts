@@ -16,6 +16,11 @@
 //   · stop_reason se mira antes de leer la respuesta; refusal con fallbacks
 //     del servidor ("default").
 //   · Errores del SDK por clase, nunca por texto.
+//   · Lo que el modelo escribe ANTES de llamar a una herramienta también es
+//     para la clienta (Fase 5, plan de pruebas 30, 24/11/2026): la respuesta
+//     del turno es todo el texto de la vuelta, no solo el de la última llamada.
+//     Antes se perdía, y con él a veces lo importante («el precio vigente es
+//     55 €») y la clienta recibía la mitad de la frase.
 // =============================================================================
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -218,6 +223,8 @@ export async function runAgentTurn(
   const usage = vacio();
   const herramientas: ToolExecution[] = [];
   let llamadas = 0;
+  /** El texto que el modelo escribió junto a sus llamadas a herramientas en este turno. */
+  const dicho: string[] = [];
 
   /** Respuesta del código (no del modelo): se guarda para el log, fuera del historial de la API. */
   const fija = async (motivo: MotivoRespuestaFija, escalar: boolean): Promise<TurnResult> => {
@@ -302,6 +309,9 @@ export async function runAgentTurn(
 
     switch (respuesta.stop_reason) {
       case 'tool_use': {
+        // Lo que escribió antes de la herramienta también llega a la clienta.
+        const antes = textoParaLaClienta(fila.contenido ?? '');
+        if (antes) dicho.push(antes);
         // TODAS las herramientas pedidas, en orden, y TODOS los resultados en
         // un único mensaje. En orden y no en paralelo: identificar_cliente
         // tiene que ir antes que la reserva que la necesita.
@@ -344,7 +354,7 @@ export async function runAgentTurn(
       case 'end_turn':
       case 'stop_sequence': {
         await appendMessages(sql, config.id, conversationId, [fila]);
-        const texto = textoParaLaClienta(fila.contenido ?? '');
+        const texto = [...dicho, textoParaLaClienta(fila.contenido ?? '')].filter(Boolean).join('\n\n');
         if (!texto) {
           // Terminar sin decir nada (o solo con etiquetas internas) no es una
           // respuesta para la clienta. Si acaba de derivar, la respuesta fija

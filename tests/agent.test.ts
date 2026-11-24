@@ -303,6 +303,25 @@ describe('texto para la clienta', () => {
     expect(r.texto).toContain(telefonoLegible(config.telefonoHumano!));
   });
 
+  it('lo que escribe antes de llamar a una herramienta también le llega (plan de pruebas Fase 5, caso 30)', async () => {
+    const conv = await nuevaConversacion();
+    const conTexto = herramientas({ name: 'derivar_a_humano', input: { motivo: 'dato_desconocido', resumen: 'Dice que el folleto pone 50 €' } });
+    conTexto.content.splice(1, 0, { type: 'text', text: 'El precio vigente de la limpieza facial es 55 €, y es el que vale.', citations: null });
+    const modelo = new ModeloSimulado([conTexto, texto('Le paso tu comentario al equipo. ¿Te busco cita?')]);
+    const r = await turno(modelo, conv, 'En vuestro folleto pone 50 €');
+    expect(r.motivoFin).toBe('respuesta');
+    expect(r.texto).toBe('El precio vigente de la limpieza facial es 55 €, y es el que vale.\n\nLe paso tu comentario al equipo. ¿Te busco cita?');
+  });
+
+  it('si solo escribió antes de la herramienta, eso es la respuesta (no un error)', async () => {
+    const conv = await nuevaConversacion();
+    const conTexto = herramientas({ name: 'derivar_a_humano', input: { motivo: 'dato_desconocido', resumen: 'x' } });
+    conTexto.content.splice(1, 0, { type: 'text', text: 'Eso no lo sé: se lo paso al equipo.', citations: null });
+    const modelo = new ModeloSimulado([conTexto, texto('')]);
+    const r = await turno(modelo, conv, '¿Tenéis descuentos?');
+    expect(r).toMatchObject({ texto: 'Eso no lo sé: se lo paso al equipo.', motivoFin: 'respuesta' });
+  });
+
   it('las etiquetas sueltas se quitan y el resto del texto se conserva', async () => {
     const conv = await nuevaConversacion();
     const modelo = new ModeloSimulado([texto('<reply>Hola, ¿en qué te ayudo?</reply> antml:x')]);

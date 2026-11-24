@@ -44,6 +44,9 @@ elige según un ajuste.
 8. **El núcleo no conoce el canal.** Si un canal necesita algo (p. ej. el
    `externalId` del widget), entra como parámetro opcional de `runAgentTurn`,
    con el cambio mínimo.
+9. **La respuesta del turno es todo el texto del turno** (D-103): lo que el
+   modelo escribe junto a una llamada a herramienta también es para la
+   clienta y se junta, en orden, con el texto final. No lo filtres.
 
 ## La base de conocimiento (Fase 5)
 
