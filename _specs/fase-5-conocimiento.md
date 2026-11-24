@@ -71,8 +71,8 @@ SQL y e2e en verde; con la IA de verdad, los escenarios 18–22 de
 `agent:eval` y el 7 de `alta:eval`, todos OK. **Falta:** que Mariana revise
 el plan de pruebas, ejecutarlo y publicar el informe; la prueba de verdad
 (punto 11) con un PDF y una foto; la nube (con su visto bueno) y el PR.
-Decisiones técnicas: D-95 a D-102 en `docs/DECISIONES.md`. Una propuesta ⚠️
-por confirmar bajo PB-04 (un precio oculto sigue oculto).
+Decisiones técnicas: D-95 a D-102 en `docs/DECISIONES.md`. Una regla nueva
+bajo PB-04, decidida por Mariana el 24/11/2026: un precio oculto sigue oculto.
 
 ## TAREAS
 

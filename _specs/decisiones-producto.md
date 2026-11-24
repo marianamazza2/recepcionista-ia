@@ -2217,7 +2217,7 @@ que hay una contradicción, cuál es el valor correcto».* Se lee como una
   sugiere al negocio darlo de alta.
 - Hasta que contesta, el documento ya vale para todo lo demás, y en lo que
   choca el agente usa lo de Configuración (PB-01).
-- ⚠️ **Por confirmar (propuesta, 24/11/2026): un precio oculto sigue oculto.**
+- ✅ **Decidida el 24/11/2026: un precio oculto sigue oculto.**
   Si en Configuración un servicio **no tiene precio** o tiene el precio
   **oculto** («se confirma en el local»), un documento no puede saltárselo: el
   agente no dice el precio del documento y se le pregunta al negocio como
@@ -2225,8 +2225,8 @@ que hay una contradicción, cuál es el valor correcto».* Se lee como una
   esa limpieza no tiene precio. ¿Cuál es el correcto?»). Si elige el del
   documento, el servicio pasa a tener ese precio, visible. *Por qué:* el
   precio oculto es una decisión del negocio (`precio_visible`, maestro §5) y un folleto viejo no
-  debería deshacerla sin que lo sepa. Ya está construido así; si prefieres
-  otra cosa, se cambia.
+  debería deshacerla sin que lo sepa. Mariana la aceptó tal como se proponía
+  («ok con todo lo que me toca», 24/11/2026); ya estaba construida así.
 
 Además, en la lista de Documentos cada uno lleva:
 
