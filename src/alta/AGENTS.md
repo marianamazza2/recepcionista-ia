@@ -58,11 +58,27 @@ Lo que no se puede romper se comprueba en el código, aquí:
    `ligarAdjuntos` solo acepta los de este negocio y sin mandar. En el historial se
    guarda una **marca** (`⟦adjunto:id|tipo|nombre⟧`, `adjuntos.ts`), no los bytes;
    `expandirAdjuntos` la cambia por el archivo de verdad en cada llamada al modelo, así
-   el agente lo sigue viendo en los mensajes siguientes del chat.
+   el agente lo sigue viendo en los mensajes siguientes del chat. Un adjunto que se
+   guardó como documento ya no tiene bytes: se manda «guardado en Documentos como …».
 8. **Lo que puede ofrecer lo calcula el código** (PC-20):
    `loQuePuedoHacer()` en `prompt.ts`, con lo que ya está cargado. El prompt
    dice que ante un mensaje sin sentido empiece por «Disculpa, no he
    comprendido tu mensaje.» y ofrezca solo lo de esa lista.
+10. **Los documentos (Fase 5, PB-03/PB-04)** van por el MISMO camino que
+    Configuración → Documentos (`src/conocimiento/documentos.ts`), nunca por
+    uno propio. `leer_documento` lee un adjunto del chat (por su nombre) o un
+    texto y lo deja como **borrador**: el agente de las clientas no lo ve.
+    `guardar_documento` (sección `documento`) lo publica solo con el resumen
+    confirmado y le quita los bytes al adjunto: el modelo ve «guardado en
+    Documentos como …» y ya no lo relee (PB-06). `resolver_dato_documento`
+    contesta «¿cuál es el correcto?»: con `documento` cambia la configuración
+    y pide antes el resumen de la sección `cambio`. Quién lee los documentos
+    es `PortalChatDeps.lector` (de serie, el mismo modelo del chat).
+11. **El tope del chat del portal (PC-22)**: antes de llamar al modelo,
+    `costePortalDelMes` contra `businesses.tope_portal_usd` (5 US$ de serie).
+    Llegado, contesta `TEXTO_TOPE_PORTAL` sin llamar a la IA (aviso
+    `tope_portal`); Configuración a mano sigue. Leer documentos no cuenta
+    (PB-07).
 
 ## Convenciones
 
@@ -106,6 +122,9 @@ guion y después pide cambios; se comprueba en la base. Cuesta ≈ 1 US$ por
 escenario largo: el alta entera es la conversación más cara. Los dos fallos
 que solo se ven con la API de verdad (esquemas y historial) los destapó este
 comando: corrélo cada vez que toques el prompt o las herramientas de aquí.
+Los documentos desde el chat y el tope (PC-22) están en
+`tests/documentos.test.ts`, y con la IA de verdad en el escenario 7 de
+`npm run alta:eval`.
 
 ## Si cambiás algo de acá
 

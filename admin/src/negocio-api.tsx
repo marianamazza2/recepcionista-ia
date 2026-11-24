@@ -33,7 +33,7 @@ export interface ApiNegocio {
    * PC-19 (Fase 9b), solo en el portal: lo vacío ofrece «Pídeselo al agente»,
    * que abre un chat nuevo con el mensaje de esa sección ya enviado.
    */
-  pedirAlAgente?: (seccion: 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'festivo') => void;
+  pedirAlAgente?: (seccion: 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'festivo' | 'documento') => void;
 }
 
 const Contexto = createContext<ApiNegocio | null>(null);

@@ -1,8 +1,9 @@
 // =============================================================================
 // Registro de herramientas y ejecución
 // =============================================================================
-// `buscar_en_conocimiento` (maestro §6) no está: es de la Fase 5 y no se
-// declara una herramienta que no hace nada.
+// `buscar_en_conocimiento` (maestro §6, Fase 5) solo se le da al modelo si el
+// negocio tiene documentos: no se declara una herramienta que no hace nada, y
+// un negocio sin documentos sigue con el mismo prefijo de siempre.
 //
 // Las definiciones salen ordenadas por nombre y construidas solo con la
 // configuración: el mismo negocio produce siempre la misma lista, byte a byte
@@ -16,12 +17,14 @@ import { telefonoLegible } from '../phone.js';
 import { reservarYCambiarCitaAnterior } from './cambiar.js';
 import { identificarCliente } from './clientes.js';
 import { enviarCodigo, verificarCodigo } from './codigo.js';
+import { buscarEnConocimiento } from './conocimiento.js';
 import { derivarAHumano } from './derivar.js';
 import { consultarDisponibilidad } from './disponibilidad.js';
 import { buscarReservasCliente, cancelarReserva, crearReserva, reprogramarReserva } from './reservas.js';
 import type { AgentTool, ToolContext, ToolResult } from './types.js';
 
 export const TOOLS: readonly AgentTool[] = [
+  buscarEnConocimiento,
   buscarReservasCliente,
   cancelarReserva,
   consultarDisponibilidad,
@@ -34,8 +37,13 @@ export const TOOLS: readonly AgentTool[] = [
   verificarCodigo,
 ].sort((a, b) => a.name.localeCompare(b.name));
 
+/** Las herramientas que tiene este negocio (sin documentos, no hay nada que buscar). */
+export function toolsDe(config: BusinessConfig): readonly AgentTool[] {
+  return config.documentos.length > 0 ? TOOLS : TOOLS.filter((t) => t !== buscarEnConocimiento);
+}
+
 export function toolDefinitions(config: BusinessConfig): Anthropic.Beta.BetaTool[] {
-  return TOOLS.map((t) => t.definition(config));
+  return toolsDe(config).map((t) => t.definition(config));
 }
 
 export interface ToolExecution {
@@ -59,7 +67,7 @@ export async function executeTool(
   onUnexpectedError: (e: unknown) => void = () => {},
 ): Promise<ToolExecution> {
   const args = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
-  const tool = TOOLS.find((t) => t.name === nombre);
+  const tool = toolsDe(ctx.config).find((t) => t.name === nombre);
   let resultado: ToolResult;
   if (!tool) {
     resultado = { ok: false, error: { motivo: 'herramienta_desconocida', mensaje: `No existe la herramienta ${nombre}.` } };

@@ -59,14 +59,23 @@ supabase/
    desde la Terminal, desde el panel o desde una tarea programada, y es un
    **delete** de verdad, no una marca.
 10. **Errores propios con SQLSTATE `RA0NN`** (el siguiente libre: hoy
-    **RA011**), con `hint`/mensaje legible. Cada código nuevo se traduce:
+    **RA012**), con `hint`/mensaje legible. Cada código nuevo se traduce:
     los del motor de reservas en `src/adapters/booking/errors.ts` (ver
     [`src/adapters/AGENTS.md`](../src/adapters/AGENTS.md)); los del panel
-    (RA007 preguntas frecuentes, RA008 activar incompleto) en
-    `src/api/admin/errores.ts`. Los del borrado (RA009 retención menor que un
+    (RA007 preguntas frecuentes, RA008 activar incompleto, RA011 más de 20
+    documentos o 100 páginas, PB-06) en `src/api/admin/errores.ts` (RA011
+    también en `src/conocimiento/documentos.ts` y en `guardar_documento`). Los del borrado (RA009 retención menor que un
     mes, RA010 clienta de otro negocio, PD-13) no pasan por el panel: solo los
     ve `npm run borrado`, que ya dice qué hacer.
-11. **Horas:** `timestamptz` en UTC para instantes; horarios en hora local
+11. **Búsqueda de texto (Fase 5, PB-09 la A):** `knowledge_chunks.busqueda`
+    es un `tsvector` generado en español y **sin tildes** (`app.sin_tildes`,
+    `unaccent` envuelto como IMMUTABLE) y `app.buscar_conocimiento` filtra por
+    `p_business_id` y solo documentos activos; si no hay coincidencias,
+    prueba por parecido de letras (`pg_trgm`). La columna `embedding` se queda
+    para la opción B (D-95). Los valores que un documento da de la
+    configuración van en `knowledge_valores`; **compararlos no es de la
+    base**, es del código (`src/conocimiento/comparar.ts`, D-98).
+12. **Horas:** `timestamptz` en UTC para instantes; horarios en hora local
     del negocio (D-09) y se cruzan con `AT TIME ZONE b.timezone`, nunca con
     offsets a mano (T-01).
 

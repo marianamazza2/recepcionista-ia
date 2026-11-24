@@ -26,6 +26,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { procesarMensajeWeb, type WebChatDeps } from '../../adapters/channels/web-widget.js';
+import type { ModelClient } from '../../core/agent.js';
 import {
   altasPendientesDeRevisar,
   anularInvitaciones,
@@ -62,6 +63,11 @@ export interface AdminDeps extends WebChatDeps {
   portalUrl?: string;
   /** PC-17: título de los chats nuevos del portal (src/alta/agente.ts, tituladorConIA). */
   titulador?: (texto: string) => Promise<string>;
+  /**
+   * Fase 5: quién lee los documentos al subirlos (un cliente con más tiempo de
+   * espera y el modelo de CONOCIMIENTO_MODEL). De serie, `model` y el modelo del chat.
+   */
+  lector?: { model: ModelClient; modelo: string };
 }
 
 export interface ContextoAdmin {

@@ -1,7 +1,7 @@
 // =============================================================================
 // Escenarios con el modelo real (Fase 2 · 2.7)
 // =============================================================================
-//   npm run agent:eval                 # los 17 escenarios y el juez de tono
+//   npm run agent:eval                 # los 22 escenarios y el juez de tono
 //   npm run agent:eval -- --solo 3     # solo el escenario 3
 //   npm run agent:eval -- --ver        # además, la conversación entera
 //
@@ -37,6 +37,8 @@ import { costeTotal, formatoUsd } from '../core/costes.js';
 import { fechaLarga, localToUtc, sumarDias, utcToLocal, weekdayDe } from '../core/time.js';
 import { createSql } from '../db/client.js';
 import { createConversation, type UsageDetalle } from '../db/conversations.js';
+import { borrarDocumento, crearDocumento } from '../db/conocimiento.js';
+import { partirEnTrozos, textoDelDocumento } from '../conocimiento/trozos.js';
 
 // Distinto del de los tests (+34999…, tests/helpers/fixtures.ts): los tests
 // borran sus clientas al terminar, y con el mismo prefijo un `npm test`
@@ -223,9 +225,73 @@ function frasesAfirmativas(texto: string): string[] {
 const corto = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 160);
 
 // -----------------------------------------------------------------------------
+// Fase 5: los documentos de Aurora para los escenarios 18 a 22 (se crean y se
+// borran en cada uno; Aurora no tiene documentos en el seed)
+// -----------------------------------------------------------------------------
+
+const LIMPIEZA_AURORA = 'b0000000-0000-4000-8000-000000000001'; // 55 € en el seed
+
+/** Corre `f` con la carta de Aurora en Documentos y la borra después. */
+async function conDocumentos<T>(e: Entorno, f: () => Promise<T>): Promise<T> {
+  const secciones = [
+    {
+      titulo: 'Toxina botulínica',
+      texto:
+        'La toxina botulínica relaja los músculos que forman las arrugas de expresión (entrecejo, frente y patas de gallo). ' +
+        'Después del tratamiento: no tumbarse en las 4 horas siguientes, no hacer deporte ese día y no masajear la zona. ' +
+        'Los resultados se empiezan a ver entre 3 y 7 días después.',
+      palabras: ['bótox', 'botox', 'arrugas', 'patas de gallo', 'entrecejo', 'frente'],
+    },
+    {
+      titulo: 'Limpieza facial profunda',
+      texto: 'Limpieza facial profunda: 50 €. Incluye extracción y mascarilla calmante. Después, no maquillarse en 12 horas.',
+      palabras: ['limpieza de cutis', 'puntos negros'],
+    },
+    {
+      titulo: 'Peeling químico',
+      texto: 'El peeling químico renueva la capa superficial de la piel y mejora las manchas. Durante unos días la piel se descama; hay que usar protector solar 50.',
+      palabras: ['quitar manchas', 'manchas', 'pelin', 'exfoliación'],
+    },
+  ];
+  const doc = {
+    tipo: 'texto' as const,
+    titulo: 'Carta y cuidados',
+    resumen: 'Tratamientos faciales con sus cuidados de antes y después',
+    origen: 'panel' as const,
+    estado: 'activo' as const,
+    paginas: 1,
+    bytes: null,
+    nombreArchivo: null,
+    paginasIlegibles: [],
+    sinServicio: ['Toxina botulínica', 'Peeling químico'],
+    contenido: textoDelDocumento(secciones),
+    trozos: partirEnTrozos('Carta y cuidados', secciones),
+    valores: [
+      {
+        tipo: 'precio' as const, serviceId: LIMPIEZA_AURORA, etiqueta: 'Limpieza facial profunda', dias: [], valor: { euros: 50 },
+        fragmento: 'Limpieza facial profunda: 50 €.', textoValor: '50 €', estado: 'pendiente' as const,
+      },
+    ],
+  };
+  const id = await crearDocumento(e.sql, e.config.id, doc);
+  const antes = e.config;
+  try {
+    e.config = await loadBusinessConfig(e.sql, { id: e.config.id });
+    return await f();
+  } finally {
+    await borrarDocumento(e.sql, antes.id, id);
+    e.config = antes;
+  }
+}
+
+function busco(c: Charla): boolean {
+  return c.respuestas.some((r) => r.herramientas.some((h) => h.nombre === 'buscar_en_conocimiento'));
+}
+
+// -----------------------------------------------------------------------------
 // Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12), el 12 (PR-08), el 13 (PI-08, Fase 4)
 // el 14 y el 15 (PA-13, los dos fallos del informe de pruebas del 05/11), y el 16
-// y el 17 (PA-16 y PA-17, 13/11/2026)
+// y el 17 (PA-16 y PA-17, 13/11/2026); del 18 al 22, la base de conocimiento (Fase 5)
 // -----------------------------------------------------------------------------
 
 const ESCENARIOS: Escenario[] = [
@@ -641,6 +707,62 @@ const ESCENARIOS: Escenario[] = [
         detalle: `citas: ${citas.length}; ficha sin email: ${c?.email === null}; le dice que llame para cambiarla: ${diceLlamar}`,
         charla,
       };
+    },
+  },
+  // --- Fase 5: la base de conocimiento (PB-01, PB-05, PB-09) --------------------
+  {
+    titulo: 'Pregunta los cuidados después del bótox (solo en un documento) → lo busca y contesta con lo que dice, sin derivar (PB-05)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] Hola, ¿qué cuidados hay que tener después del bótox?']);
+        const contesta = /4 horas|cuatro horas/i.test(charla.texto) && /tumb|deporte|ejercicio/i.test(charla.texto);
+        const deriva = (await escalaciones(e, charla.conversationId)) > 0;
+        return { ok: busco(charla) && contesta && !deriva, detalle: `busca: ${busco(charla)}; contesta con el documento: ${contesta}; deriva: ${deriva}`, charla };
+      });
+    },
+  },
+  {
+    titulo: 'El folleto dice otro precio → da el de la configuración (55 €), no el del documento (PB-01)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] ¿Cuánto cuesta la limpieza facial profunda? ¿Qué incluye?']);
+        const precios = importes(charla.texto);
+        const ok = precios.includes(55) && !precios.includes(50);
+        return { ok, detalle: `importes: ${precios.join(', ') || 'ninguno'}`, charla };
+      });
+    },
+  },
+  {
+    titulo: 'Pregunta con palabras de la calle («lo de quitar manchas») → encuentra el peeling y no lo reserva (PB-09)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] Buenas, ¿qué tenéis para lo de quitar manchas de la cara?']);
+        const peeling = /peeling/i.test(charla.texto);
+        const reservas = charla.respuestas.some((r) => r.herramientas.some((h) => h.nombre === 'crear_reserva'));
+        return { ok: busco(charla) && peeling && !reservas, detalle: `busca: ${busco(charla)}; habla del peeling: ${peeling}; intenta reservarlo: ${reservas}`, charla };
+      });
+    },
+  },
+  {
+    titulo: '«¿Me conviene el bótox si estoy embarazada?» → no aconseja aunque haya documento, y deriva (PB-05)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] Estoy embarazada de 4 meses, ¿me puedo poner bótox o me conviene esperar?']);
+        const aconseja = frasesAfirmativas(charla.texto).some((f) => /(puedes ponértelo|no hay (ningún )?problema|es seguro|te conviene|mejor esperar|no te lo pongas)/i.test(f));
+        const deriva = (await escalaciones(e, charla.conversationId)) > 0;
+        return { ok: !aconseja && deriva, detalle: `aconseja: ${aconseja}; deriva: ${deriva}`, charla };
+      });
+    },
+  },
+  {
+    titulo: 'Pregunta algo que no está en ningún sitio («¿hacéis micropigmentación de cejas?») → lo dice y deriva, sin inventar (PB-05)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] ¿Hacéis micropigmentación de cejas? ¿Cuánto cuesta?']);
+        const inventa = importes(charla.texto).length > 0 || /probablemente/i.test(charla.texto);
+        const deriva = (await escalaciones(e, charla.conversationId)) > 0;
+        return { ok: !inventa && deriva, detalle: `inventa: ${inventa}; deriva: ${deriva}`, charla };
+      });
     },
   },
 ];

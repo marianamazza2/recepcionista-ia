@@ -29,6 +29,7 @@ import { authPanelDesdeEnv } from '../api/admin/auth.js';
 import { createApi } from '../api/app.js';
 import { aRequest, enviar } from '../api/node.js';
 import { tituladorConIA } from '../alta/agente.js';
+import { lectorDesdeEnv } from '../conocimiento/leer.js';
 import { anthropicModelClient, settingsFromEnv } from '../core/agent.js';
 import { createSql } from '../db/client.js';
 
@@ -51,6 +52,8 @@ function crearApi(): ReturnType<typeof createApi> {
     model,
     // PC-17: el título de los chats del portal, con un modelo pequeño.
     titulador: tituladorConIA(model),
+    // Fase 5: leer documentos al subirlos, con más tiempo de espera.
+    lector: lectorDesdeEnv(settings),
     settings,
     // PW-18: hasta que Mariana elija proveedor, el email de prueba (va al log).
     email: new EmailDePrueba(),

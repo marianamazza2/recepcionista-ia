@@ -17,7 +17,11 @@
 //     (el mismo lock que el widget, D-45) y el mismo mensaje repetido no se
 //     procesa dos veces (clientMessageId, maestro §9);
 //   · si algo falla, se responde con un texto en palabras y el error va al log:
-//     el cliente nunca ve un error técnico.
+//     el cliente nunca ve un error técnico;
+//   · PC-22 (Fase 5): llegado el tope del mes del chat del portal, no se llama
+//     al modelo y se contesta TEXTO_TOPE_PORTAL;
+//   · Fase 5: las herramientas de documentos reciben quién los lee
+//     (`lector`, de serie el mismo modelo) y el chat, para encontrar sus adjuntos.
 // =============================================================================
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -30,7 +34,7 @@ import { leerNegocio, type NegocioPanel } from '../db/negocios.js';
 import { expandirAdjuntos, marcaDeAdjunto } from './adjuntos.js';
 import { ligarAdjuntos, MAX_ADJUNTOS_POR_MENSAJE, type AdjuntoResumido } from '../db/adjuntos.js';
 import { cadenaDelChat, chatDelMensaje, continuarChat, crearChat, estadoDelAlta, recortarTitulo, renombrarChat, type SeccionDelAlta } from '../db/portal.js';
-import { eventosDelTurno, registrarUso, type LlamadaRegistrada } from '../db/usage.js';
+import { costePortalDelMes, eventosDelTurno, registrarUso, topeAlcanzado, type LlamadaRegistrada } from '../db/usage.js';
 import { conLockDeConversacion, filasDelTurno, findUserMessage } from '../db/widget.js';
 import { contextoDelDia, definiciones, ejecutar, type ContextoPortal, type Resumen } from './herramientas.js';
 import { promptDelPortal, type ModoChat } from './prompt.js';
@@ -61,7 +65,17 @@ export interface PortalChatDeps {
    * él (tests, e2e), el título es el propio mensaje recortado.
    */
   titulador?: (texto: string) => Promise<string>;
+  /** Fase 5: quién lee los documentos (leer_documento). De serie, `model` y el modelo del chat. */
+  lector?: { model: ModelClient; modelo: string };
 }
+
+/**
+ * PC-22 (23/11/2026): al llegar al tope del mes del chat del portal, el chat
+ * se pausa con este mensaje. Configuración a mano sigue. Sin euros ni
+ * porcentajes (PC-09).
+ */
+export const TEXTO_TOPE_PORTAL =
+  'Este mes ya has usado todo el asistente incluido. Puedes seguir cambiando todo a mano en Configuración, o escribirnos y te lo ampliamos.';
 
 /** El modelo pequeño que titula los chats: barato y rápido (menos de un céntimo por chat). */
 export const MODELO_TITULOS = 'claude-haiku-5-5';
@@ -97,7 +111,7 @@ export interface RespuestaPortal {
   modo: ModoChat;
   /** PC-17: el chat donde va este mensaje (nuevo si no se pidió ninguno). */
   chat: { id: string; titulo: string };
-  aviso?: 'mensaje_largo' | 'ocupado' | 'error';
+  aviso?: 'mensaje_largo' | 'ocupado' | 'error' | 'tope_portal';
 }
 
 const TEXTO_ERROR = 'Perdona, ha habido un problema y no he podido responderte. Inténtalo de nuevo en un momento.';
@@ -296,6 +310,13 @@ async function ejecutarTurno(
     modo,
     now,
     onError,
+    chatId: p.chatId,
+    documentos: {
+      sql,
+      model: deps.lector?.model ?? model,
+      modelo: deps.lector?.modelo ?? settings.model,
+      onError,
+    },
   };
 
   // PC-21: los archivos quedan ligados a esta conversación (solo los de este
@@ -344,7 +365,7 @@ async function ejecutarTurno(
   const usage = vacio();
   const yaGastado = total(await usageAcumulado(sql, businessId, conversationId));
 
-  const fija = async (texto: string, motivo: string): Promise<RespuestaPortal> => {
+  const fija = async (texto: string, motivo: string, aviso: RespuestaPortal['aviso'] = 'error'): Promise<RespuestaPortal> => {
     // A diferencia del agente de las clientas (que tras un error deriva y no
     // vuelve a llamar al modelo, PA-06), este chat sigue. La respuesta fija va
     // también al historial como mensaje del asistente: si no, el turno queda
@@ -355,8 +376,13 @@ async function ejecutarTurno(
     await appendMessages(sql, businessId, conversationId, [{ rol: 'assistant', contenido: texto, mensajes: delAsistente, extra: { respuesta_fija: motivo } }]);
     await registrar(deps, businessId, conversationId, p.externalId, motivo);
     const estado = await estadoDelAlta(sql, businessId);
-    return { respuesta: texto, resumen: ctx.resumen ?? null, altaTerminada: estado.terminadaAt !== null, seccion: estado.seccion, faltan: estado.faltan, modo, chat: { id: p.chatId, titulo: '' }, aviso: 'error' };
+    return { respuesta: texto, resumen: ctx.resumen ?? null, altaTerminada: estado.terminadaAt !== null, seccion: estado.seccion, faltan: estado.faltan, modo, chat: { id: p.chatId, titulo: '' }, aviso };
   };
+
+  // PC-22: llegado el tope del mes del chat del portal, no se llama al modelo.
+  const portal = await costePortalDelMes(sql, businessId);
+  if (topeAlcanzado(portal.costeUsd, portal.topeUsd)) return fija(TEXTO_TOPE_PORTAL, 'tope_portal', 'tope_portal');
+
 
   for (let vuelta = 0; ; vuelta++) {
     if (yaGastado + total(usage) >= LIMITES_PORTAL.maxTokensConversacion) {

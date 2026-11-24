@@ -23,8 +23,10 @@ Antes del primer cliente real falta conectar un proveedor de email de verdad
 (PC-15): sin él, el código para crear la cuenta no le llega. **Fase 9b** (el
 chat del portal como los chats de IA conocidos: historial de chats, alta por
 temas, portal siempre visible; PC-17 a PC-20) publicada el 21/11/2026 (PR #10
-y su migración en la nube). Lo siguiente es la Fase 5
-(conocimiento del negocio). Un negocio nuevo se da de alta **hablando con un
+y su migración en la nube). **Fase 5** (lo que sabe el negocio: sus
+documentos, PB-01 a PB-09, y el tope del chat del portal, PC-22) construida
+en local en la rama `fase-5-spec` (24/11/2026): falta el plan de pruebas, la
+nube y el PR. Un negocio nuevo se da de alta **hablando con un
 chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
 crea su cuenta con el código que le llega al email (PC-11), el chat le
 pregunta una cosa cada vez siguiendo el guion que dictó ella y, al terminar,
@@ -116,6 +118,8 @@ tests/                   tests TypeScript (motor, herramientas, prompt, loop, wi
 | `…120200_operacion` | `customers`, `appointments` y **la restricción `no_overlap`** |
 | `…120300_conversacion` | `conversations`, `messages`, `escalations` |
 | `…120400_conocimiento` | `knowledge_docs`, `knowledge_chunks` (vacías hasta la Fase 5) |
+| `20261123120000_conocimiento_tipo_imagen` | Fase 5: `knowledge_doc_tipo` admite `imagen` (PB-02), en su propia migración (T-04). Aplicada en local |
+| `20261123120100_base_de_conocimiento` | Fase 5: documentos (resumen, origen, borrador, páginas, ilegibles), trozos con búsqueda de texto en español sin tildes (PB-09 la A, `app.buscar_conocimiento`), `knowledge_valores` (PB-04/PB-01), límites de PB-06 (`RA011`), `usage_events.concepto` (PB-07), `businesses.tope_portal_usd` (PC-22) y el adjunto que sale del chat al guardarse (PB-06). Aplicada en local |
 | `…120500_integraciones_y_consumo` | `integrations`, `usage_events` |
 | `…120600_rls` | RLS y políticas de aislamiento en las 15 tablas |
 | `…120700_book_appointment` | esqueleto del RPC de reserva atómica (Fase 0) |
@@ -272,6 +276,11 @@ que se borran al empezar y al terminar.
   `escalations`.
 - **Modelo y esfuerzo por variable de entorno** (`AGENT_MODEL`, de serie
   `claude-opus-5`; `AGENT_EFFORT`, de serie `low`). Ver `.env.example`.
+  El que lee los documentos al subirlos, `CONOCIMIENTO_MODEL` (vacío = el
+  mismo).
+- **Lo que sabe el negocio** (Fase 5): si tiene documentos, el agente tiene
+  `buscar_en_conocimiento` y los busca cuando la respuesta no está en la
+  configuración; lo de la configuración manda siempre (PB-01).
 
 ---
 
@@ -688,7 +697,7 @@ tests siguen en Aurora.
 | Proveedor real de email (hoy, uno de prueba que escribe en la consola y en los logs de Vercel) | cuando Mariana lo elija (PW-18) |
 | SMS (apagado desde PW-18) | 6, para los recordatorios, o si un negocio lo pide (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) y tope del chat del portal (PC-22) | 5: spec escrito y decidido (`_specs/fase-5-conocimiento.md`, rama `fase-5-spec`) |
+| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) y tope del chat del portal (PC-22) | 5: construida en local (rama `fase-5-spec`); faltan el plan de pruebas, la nube y el PR |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
 

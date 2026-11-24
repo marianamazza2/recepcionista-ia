@@ -240,6 +240,8 @@ export function createPortalApi(deps: PortalDeps): (req: Request, ctx: ContextoP
         if (req.method !== 'GET') return json({ error: 'metodo_no_permitido' }, 405);
         const a = await leerAdjunto(deps.sql, sesion.businessId, deAdjunto[1]!);
         if (!a) return json({ error: 'no_encontrado', mensaje: 'Ese archivo no existe.' }, 404);
+        // Fase 5 (PB-06): guardado como documento, el archivo ya no se guarda aquí.
+        if (a.documentoTitulo !== null) return json({ error: 'guardado', mensaje: `Guardado en Documentos como «${a.documentoTitulo}».`, titulo: a.documentoTitulo }, 410);
         return new Response(new Uint8Array(a.datos), {
           status: 200,
           headers: {

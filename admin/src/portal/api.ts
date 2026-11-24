@@ -10,6 +10,7 @@
 // (PC-02). Por eso los caminos de aquí son 'negocio/…', sin ningún id.
 // =============================================================================
 
+import { cuerpoDe } from '../cuerpo';
 import { ErrorApi } from '../error-api';
 
 export interface SesionPortal {
@@ -85,10 +86,11 @@ export function guardarSesion(s: SesionPortal | null): void {
 export { ErrorApi } from '../error-api';
 
 async function crudo(metodo: string, ruta: string, body?: unknown, token?: string): Promise<Response> {
-  const headers: Record<string, string> = {};
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  // Fase 5: un archivo (Documentos) va en binario; lo demás, en JSON.
+  const c = cuerpoDe(body);
+  const headers: Record<string, string> = { ...c.headers };
   if (token) headers.authorization = `Bearer ${token}`;
-  return fetch(`/api/portal/${ruta}`, { method: metodo, headers, credentials: 'omit', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+  return fetch(`/api/portal/${ruta}`, { method: metodo, headers, credentials: 'omit', ...(c.body !== undefined ? { body: c.body } : {}) });
 }
 
 async function leer<T>(r: Response): Promise<T> {

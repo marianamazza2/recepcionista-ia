@@ -64,6 +64,16 @@ Todas en `decisiones-producto.md` (sección *La base de conocimiento (Fase 5)*),
 - **Borrado** (PD-13): los documentos son del negocio, no de clientas, así que no caducan a los 6 meses; se van cuando el negocio los borra o se borra el negocio.
 - Publicar en Vercel y tocar la base de la nube, **solo con el visto bueno de Mariana**. Si PB-09 queda en B, la clave de Voyage la escribe ella en `.env` y en Vercel.
 
+## ESTADO (24/11/2026)
+
+Construida en local en la rama `fase-5-spec` (5.1 a 5.5b): tests TypeScript,
+SQL y e2e en verde; con la IA de verdad, los escenarios 18–22 de
+`agent:eval` y el 7 de `alta:eval`, todos OK. **Falta:** que Mariana revise
+el plan de pruebas, ejecutarlo y publicar el informe; la prueba de verdad
+(punto 11) con un PDF y una foto; la nube (con su visto bueno) y el PR.
+Decisiones técnicas: D-95 a D-102 en `docs/DECISIONES.md`. Una propuesta ⚠️
+por confirmar bajo PB-04 (un precio oculto sigue oculto).
+
 ## TAREAS
 
 ### 5.1 — Base de datos

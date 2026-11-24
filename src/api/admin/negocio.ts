@@ -17,6 +17,10 @@
 //   · PC-09: el cliente no ve ni cambia su tope mensual. Con ver = 'portal'
 //     la ficha no lo trae y, al guardar el chat de su web, se conserva el que
 //     puso Mariana.
+//   · PC-22 (Fase 5): lo mismo con el tope del chat del portal.
+// Fase 5: las rutas de Documentos (subir, listar, renombrar, reemplazar,
+// borrar y «¿cuál es el correcto?») también están aquí, para los dos, y
+// llaman al único camino de src/conocimiento/documentos.ts.
 // Lo que NO está aquí (activar, pausar, cambiar la clave, probar el chat, el
 // visor, las derivaciones, el consumo y las invitaciones) es del panel y se
 // queda en rutas.ts.
@@ -48,6 +52,18 @@ import {
   type ServicioPanel,
   type TurnoSueltoPanel,
 } from '../../db/negocios.js';
+import {
+  documentosDeLaFicha,
+  ErrorDocumento,
+  LIMITES_DOCUMENTOS,
+  resolverValor,
+  subirDocumento,
+  TEXTOS,
+  type DocumentosDeps,
+  type Subida,
+} from '../../conocimiento/documentos.js';
+import { limpiarNombre } from '../../db/adjuntos.js';
+import { borrarDocumento, renombrarDocumento } from '../../db/conocimiento.js';
 import { json, leerJson } from '../http.js';
 import { Entrada, horaDeTramo, normalizarDominio } from './entrada.js';
 import { aErrorPanel, ErrorPanel, TEXTO_LO_QUE_FALTA } from './errores.js';
@@ -89,7 +105,8 @@ export async function leerNegocioO404(deps: AdminDeps, id: string): Promise<Nego
  */
 export async function detalleNegocio(deps: AdminDeps, id: string, ver: VistaNegocio): Promise<Response> {
   const n = await leerNegocioO404(deps, id);
-  const { topeMensualUsd, ...chatSinTope } = n.chat;
+  // PC-09 / PC-22: el cliente no ve ninguno de sus dos topes.
+  const { topeMensualUsd, topePortalUsd, ...chatSinTope } = n.chat;
   return json({
     ...n,
     chat: ver === 'panel' ? n.chat : chatSinTope,
@@ -121,6 +138,12 @@ export function rutasDeNegocio(deps: AdminDeps, ver: VistaNegocio): RutaNegocio[
   /** PI-21: lo que se decidió con las citas afectadas (de serie, preguntar). */
   function queHacerConCitas(e: Entrada): QueHacerConCitas {
     return e.valor('citas') === undefined ? 'preguntar' : e.opcion('citas', 'qué hacer con las citas', ['preguntar', 'dejar', 'cancelar'] as const);
+  }
+
+  /** Fase 5: la lista de Documentos, con sus avisos (PB-04, PB-01) y lo que ocupa (PB-06). */
+  async function documentosDe(businessId: string, extra: Record<string, unknown> = {}, status = 200): Promise<Response> {
+    const n = await leerNegocioO404(deps, businessId);
+    return json({ ...(await documentosDeLaFicha(deps.sql, businessId, n)), ...extra }, status);
   }
 
   /** PI-21: se cancelan una a una, como desde la agenda: cada clienta con email recibe su aviso. */
@@ -192,6 +215,9 @@ export function rutasDeNegocio(deps: AdminDeps, ver: VistaNegocio): RutaNegocio[
           privacidadUrl: e.textoOpcional('privacidadUrl', 'la política de privacidad', 500),
           // PC-09: el cliente no ve ni cambia su tope; se conserva el de Mariana.
           topeMensualUsd: ver === 'panel' ? e.numero('topeMensualUsd', 'el tope mensual', 0, 100_000) : n.chat.topeMensualUsd,
+          // PC-22: el del chat del portal, igual (si el panel no lo manda, se queda el que había).
+          topePortalUsd:
+            ver === 'panel' && e.valor('topePortalUsd') !== undefined ? e.numero('topePortalUsd', 'el tope del chat del portal', 0, 100_000) : n.chat.topePortalUsd,
         });
         return detalle(businessId);
       },
@@ -352,6 +378,62 @@ export function rutasDeNegocio(deps: AdminDeps, ver: VistaNegocio): RutaNegocio[
       },
     },
 
+    // --- Documentos: lo que sabe el negocio (Fase 5 · 5.4, PB-02 a PB-08) ------------
+    // Todas devuelven la lista entera, con los avisos ya comparados con la
+    // configuración de ahora (D-98). Subir y reemplazar aceptan un archivo en
+    // binario (como los adjuntos de PC-21, con el nombre en x-nombre) o un
+    // texto escrito en JSON ({ texto, titulo }).
+    { metodo: 'GET', patron: /^documentos$/, handler: async ({ businessId }) => documentosDe(businessId) },
+    {
+      metodo: 'POST',
+      patron: /^documentos$/,
+      handler: async ({ req, businessId }) => {
+        await leerNegocioO404(deps, businessId);
+        const r = await subirDocumento(depsDocumentos(deps), businessId, await subidaDe(req), { origen: ver });
+        return documentosDe(businessId, { subido: r.id }, 201);
+      },
+    },
+    {
+      metodo: 'PUT',
+      patron: new RegExp(`^documentos/${ID}$`),
+      handler: async ({ req, businessId, params }) => {
+        const e = await cuerpoDeNegocio(req);
+        if (!(await renombrarDocumento(deps.sql, businessId, params[0]!, e.texto('titulo', 'el título', 200)))) throw new ErrorPanel(404, 'Ese documento no existe.');
+        return documentosDe(businessId);
+      },
+    },
+    {
+      metodo: 'DELETE',
+      patron: new RegExp(`^documentos/${ID}$`),
+      handler: async ({ businessId, params }) => {
+        if (!(await borrarDocumento(deps.sql, businessId, params[0]!))) throw new ErrorPanel(404, 'Ese documento no existe.');
+        return documentosDe(businessId);
+      },
+    },
+    {
+      metodo: 'POST',
+      patron: new RegExp(`^documentos/${ID}/reemplazar$`),
+      handler: async ({ req, businessId, params }) => {
+        await leerNegocioO404(deps, businessId);
+        const r = await subirDocumento(depsDocumentos(deps), businessId, await subidaDe(req), { origen: ver, reemplaza: params[0]! });
+        return documentosDe(businessId, { subido: r.id });
+      },
+    },
+    {
+      // PB-04 / PB-01: «¿cuál es el correcto?». usar = configuracion (el
+      // documento se corrige) o documento (la configuración cambia, con las
+      // validaciones de siempre; un horario con citas afectadas pregunta, PI-21).
+      metodo: 'POST',
+      patron: new RegExp(`^documentos/${ID}/valores/${ID}$`),
+      handler: async ({ req, businessId, params }) => {
+        const e = await cuerpoDeNegocio(req);
+        const usar = e.opcion('usar', 'qué valor vale', ['configuracion', 'documento'] as const);
+        const r = await resolverValor(deps.sql, businessId, { docId: params[0]!, valorId: params[1]!, usar, citas: queHacerConCitas(e) });
+        await cancelarAfectadas(businessId, r.cancelar);
+        return documentosDe(businessId);
+      },
+    },
+
     // --- La agenda y las citas a mano (PR-04, PI-14, PC-16) -----------------------
     {
       metodo: 'GET',
@@ -480,6 +562,43 @@ export function festivoLocal(desde: Date, hasta: Date, tz: string) {
     horaHasta: diaEntero ? null : h.hora === '00:00' ? '24:00' : h.hora,
     diaEntero,
   };
+}
+
+/**
+ * Fase 5: quién lee los documentos. De serie, el mismo cliente y modelo del
+ * chat; el servidor puede pasar uno propio con más tiempo de espera
+ * (`lector`, CONOCIMIENTO_MODEL).
+ */
+export function depsDocumentos(deps: AdminDeps): DocumentosDeps {
+  return {
+    sql: deps.sql,
+    model: deps.lector?.model ?? deps.model,
+    modelo: deps.lector?.modelo ?? deps.settings.model,
+    ...(deps.onError ? { onError: deps.onError } : {}),
+  };
+}
+
+/**
+ * Lo que llega para subir un documento: un archivo en binario (PDF o foto,
+ * con el nombre en la cabecera x-nombre, como los adjuntos de PC-21) o un
+ * texto escrito en JSON ({ texto, titulo }).
+ */
+export async function subidaDe(req: Request): Promise<Subida> {
+  const tipo = req.headers.get('content-type') ?? '';
+  if (tipo.includes('application/json')) {
+    const e = new Entrada(await leerJson(req, LIMITES_DOCUMENTOS.caracteresTexto * 4 + 4096));
+    return { texto: e.texto('texto', 'el texto', LIMITES_DOCUMENTOS.caracteresTexto), titulo: e.textoOpcional('titulo', 'el título', 200) ?? null };
+  }
+  const declarado = Number(req.headers.get('content-length'));
+  if (Number.isFinite(declarado) && declarado > LIMITES_DOCUMENTOS.bytes) throw new ErrorDocumento('demasiado_grande', TEXTOS.demasiado_grande, 413);
+  const archivo = Buffer.from(await req.arrayBuffer());
+  let nombre = 'documento';
+  try {
+    nombre = limpiarNombre(decodeURIComponent(req.headers.get('x-nombre') ?? 'documento'));
+  } catch {
+    nombre = 'documento';
+  }
+  return { archivo, nombre };
 }
 
 /** Lo que el panel y el portal responden cuando algo no se pudo guardar. */

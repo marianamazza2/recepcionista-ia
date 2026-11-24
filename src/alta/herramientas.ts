@@ -19,12 +19,23 @@
 //
 // Las profesionales y los servicios se nombran POR NOMBRE (el cliente no ve
 // ids); aquí se traducen a ids de su propio negocio.
+//
+// Fase 5 (PB-03, PB-04, PB-06): los documentos desde el chat. `leer_documento`
+// lee un adjunto (o un texto) por el MISMO camino que Configuración →
+// Documentos (src/conocimiento/documentos.ts) y lo deja como borrador, que el
+// agente de las clientas no ve; `guardar_documento` lo publica tras el resumen
+// confirmado (PC-03) y saca el archivo de la conversación; y
+// `resolver_dato_documento` contesta «¿cuál es el correcto?» (si gana el del
+// documento cambia la configuración, también con su resumen confirmado).
 // =============================================================================
 
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Sql } from 'postgres';
 
 import { cancelarCitaManual } from '../citas/manual.js';
+import { ErrorDocumento, resolverValor, subirDocumento, type DocumentosDeps } from '../conocimiento/documentos.js';
+import { adjuntoDelChat, marcarAdjuntoGuardado } from '../db/adjuntos.js';
+import { leerDocumento, publicarBorrador } from '../db/conocimiento.js';
 import type { EmailProvider } from '../adapters/email/types.js';
 import { normalizarTelefono } from '../core/phone.js';
 import { fechaLarga, inicioDelDia, localToUtc, sumarDias, utcToLocal } from '../core/time.js';
@@ -43,7 +54,7 @@ import {
   type NegocioPanel,
 } from '../db/negocios.js';
 import { momentoDelDia } from './prompt.js';
-import { estadoDelAlta, guardarEstadoDelAlta, hayConfirmacion, marcarSeccionHecha, SECCIONES_DEL_ALTA, type SeccionDelAlta } from '../db/portal.js';
+import { cadenaDelChat, estadoDelAlta, guardarEstadoDelAlta, hayConfirmacion, marcarSeccionHecha, SECCIONES_DEL_ALTA, type SeccionDelAlta } from '../db/portal.js';
 
 export interface ContextoPortal {
   sql: Sql;
@@ -61,6 +72,9 @@ export interface ContextoPortal {
   resumen?: Resumen | undefined;
   /** Cambia a true cuando el alta se da por terminada en este turno (PC-13). */
   altaTerminada?: boolean;
+  /** Fase 5: el chat (para encontrar sus adjuntos) y quién lee los documentos. */
+  chatId?: string;
+  documentos?: DocumentosDeps;
 }
 
 /** El bloque que el portal dibuja: el modelo pone los datos, no el formato. */
@@ -71,8 +85,8 @@ export interface Resumen {
   tabla?: { columnas: string[]; filas: string[][] };
 }
 
-export type Seccion = 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'cambio';
-const SECCIONES: Seccion[] = ['negocio', 'servicios', 'profesionales', 'horario', 'reglas', 'cambio'];
+export type Seccion = 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'cambio' | 'documento';
+const SECCIONES: Seccion[] = ['negocio', 'servicios', 'profesionales', 'horario', 'reglas', 'cambio', 'documento'];
 
 export type ResultadoHerramienta = { ok: true; data: Record<string, unknown> } | { ok: false; error: { motivo: string; mensaje: string; [k: string]: unknown } };
 
@@ -785,6 +799,176 @@ const terminarAlta: HerramientaPortal = {
 };
 
 /** Un error de la base en palabras para el modelo (la frase la pone errores.ts del panel). */
+// -----------------------------------------------------------------------------
+// Documentos (Fase 5 · 5.5: PB-03, PB-04, PB-06, PB-08, PC-03)
+// -----------------------------------------------------------------------------
+
+/** Lo que el agente le cuenta al cliente de una contradicción (PB-04), con su id para resolverla. */
+function contradiccion(c: { valor: { id: string }; que: string; documento: string; configuracion: string }) {
+  return { dato_id: c.valor.id, que: c.que, dice_el_documento: c.documento, dice_tu_configuracion: c.configuracion };
+}
+
+const leerDocumentoTool: HerramientaPortal = {
+  name: 'leer_documento',
+  definicion: {
+    name: 'leer_documento',
+    description:
+      'Lee un documento para que el recepcionista de las clientas lo sepa (carta de tratamientos, hoja de cuidados, folleto): un archivo que el cliente adjuntó en este chat, o un texto que te ha escrito. ' +
+      'Úsala cuando el cliente quiera que el agente "sepa" o "tenga" esa información, no para cargar horarios o servicios (eso va con sus herramientas). ' +
+      'NO guarda nada todavía: devuelve el título, de qué trata, las páginas que no se pudieron leer, los tratamientos que no están en sus servicios y las contradicciones con su configuración. Después enséñale el resumen con proponer_resumen (sección "documento") y, si dice que sí, llama a guardar_documento.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        archivo: { type: ['string', 'null'], description: 'El nombre del archivo adjunto, tal como aparece en el chat ("carta-2026.pdf"). null si es un texto escrito.' },
+        texto: { type: ['string', 'null'], description: 'Solo si no hay archivo: el texto que el cliente quiere que sepa el agente, tal cual lo escribió.' },
+        titulo: { type: ['string', 'null'], description: 'Un título si el cliente lo ha dicho ("Cuidados después del láser").' },
+      },
+      required: ['archivo', 'texto', 'titulo'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  async run(i, ctx) {
+    if (!ctx.documentos) return mal('no_disponible', 'Ahora mismo no puedo leer documentos. Dile que lo suba en Configuración → Documentos.');
+    const nombre = texto(i.archivo);
+    const escrito = texto(i.texto);
+    let subida: Parameters<typeof subirDocumento>[2];
+    let adjuntoId: string | null = null;
+    if (nombre || !escrito) {
+      const cadena = ctx.chatId ? await cadenaDelChat(ctx.sql, ctx.businessId, ctx.chatId) : [ctx.conversationId];
+      const a = await adjuntoDelChat(ctx.sql, ctx.businessId, cadena.length ? cadena : [ctx.conversationId], nombre);
+      if (!a) return mal('sin_archivo', nombre ? `No encuentro ningún archivo «${nombre}» en este chat. Pídele que lo adjunte con el «+».` : 'No hay ningún archivo adjunto en este chat. Pídele que lo adjunte con el «+» o que te escriba el texto.');
+      if (a.documentoTitulo !== null) return mal('ya_guardado', `Ese archivo ya está guardado en Documentos como «${a.documentoTitulo}».`);
+      subida = { archivo: a.datos, nombre: a.nombre };
+      adjuntoId = a.id;
+    } else {
+      subida = { texto: escrito, titulo: texto(i.titulo) || null };
+    }
+    try {
+      const r = await subirDocumento(ctx.documentos, ctx.businessId, subida, { origen: 'chat', estado: 'borrador' });
+      return {
+        ok: true,
+        data: {
+          documento_id: r.id,
+          ...(adjuntoId ? { adjunto_id: adjuntoId } : {}),
+          titulo: texto(i.titulo) || r.titulo,
+          de_que_trata: r.resumen,
+          paginas: r.paginas,
+          ...(r.paginasIlegibles.length ? { paginas_ilegibles: r.paginasIlegibles } : {}),
+          ...(r.sinServicio.length ? { tratamientos_que_no_estan_en_servicios: r.sinServicio } : {}),
+          ...(r.preguntas.length ? { contradicciones: r.preguntas.map(contradiccion) } : {}),
+          siguiente:
+            (r.preguntas.length
+              ? 'Hay datos que no coinciden con su configuración: díselos UNO A UNO y pregunta cuál es el correcto. Si es el de su configuración, llama a resolver_dato_documento con usar = "configuracion". Si es el del documento, enséñale el cambio con proponer_resumen (sección "cambio") y, con su sí, resolver_dato_documento con usar = "documento". '
+              : '') +
+            'Enseña el resumen del documento con proponer_resumen (sección "documento": título, de qué trata y, si los hay, las páginas que no se leyeron y los tratamientos que no están en sus servicios, que el agente podrá explicar pero no reservar) y pregunta «¿Está todo bien?». Con su sí, guardar_documento.',
+        },
+      };
+    } catch (e) {
+      if (e instanceof ErrorDocumento) return mal(e.motivo, `${e.message} Díselo con estas palabras; no se ha guardado nada.`);
+      throw e;
+    }
+  },
+};
+
+const guardarDocumentoTool: HerramientaPortal = {
+  name: 'guardar_documento',
+  seccion: 'documento',
+  definicion: {
+    name: 'guardar_documento',
+    description:
+      'Guarda en Documentos el documento que leíste con leer_documento, para que el recepcionista de las clientas lo sepa desde ya. Solo después de enseñar el resumen (proponer_resumen, sección "documento") y de que el cliente diga que sí.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        documento_id: { type: 'string', description: 'El que devolvió leer_documento.' },
+        titulo: { type: ['string', 'null'], description: 'El título con que se guarda, si el cliente lo cambió.' },
+      },
+      required: ['documento_id', 'titulo'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  async run(i, ctx) {
+    const falta = await faltaConfirmacion(ctx, 'documento');
+    if (falta) return falta;
+    const id = texto(i.documento_id);
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return mal('documento_desconocido', 'Ese documento no existe. Vuelve a leerlo con leer_documento.');
+    const titulo = texto(i.titulo).slice(0, 200) || undefined;
+    let d;
+    try {
+      d = await publicarBorrador(ctx.sql, ctx.businessId, id, titulo);
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'RA011') {
+        return mal('limite_documentos', 'No cabe: ya tiene el máximo de documentos (20 documentos o 100 páginas entre todos). Dile que borre alguno en Configuración → Documentos. No se ha guardado.');
+      }
+      throw e;
+    }
+    if (!d) {
+      const ya = await leerDocumento(ctx.sql, ctx.businessId, id);
+      if (ya?.estado === 'activo') return { ok: true, data: { guardado: true, titulo: ya.titulo, ya_estaba: true } };
+      return mal('documento_desconocido', 'Ese documento ya no está (pasó más de un día). Vuelve a leerlo con leer_documento.');
+    }
+    // PB-06: el archivo sale de la conversación; la IA ya no lo vuelve a leer.
+    if (ctx.chatId) {
+      const cadena = await cadenaDelChat(ctx.sql, ctx.businessId, ctx.chatId);
+      const a = d.nombreArchivo ? await adjuntoDelChat(ctx.sql, ctx.businessId, cadena, d.nombreArchivo) : null;
+      if (a && a.documentoTitulo === null) await marcarAdjuntoGuardado(ctx.sql, ctx.businessId, a.id, d.titulo, ctx.now());
+    }
+    return { ok: true, data: { guardado: true, titulo: d.titulo, donde: 'Configuración → Documentos', el_agente_ya_lo_sabe: true } };
+  },
+};
+
+const resolverDatoDocumento: HerramientaPortal = {
+  name: 'resolver_dato_documento',
+  definicion: {
+    name: 'resolver_dato_documento',
+    description:
+      'Contesta una contradicción entre un documento y la configuración (PB-04), con lo que ha dicho el cliente. usar = "configuracion": su configuración estaba bien y el texto del documento se corrige. usar = "documento": el dato bueno es el del documento y se cambia su configuración (antes, enséñale el cambio con proponer_resumen, sección "cambio", y espera su sí).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        documento_id: { type: 'string' },
+        dato_id: { type: 'string', description: 'El dato_id de la contradicción.' },
+        usar: { type: 'string', enum: ['configuracion', 'documento'] },
+        citas: { type: 'string', enum: ['preguntar', 'dejar', 'cancelar'], description: 'Qué hacer con las citas afectadas si cambia un horario. La primera vez, "preguntar".' },
+      },
+      required: ['documento_id', 'dato_id', 'usar'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  async run(i, ctx) {
+    const usar = i.usar === 'documento' ? 'documento' : 'configuracion';
+    if (usar === 'documento') {
+      const falta = await faltaConfirmacion(ctx, 'cambio');
+      if (falta) return falta;
+    }
+    const docId = texto(i.documento_id);
+    const valorId = texto(i.dato_id);
+    if (!/^[0-9a-f-]{36}$/i.test(docId) || !/^[0-9a-f-]{36}$/i.test(valorId)) return mal('dato_desconocido', 'Ese dato no existe. Vuelve a leer el documento.');
+    try {
+      const r = await resolverValor(ctx.sql, ctx.businessId, { docId, valorId, usar, citas: comoCitas(i.citas) });
+      for (const id of r.cancelar) {
+        await cancelarCitaManual({ sql: ctx.sql, email: ctx.email, baseUrl: ctx.baseUrl, ...(ctx.onError ? { onError: ctx.onError } : {}) }, ctx.businessId, id);
+      }
+      await recargar(ctx);
+      return {
+        ok: true,
+        data:
+          usar === 'documento'
+            ? { cambiado_en_la_configuracion: r.comparacion.que, ahora: r.comparacion.documento, canceladas: r.cancelar.length }
+            : { corregido_en_el_documento: r.comparacion.que, ahora: r.comparacion.configuracion },
+      };
+    } catch (e) {
+      const citas = citasAfectadasComoError(e);
+      if (citas) return citas;
+      if (e instanceof ErrorDocumento) return mal(e.motivo, e.message);
+      throw e;
+    }
+  },
+};
+
 function errorDeLaBase(e: unknown, que: string): ResultadoHerramienta {
   const pg = e as { constraint_name?: string; code?: string; message?: string };
   if (pg?.constraint_name?.includes('sin_solape') || pg?.code === '23P01') {
@@ -814,12 +998,15 @@ const NUMERO_DE_SECCION: Record<SeccionDelAlta, number> = { negocio: 1, servicio
 export const HERRAMIENTAS_PORTAL: readonly HerramientaPortal[] = [
   cambiarServicio,
   cerrarDia,
+  guardarDocumentoTool,
   guardarHorarios,
   guardarNegocio,
   guardarProfesionales,
   guardarReglasTool,
   guardarServicios,
+  leerDocumentoTool,
   proponerResumen,
+  resolverDatoDocumento,
   quitarDiaDeLaSemana,
   turnoSuelto,
   verConfiguracion,

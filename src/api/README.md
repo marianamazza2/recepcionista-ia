@@ -85,7 +85,7 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `GET negocios` | Todos, con estado, lo que falta y derivaciones pendientes | lista |
 | `POST negocios` `{nombre, sector?, timezone?}` | Alta: en prueba y sin dominios (PI-03) | `201 {id, slug}` |
 | `GET negocios/:id` | Todo el negocio (bloques, lo que falta, `widgetKey`, `widgetJs`) | el negocio |
-| `PUT negocios/:id/datos` · `reglas` · `chat` | Guardar un bloque (el chat: dominios, color, logo, privacidad, tope) | el negocio |
+| `PUT negocios/:id/datos` · `reglas` · `chat` | Guardar un bloque (el chat: dominios, color, logo, privacidad, tope de las clientas y, si se manda, `topePortalUsd`, el del chat del portal, PC-22; el portal no ve ni cambia ninguno de los dos) | el negocio |
 | `POST negocios/:id/activar` · `pausar` | PI-03 (409 con `falta` si no se puede), PI-04 | el negocio |
 | `POST negocios/:id/clave` | Clave nueva del widget; la anterior deja de valer (PI-09) | el negocio |
 | `POST negocios/:id/servicios` · `PUT …/servicios/:sid` | Alta y edición (`activo: false` = desactivar, PI-04) | el negocio |
@@ -93,6 +93,11 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `PUT negocios/:id/horario` `{staffId|null, tramos, diasLibres?, citas?}` | Sustituye el horario del local o el propio de una profesional | el negocio |
 | `POST negocios/:id/festivos` · `DELETE …/festivos/:fid` | Días enteros (`fechaDesde`, `fechaHasta?`) o unas horas (`horaDesde`, `horaHasta`), del local o de una profesional (PI-12); `citas?` como en horario (PI-21) | el negocio |
 | `POST negocios/:id/preguntas` · `PUT`/`DELETE …/preguntas/:qid` | Preguntas frecuentes (PI-08; 409 al pasar el límite) | el negocio |
+| `GET negocios/:id/documentos` | Documentos (Fase 5), cada uno con `preguntas` (PB-04) y `viejos` (PB-01) ya comparados con la configuración de ahora; `usados` y `limites` (PB-06) | `{documentos, usados, limites}` |
+| `POST negocios/:id/documentos` | Subir: un PDF o una foto **en binario** (nombre en `x-nombre`, hasta 4 MB) o `{texto, titulo?}` en JSON. La IA lo lee (≈ 10 s). 415 si no es PDF ni foto, 413 si pasa de 4 MB, 409 si se pasa de 20 documentos o 100 páginas (RA011), 422 si no se lee o trae datos de clientas (PB-08), 503 si la IA no responde. Nada se guarda si falla | `201` la lista, con `subido` |
+| `PUT …/documentos/:did` `{titulo}` · `DELETE …/documentos/:did` | Cambiar el título · borrar (el agente deja de saberlo al momento) | la lista |
+| `POST …/documentos/:did/reemplazar` | Como subir; se quedan el id y el título | la lista |
+| `POST …/documentos/:did/valores/:vid` `{usar: configuracion|documento, citas?}` | PB-04/PB-01: «¿cuál es el correcto?». `configuracion` corrige el texto del documento; `documento` cambia la configuración con las validaciones de siempre (409 si el documento quedó viejo; un horario con citas, `citas_afectadas` como en PI-21) | la lista |
 | `GET negocios/:id/conversaciones?filtro=todas|derivadas|pruebas` | Lista (PI-06) | lista |
 | `GET negocios/:id/conversaciones/:cid` | Una conversación: líneas (clienta, asistente, herramienta con entrada y resultado), derivaciones, coste | detalle |
 | `GET negocios/:id/derivaciones` · `POST …/derivaciones/:eid/resolver` | Pendientes y marcar resuelta (PI-07) | lista de pendientes |
@@ -100,7 +105,7 @@ activar incompleto, además `falta: [códigos]`; en una cita, `motivo`.
 | `POST negocios/:id/citas` `{serviceId, staffId, fecha, hora, email?, telefono, nombre, notas?}` | Cita a mano (PR-04, PI-14), con su email si lo tiene (PW-18, PA-17) | `201 {id, email}` (`email`: estado del envío, o `null` sin email) |
 | `POST negocios/:id/citas/:aid/cancelar` | Cancelar desde la agenda, con su email de aviso (PW-10) | `{cancelada}` |
 | `POST negocios/:id/probar` `{sessionToken?, clientMessageId?, texto}` | Probar el chat (PI-13): como `POST /api/chat`, marcado como prueba | como `/api/chat` |
-| `GET consumo?mes=AAAA-MM` | El mes de todos los negocios, con las pruebas aparte (PI-11) | lista de informes |
+| `GET consumo?mes=AAAA-MM` | El mes de todos los negocios, con las pruebas aparte (PI-11), el chat del portal con su tope y su aviso (`portal`, PC-22) y lo que costó leer documentos (`documentos`, PB-07) | lista de informes |
 
 ### Validaciones de la ficha (aceptación Fase 4)
 

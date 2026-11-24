@@ -14,6 +14,7 @@ import { BusinessNotFoundError } from '../../config/business.js';
 import { InvalidLocalTimeError } from '../../core/time.js';
 import { CitasAfectadas, NoEncontrado, type LoQueFalta } from '../../db/negocios.js';
 import { EmailNoValido, TelefonoNoValido } from '../../citas/manual.js';
+import { ErrorDocumento } from '../../conocimiento/documentos.js';
 
 /** Un error que el panel puede enseñar tal cual. */
 export class ErrorPanel extends Error {
@@ -92,6 +93,8 @@ interface ErrorPostgres {
 export function aErrorPanel(e: unknown): ErrorPanel | null {
   if (e instanceof ErrorPanel) return e;
   if (e instanceof NoEncontrado) return new ErrorPanel(404, `${e.message}.`);
+  // Fase 5 (PB-02, PB-04, PB-06, PB-08): un documento que no se guarda, con su frase.
+  if (e instanceof ErrorDocumento) return new ErrorPanel(e.status, e.message, { error: e.motivo });
   // PI-21: no se guardó nada; el panel enseña la lista y pregunta si se dejan o se cancelan.
   if (e instanceof CitasAfectadas) {
     const n = e.citas.length;
@@ -108,6 +111,9 @@ export function aErrorPanel(e: unknown): ErrorPanel | null {
   if (typeof pg?.code !== 'string') return null;
   if (pg.code === 'RA007') {
     return new ErrorPanel(409, 'Hay demasiadas preguntas frecuentes: como mucho 20 o 4.000 caracteres entre todas. Lo largo irá en la base de conocimiento (Fase 5).');
+  }
+  if (pg.code === 'RA011') {
+    return new ErrorPanel(409, 'Ya tienes el máximo de documentos: 20 documentos o 100 páginas entre todos. Borra alguno para subir otro.', { error: 'limite_documentos' });
   }
   if (pg.code === 'RA008') {
     const falta = (pg.detail ?? '').split(',').filter(Boolean) as LoQueFalta[];

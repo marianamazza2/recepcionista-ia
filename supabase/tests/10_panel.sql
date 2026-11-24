@@ -121,8 +121,8 @@ select test.throws(
 );
 
 select test.succeeds(
-  $q$insert into public.knowledge_docs (business_id, tipo, titulo, contenido_raw)
-     values ('10101010-1010-4010-8010-000000000002', 'texto', 'Un documento largo', repeat('z', 10000))$q$,
+  $q$insert into public.knowledge_docs (business_id, tipo, titulo, contenido_raw, origen)
+     values ('10101010-1010-4010-8010-000000000002', 'texto', 'Un documento largo', repeat('z', 10000), 'panel')$q$,
   'PI-08: el límite solo cuenta las preguntas frecuentes (los documentos son de la Fase 5)'
 );
 
