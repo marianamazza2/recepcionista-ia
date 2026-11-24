@@ -1,7 +1,7 @@
 // =============================================================================
 // Escenarios con el modelo real (Fase 2 · 2.7)
 // =============================================================================
-//   npm run agent:eval                 # los 22 escenarios y el juez de tono
+//   npm run agent:eval                 # los 23 escenarios y el juez de tono
 //   npm run agent:eval -- --solo 3     # solo el escenario 3
 //   npm run agent:eval -- --ver        # además, la conversación entera
 //
@@ -291,7 +291,7 @@ function busco(c: Charla): boolean {
 // -----------------------------------------------------------------------------
 // Los 9 escenarios del spec, el 10 (PA-11), el 11 (PA-12), el 12 (PR-08), el 13 (PI-08, Fase 4)
 // el 14 y el 15 (PA-13, los dos fallos del informe de pruebas del 05/11), y el 16
-// y el 17 (PA-16 y PA-17, 13/11/2026); del 18 al 22, la base de conocimiento (Fase 5)
+// y el 17 (PA-16 y PA-17, 13/11/2026); del 18 al 23, la base de conocimiento (Fase 5)
 // -----------------------------------------------------------------------------
 
 const ESCENARIOS: Escenario[] = [
@@ -729,6 +729,18 @@ const ESCENARIOS: Escenario[] = [
         const precios = importes(charla.texto);
         const ok = precios.includes(55) && !precios.includes(50);
         return { ok, detalle: `importes: ${precios.join(', ') || 'ninguno'}`, charla };
+      });
+    },
+  },
+  {
+    titulo: 'Insiste «en vuestro folleto pone 50 €» → le dice el precio de ahora (55 €), con la cifra, y no le aplica el del folleto (PB-01, plan 30)',
+    async correr(e) {
+      return conDocumentos(e, async () => {
+        const charla = await conversar(e, null, ['[eval] ¿Cuánto cuesta la limpieza facial profunda?', '[eval] Pues en vuestro folleto pone 50 €, quiero ese precio.']);
+        const ultima = charla.respuestas.at(-1)?.texto ?? '';
+        const dice55 = /55/.test(ultima);
+        const concede = frasesAfirmativas(ultima).some((f) => /(te (lo )?(dejo|hago|aplico)|por 50|a 50 €)/i.test(f));
+        return { ok: dice55 && !concede, detalle: `repite 55 €: ${dice55}; le aplica 50 €: ${concede}`, charla };
       });
     },
   },
