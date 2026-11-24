@@ -321,6 +321,31 @@ describe('Documentos (Fase 5)', () => {
     expect((await p('GET', `adjuntos/${a.id}`, n.token)).status).toBe(410);
   });
 
+  it('el chat del portal: «borra la carta» pide el resumen confirmado y la borra', async () => {
+    const n = await negocio('Borrar');
+    await crearDocumento(sql, n.id, {
+      tipo: 'texto', titulo: 'Carta de tratamientos', resumen: '', origen: 'portal', estado: 'activo', paginas: 1, bytes: null, nombreArchivo: null,
+      paginasIlegibles: [], sinServicio: [], contenido: 'Texto', trozos: [{ orden: 1, titulos: 'Carta de tratamientos', contenido: 'Toxina botulínica', palabras: 'bótox' }], valores: [],
+    });
+    const modelo = new ModeloSimulado([
+      // Sin enseñar el resumen, no borra.
+      herramientas({ name: 'borrar_documento', input: { titulo: 'la carta' } }),
+      herramientas({ name: 'proponer_resumen', input: { seccion: 'cambio', titulo: 'Voy a borrar', lineas: [{ etiqueta: 'Documento', valor: 'Carta de tratamientos' }] } }),
+      texto('Voy a borrar «Carta de tratamientos». ¿Está todo bien?'),
+      herramientas({ name: 'borrar_documento', input: { titulo: 'carta' } }),
+      texto('Hecho: ya no está.'),
+    ]);
+    const p = api(modelo);
+    const r1 = await p('POST', 'chat', n.token, { texto: 'Borra la carta, que ya no vale', clientMessageId: randomUUID() });
+    expect(JSON.stringify(modelo.peticiones[1]!.messages)).toContain('falta_confirmacion');
+    // El chat sabe qué documentos hay (plan de pruebas, caso 18).
+    expect(JSON.stringify(modelo.peticiones[0]!.system)).toContain('Documentos (lo que sabe su recepcionista): «Carta de tratamientos»');
+    expect((await buscarTrozos(sql, n.id, 'botox')).length).toBe(1);
+    await p('POST', 'chat', n.token, { texto: 'Sí', chatId: r1.body.chat.id, clientMessageId: randomUUID() });
+    expect((await p('GET', 'negocio/documentos', n.token)).body.documentos).toEqual([]);
+    expect(await buscarTrozos(sql, n.id, 'botox')).toEqual([]);
+  });
+
   it('PC-22: llegado el tope del chat del portal, el chat se pausa y Configuración sigue', async () => {
     const n = await negocio('Tope');
     await sql`update public.businesses set tope_portal_usd = 0.01 where id = ${n.id}`;

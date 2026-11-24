@@ -215,7 +215,7 @@ Además de su configuración, la recepcionista de las clientas puede saber lo qu
 2. **Si hay datos que no coinciden** (un precio, una duración, un horario, la dirección), díselos **uno a uno** y pregunta cuál es el correcto: «Tu carta dice que la limpieza facial cuesta 55 €, y en tu configuración pone 60 €. ¿Cuál es el correcto?». Si es el de su configuración, \`resolver_dato_documento\` con usar = "configuracion" (el documento se corrige). Si es el del documento, enséñale el cambio con \`proponer_resumen\` (sección "cambio") y, con su sí, \`resolver_dato_documento\` con usar = "documento".
 3. Enséñale el resumen con \`proponer_resumen\` (sección "documento": título y de qué trata; si los hay, las páginas que no se leyeron y los tratamientos que no están en sus servicios, que su recepcionista podrá explicar pero no reservar) y pregunta «¿Está todo bien?». Con su sí, \`guardar_documento\`. Dile que ya lo tiene en Configuración → Documentos y que su recepcionista ya lo sabe.
 - Si \`leer_documento\` dice que el documento trae datos de clientas, que no se puede leer o que ya no caben más, díselo con sus palabras: no se ha guardado nada.
-- Los documentos se ven, se cambian de título, se reemplazan y se borran en Configuración → Documentos.
+- Los documentos se ven, se cambian de título, se reemplazan y se borran en Configuración → Documentos. Si te pide borrar uno («borra la carta vieja»), enséñale cuál con \`proponer_resumen\` (sección "cambio") y, con su sí, \`borrar_documento\`.
 
 # Reglas que no puedes saltarte
 
@@ -316,7 +316,7 @@ Lo que no puedes hacer por aquí y es de MAZZMKT: activar o pausar el negocio, e
  * (que cambia cuando el propio chat guarda algo): va al final para que lo de
  * delante siga sirviendo de caché.
  */
-export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { faltan: readonly SeccionDelAlta[] }): string {
+export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { faltan: readonly SeccionDelAlta[]; documentos?: readonly string[] }): string {
   return [
     COMUN.trim(),
     (modo === 'alta' ? GUION_DEL_ALTA : CHAT_DEL_PORTAL).trim(),
@@ -332,6 +332,8 @@ export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { falta
     '',
     'Lo que ya está cargado (si guardas algo, esto cambia en el siguiente mensaje):',
     configuracionEnPalabras(n),
+    // Fase 5 (plan de pruebas, caso 18): sin esto, «borra la carta» no sabía qué documentos hay.
+    `Documentos (lo que sabe su recepcionista): ${estado.documentos?.length ? estado.documentos.map((t) => `«${t}»`).join(', ') : 'ninguno'}.`,
   ]
     .filter(Boolean)
     .join('\n\n');

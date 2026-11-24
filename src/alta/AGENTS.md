@@ -70,7 +70,8 @@ Lo que no se puede romper se comprueba en el código, aquí:
     texto y lo deja como **borrador**: el agente de las clientas no lo ve.
     `guardar_documento` (sección `documento`) lo publica solo con el resumen
     confirmado y le quita los bytes al adjunto: el modelo ve «guardado en
-    Documentos como …» y ya no lo relee (PB-06). `resolver_dato_documento`
+    Documentos como …» y ya no lo relee (PB-06). `borrar_documento` borra uno por
+    su título, también con el resumen confirmado (`cambio`). `resolver_dato_documento`
     contesta «¿cuál es el correcto?»: con `documento` cambia la configuración
     y pide antes el resumen de la sección `cambio`. Quién lee los documentos
     es `PortalChatDeps.lector` (de serie, el mismo modelo del chat).

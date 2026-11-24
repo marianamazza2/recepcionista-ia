@@ -30,6 +30,7 @@ import type { Sql } from 'postgres';
 import type { EmailProvider } from '../adapters/email/types.js';
 import { BETA_FALLBACKS, type AgentSettings, type ModelClient } from '../core/agent.js';
 import { appendMessages, conversationUsage, loadHistory, type MessageRow, type UsageDetalle } from '../db/conversations.js';
+import { listarDocumentos } from '../db/conocimiento.js';
 import { leerNegocio, type NegocioPanel } from '../db/negocios.js';
 import { expandirAdjuntos, marcaDeAdjunto } from './adjuntos.js';
 import { ligarAdjuntos, MAX_ADJUNTOS_POR_MENSAJE, type AdjuntoResumido } from '../db/adjuntos.js';
@@ -395,7 +396,16 @@ async function ejecutarTurno(
         model: settings.model,
         max_tokens: settings.maxTokensRespuesta,
         tools: definiciones(modo),
-        system: [{ type: 'text', text: promptDelPortal(ctx.ficha, modo, { faltan: (await estadoDelAlta(sql, businessId)).faltan }), cache_control: { type: 'ephemeral' } }],
+        system: [
+          {
+            type: 'text',
+            text: promptDelPortal(ctx.ficha, modo, {
+              faltan: (await estadoDelAlta(sql, businessId)).faltan,
+              documentos: (await listarDocumentos(sql, businessId)).map((d) => d.titulo),
+            }),
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
         cache_control: { type: 'ephemeral' },
         messages: mensajes,
         output_config: { effort: settings.effort },

@@ -636,6 +636,11 @@ describe('de la invitación a la primera cita', () => {
     const pregunta = docs.getByRole('group', { name: 'Dato que no coincide: el precio de Limpieza facial' });
     expect(await pregunta.textContent()).toContain('¿Cuál es el correcto?');
     await portal.screenshot({ path: join(CAPTURAS, '14-portal-documentos.png'), fullPage: true });
+    // En el móvil, el título del documento a todo el ancho (plan de pruebas, caso 56).
+    await portal.setViewportSize({ width: 390, height: 844 });
+    const ancho = (await docs.getByLabel('Título del documento').first().boundingBox())!.width;
+    expect(ancho).toBeGreaterThan(250);
+    await portal.setViewportSize({ width: 1280, height: 900 });
     await pregunta.getByRole('button', { name: 'Es 45 € (lo de mi configuración)' }).click();
     await expect.poll(() => pregunta.isVisible(), ESPERA).toBe(false);
 

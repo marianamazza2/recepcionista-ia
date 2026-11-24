@@ -985,7 +985,8 @@ function FilaDocumento({ doc, setD, poner }: { doc: Documento; setD: (d: Documen
 
   return (
     <li className="rounded-md border border-slate-200 p-3" data-documento={doc.titulo}>
-      <div className="flex flex-wrap items-start gap-2">
+      {/* En el móvil, el título y su texto a todo el ancho y los botones debajo (plan de pruebas, caso 56). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <input className="campo font-medium" aria-label="Título del documento" maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
           {doc.resumen ? <p className="mt-1 text-sm text-slate-600">{doc.resumen}</p> : null}
@@ -994,7 +995,7 @@ function FilaDocumento({ doc, setD, poner }: { doc: Documento; setD: (d: Documen
             {doc.reemplazado ? ` · reemplazado el ${fecha(doc.reemplazado)}` : ''}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-none flex-wrap gap-2">
           {titulo.trim() && titulo !== doc.titulo ? (
             <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => setD(await pedir<DocumentosNegocio>('PUT', `documentos/${doc.id}`, { titulo: titulo.trim() })), 'Título cambiado.')}>Guardar título</button>
           ) : null}

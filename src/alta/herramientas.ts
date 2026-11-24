@@ -35,7 +35,7 @@ import type { Sql } from 'postgres';
 import { cancelarCitaManual } from '../citas/manual.js';
 import { ErrorDocumento, resolverValor, subirDocumento, type DocumentosDeps } from '../conocimiento/documentos.js';
 import { adjuntoDelChat, marcarAdjuntoGuardado } from '../db/adjuntos.js';
-import { leerDocumento, publicarBorrador } from '../db/conocimiento.js';
+import { borrarDocumento, leerDocumento, listarDocumentos, publicarBorrador } from '../db/conocimiento.js';
 import type { EmailProvider } from '../adapters/email/types.js';
 import { normalizarTelefono } from '../core/phone.js';
 import { fechaLarga, inicioDelDia, localToUtc, sumarDias, utcToLocal } from '../core/time.js';
@@ -969,6 +969,36 @@ const resolverDatoDocumento: HerramientaPortal = {
   },
 };
 
+const borrarDocumentoTool: HerramientaPortal = {
+  name: 'borrar_documento',
+  seccion: 'cambio',
+  definicion: {
+    name: 'borrar_documento',
+    description:
+      'Borra un documento de Configuración → Documentos: su recepcionista deja de saberlo al momento. Antes, enséñale qué vas a borrar con proponer_resumen (sección "cambio") y espera su sí.',
+    input_schema: {
+      type: 'object',
+      properties: { titulo: { type: 'string', description: 'El documento, por su título (o una parte que lo distinga).' } },
+      required: ['titulo'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  async run(i, ctx) {
+    const docs = await listarDocumentos(ctx.sql, ctx.businessId);
+    // Como lo diría el cliente («la carta», «el folleto de cuidados»): por nombre y, si no, por sus palabras.
+    const limpio = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const palabras = limpio(texto(i.titulo)).split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
+    const porPalabras = docs.filter((x) => palabras.length > 0 && palabras.every((w) => limpio(x.titulo).includes(w)));
+    const d = porNombre(docs.map((x) => ({ ...x, nombre: x.titulo })), texto(i.titulo)) ?? (porPalabras.length === 1 ? porPalabras[0]! : null);
+    if (!d) return mal('documento_desconocido', `No encuentro ningún documento que se llame «${texto(i.titulo)}». Los que hay son: ${docs.map((x) => `«${x.titulo}»`).join(', ') || 'ninguno'}.`);
+    const falta = await faltaConfirmacion(ctx, 'cambio');
+    if (falta) return falta;
+    await borrarDocumento(ctx.sql, ctx.businessId, d.id);
+    return { ok: true, data: { borrado: d.titulo, el_agente_ya_no_lo_sabe: true } };
+  },
+};
+
 function errorDeLaBase(e: unknown, que: string): ResultadoHerramienta {
   const pg = e as { constraint_name?: string; code?: string; message?: string };
   if (pg?.constraint_name?.includes('sin_solape') || pg?.code === '23P01') {
@@ -996,6 +1026,7 @@ const NUMERO_DE_SECCION: Record<SeccionDelAlta, number> = { negocio: 1, servicio
 // no existe `avanzar_seccion`: qué secciones están hechas lo marca el código
 // al guardar (ejecutar(), abajo).
 export const HERRAMIENTAS_PORTAL: readonly HerramientaPortal[] = [
+  borrarDocumentoTool,
   cambiarServicio,
   cerrarDia,
   guardarDocumentoTool,
