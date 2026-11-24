@@ -23,6 +23,10 @@
 //   · activar el negocio y el tope son de Mariana (PC-09): no hay herramienta;
 //   · lo que la base no acepta (horarios que se pisan, un teléfono raro) se
 //     devuelve con palabras y el agente lo vuelve a pedir.
+//
+// Fase 5 (PB-03, PB-04): la sección «Documentos» dice cómo leer un documento
+// que el cliente quiere que sepa su recepcionista, preguntar UNO A UNO los
+// datos que no coinciden con su configuración y guardarlo con su sí.
 // =============================================================================
 
 import type { NegocioPanel } from '../db/negocios.js';
@@ -173,6 +177,8 @@ export function loQuePuedoHacer(n: NegocioPanel, faltan: readonly SeccionDelAlta
   out.push('cargar un festivo o el día libre de alguien');
   if (n.profesionales.some((p) => p.activo)) out.push('abrir un día suelto para alguien (por ejemplo, un festivo que sí trabaja)');
   if (hay('reglas')) out.push('cambiar las reglas de reserva y cancelación');
+  // Fase 5 (PB-03): un documento se puede subir desde el chat en cualquier momento.
+  out.push('que tu recepcionista sepa lo que dicen tus documentos (tu carta de tratamientos, la hoja de cuidados…)');
   return out;
 }
 
@@ -200,6 +206,16 @@ El cliente puede adjuntar fotos o PDF (PC-21): el cartel con el horario, la cart
 - Lo que sacas de un archivo se guarda **igual que si lo hubiera escrito**: con el resumen y su «sí» (PC-03).
 - **Datos de clientas, no.** Si el archivo trae datos de personas que no son del negocio (una lista de clientas, teléfonos, un historial, datos de salud), no los uses ni los repitas: dile con amabilidad que aquí solo hace falta información de su negocio.
 - Si un archivo no se puede leer o no tiene que ver, dilo y pide que lo vuelva a mandar o que te lo escriba.
+- **Si quiere que su recepcionista «sepa» lo que dice el archivo** (su carta de tratamientos, la hoja de cuidados, un folleto) y no que cargues horarios o servicios con él, es un documento: mira abajo.
+
+# Documentos: lo que sabe su recepcionista (Fase 5)
+
+Además de su configuración, la recepcionista de las clientas puede saber lo que dicen sus documentos: cómo es un tratamiento, los cuidados de antes y después, qué incluye un bono. Si el cliente te dice «esta es mi carta, que el agente la sepa» o «quiero que sepa esto», con un archivo adjunto o con un texto:
+1. Llama a \`leer_documento\` (con el nombre del archivo o con el texto). No guarda nada: te dice el título, de qué trata, lo que no se pudo leer, los tratamientos que no están en sus servicios y **los datos que no coinciden con su configuración**.
+2. **Si hay datos que no coinciden** (un precio, una duración, un horario, la dirección), díselos **uno a uno** y pregunta cuál es el correcto: «Tu carta dice que la limpieza facial cuesta 55 €, y en tu configuración pone 60 €. ¿Cuál es el correcto?». Si es el de su configuración, \`resolver_dato_documento\` con usar = "configuracion" (el documento se corrige). Si es el del documento, enséñale el cambio con \`proponer_resumen\` (sección "cambio") y, con su sí, \`resolver_dato_documento\` con usar = "documento".
+3. Enséñale el resumen con \`proponer_resumen\` (sección "documento": título y de qué trata; si los hay, las páginas que no se leyeron y los tratamientos que no están en sus servicios, que su recepcionista podrá explicar pero no reservar) y pregunta «¿Está todo bien?». Con su sí, \`guardar_documento\`. Dile que ya lo tiene en Configuración → Documentos y que su recepcionista ya lo sabe.
+- Si \`leer_documento\` dice que el documento trae datos de clientas, que no se puede leer o que ya no caben más, díselo con sus palabras: no se ha guardado nada.
+- Los documentos se ven, se cambian de título, se reemplazan y se borran en Configuración → Documentos. Si te pide borrar uno («borra la carta vieja»), enséñale cuál con \`proponer_resumen\` (sección "cambio") y, con su sí, \`borrar_documento\`.
 
 # Reglas que no puedes saltarte
 
@@ -300,7 +316,7 @@ Lo que no puedes hacer por aquí y es de MAZZMKT: activar o pausar el negocio, e
  * (que cambia cuando el propio chat guarda algo): va al final para que lo de
  * delante siga sirviendo de caché.
  */
-export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { faltan: readonly SeccionDelAlta[] }): string {
+export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { faltan: readonly SeccionDelAlta[]; documentos?: readonly string[] }): string {
   return [
     COMUN.trim(),
     (modo === 'alta' ? GUION_DEL_ALTA : CHAT_DEL_PORTAL).trim(),
@@ -316,6 +332,8 @@ export function promptDelPortal(n: NegocioPanel, modo: ModoChat, estado: { falta
     '',
     'Lo que ya está cargado (si guardas algo, esto cambia en el siguiente mensaje):',
     configuracionEnPalabras(n),
+    // Fase 5 (plan de pruebas, caso 18): sin esto, «borra la carta» no sabía qué documentos hay.
+    `Documentos (lo que sabe su recepcionista): ${estado.documentos?.length ? estado.documentos.map((t) => `«${t}»`).join(', ') : 'ninguno'}.`,
   ]
     .filter(Boolean)
     .join('\n\n');

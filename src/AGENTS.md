@@ -13,6 +13,7 @@ src/
 │   └── sms/          ADAPTADORES    el envío de SMS detrás de SmsProvider (apagado desde PW-18)
 ├── core/             NÚCLEO         el loop del agente de las clientas, prompt, herramientas, guardrails. Igual para todos
 ├── alta/             NÚCLEO         el OTRO agente: el chat del portal (el alta por chat y los cambios), con su prompt y sus herramientas (Fase 9)
+├── conocimiento/     NÚCLEO         lo que sabe el negocio: subir, leer, partir, comparar y buscar sus documentos (Fase 5)
 ├── portal/           cuentas        contraseña (scrypt), sesión y emails del portal del cliente (PC-02, PC-11)
 ├── config/           CONFIGURACIÓN  lo que el agente sabe de UN negocio, leído de la base
 ├── db/               datos          cliente Postgres, tenant, clientas, conversaciones, consumo, widget, borrado (PD-13), portal (Fase 9)
@@ -27,9 +28,11 @@ src/
 ```
 api → adapters/channels → core → config, db, adapters/booking
                        ↘ citas → core (time, tools/common, tools/reservas → plazo de PR-07), adapters/email, db
-api/admin → db (negocios, visor, personas, usage, portal), citas (manual), adapters/channels (probar el chat), portal (emails)
+api/admin → db (negocios, visor, personas, usage, portal, conocimiento), citas (manual), adapters/channels (probar el chat), portal (emails), conocimiento (Documentos)
 api/portal → api/admin/negocio (LAS MISMAS rutas de configuración, PC-05), db/portal, portal, alta
-alta → db (negocios, portal, conversations, widget, usage), citas (manual), core (solo agent: tipos y BETA_FALLBACKS)
+alta → db (negocios, portal, conversations, widget, usage, adjuntos, conocimiento), citas (manual), conocimiento (documentos), core (solo agent: tipos y BETA_FALLBACKS)
+conocimiento → db (conocimiento, negocios, usage, adjuntos), config, core (phone, costes, el cliente del modelo)
+core/tools → conocimiento/buscar (solo la búsqueda, detrás de BuscadorConocimiento, D-96)
 citas/manual → adapters/booking (con manual: true), config, core (time, phone), db
 cli, dev, vercel → cualquiera
 ```
@@ -41,6 +44,9 @@ cli, dev, vercel → cualquiera
   no con la clienta. Tiene su prompt (el guion de Mariana), sus herramientas y
   su loop; de `core/` solo usa tipos y el reloj. Ver
   [`src/alta/AGENTS.md`](alta/AGENTS.md).
+- **`conocimiento/`** (Fase 5) es el único camino de un documento: las rutas
+  de Documentos y el chat del portal lo llaman; el núcleo solo usa su
+  búsqueda. Ver [`src/conocimiento/AGENTS.md`](conocimiento/AGENTS.md).
 - `core/` habla con la agenda **solo** a través de la interfaz
   `BookingAdapter` (`adapters/booking/types.ts`), nunca con SQL de citas.
 - `db/` no conoce el agente (la única excepción es `db/usage.ts`, que usa la

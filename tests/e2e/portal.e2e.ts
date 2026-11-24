@@ -134,6 +134,25 @@ const modelo = new ModeloSimulado([
 
   // --- PC-21: una foto adjunta, sin texto --------------------------------------
   texto('He reconocido el horario del local. ¿Qué quieres que haga con esta información?'),
+
+  // --- Fase 5: un PDF en Configuración → Documentos (lo lee la IA) -------------
+  texto(
+    JSON.stringify({
+      legible: true,
+      titulo: 'Carta de tratamientos',
+      resumen: 'Precios y cuidados de los tratamientos faciales',
+      paginas: 1,
+      paginas_ilegibles: [],
+      datos_de_personas: { hay: false, que: '' },
+      secciones: [{ titulo: 'Faciales', texto: 'Limpieza facial: 50 €. Después, no maquillarse en 12 horas.', palabras: ['limpieza de cutis'] }],
+      precios: [{ servicio: 'Limpieza facial', etiqueta: 'Limpieza facial', euros: 50, fragmento: 'Limpieza facial: 50 €.', texto_valor: '50 €' }],
+      duraciones: [],
+      horarios: [],
+      direccion: [],
+      telefono: [],
+      tratamientos_sin_servicio: [],
+    }),
+  ),
 ]);
 
 let servidores: Awaited<ReturnType<typeof iniciarServidores>>;
@@ -604,5 +623,34 @@ describe('de la invitación a la primera cita', () => {
     expect(await portal.getByRole('list', { name: 'Archivos del mensaje' }).getByRole('img').count()).toBe(1);
     expect(JSON.stringify(modelo.peticiones.at(-1)!.messages)).toContain('"type":"image"');
     await portal.screenshot({ path: join(CAPTURAS, '13-portal-adjunto.png') });
+  });
+
+  it('12. sube un PDF en Documentos, contesta qué precio vale y Mariana lo ve y lo borra (Fase 5)', async () => {
+    await portal.goto(`${servidores.panelUrl}/portal/#/configuracion`);
+    const docs = portal.locator('#documentos');
+    await expect.poll(() => docs.isVisible(), ESPERA).toBe(true);
+    expect(await docs.textContent()).toContain('No subas datos de tus clientas');
+    await docs.getByLabel('Elegir un documento').setInputFiles({ name: 'carta.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n1 0 obj<</Type /Page>>endobj\n%%EOF\n') });
+    await expect.poll(() => docs.getByText('Precios y cuidados de los tratamientos faciales').isVisible(), ESPERA).toBe(true);
+    // PB-04: su carta dice 50 € y su configuración 45 €.
+    const pregunta = docs.getByRole('group', { name: 'Dato que no coincide: el precio de Limpieza facial' });
+    expect(await pregunta.textContent()).toContain('¿Cuál es el correcto?');
+    await portal.screenshot({ path: join(CAPTURAS, '14-portal-documentos.png'), fullPage: true });
+    // En el móvil, el título del documento a todo el ancho (plan de pruebas, caso 56).
+    await portal.setViewportSize({ width: 390, height: 844 });
+    const ancho = (await docs.getByLabel('Título del documento').first().boundingBox())!.width;
+    expect(ancho).toBeGreaterThan(250);
+    await portal.setViewportSize({ width: 1280, height: 900 });
+    await pregunta.getByRole('button', { name: 'Es 45 € (lo de mi configuración)' }).click();
+    await expect.poll(() => pregunta.isVisible(), ESPERA).toBe(false);
+
+    // Mariana lo ve igual en su panel y lo borra.
+    await panel.goto(`${servidores.panelUrl}/panel/#/negocios/${negocioId}/ficha`);
+    await panel.reload();
+    const enPanel = panel.locator('#documentos');
+    await expect.poll(() => enPanel.getByLabel('Título del documento').first().inputValue(), ESPERA).toBe('Carta de tratamientos');
+    panel.once('dialog', (d) => void d.accept());
+    await enPanel.getByRole('button', { name: 'Borrar' }).click();
+    await expect.poll(() => enPanel.getByLabel('Título del documento').count(), ESPERA).toBe(0);
   });
 });

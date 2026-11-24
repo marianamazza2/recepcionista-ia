@@ -16,6 +16,7 @@ import type { Sql } from 'postgres';
 
 import type { BookingAdapter } from '../../adapters/booking/types.js';
 import type { BusinessConfig } from '../../config/business.js';
+import type { BuscadorConocimiento } from '../../conocimiento/buscar.js';
 import type { ConversationEstado } from '../../db/conversations.js';
 
 /** Lo que una herramienta necesita para ejecutarse. */
@@ -42,6 +43,11 @@ export interface ToolContext {
    * Lanza si el envío falla.
    */
   enviarCodigo?: EnviarCodigo;
+  /**
+   * PB-09 (Fase 5): cómo se busca en los documentos del negocio. De serie, la
+   * búsqueda de texto (la A); la B sería otra implementación (D-96).
+   */
+  buscador?: BuscadorConocimiento;
 }
 
 /** PA-16: cómo manda el canal el código al email (src/citas/codigo.ts). */

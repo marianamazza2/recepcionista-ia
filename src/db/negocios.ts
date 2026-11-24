@@ -71,6 +71,8 @@ export interface ChatNegocio {
   logo: string | null;
   privacidadUrl: string | null;
   topeMensualUsd: number;
+  /** PC-22 (Fase 5): el tope del mes del chat del portal. Lo cambia Mariana; el cliente no lo ve (PC-09). */
+  topePortalUsd: number;
 }
 
 export interface ServicioPanel {
@@ -284,6 +286,7 @@ interface BusinessRow {
   widget_logo: string | null;
   privacidad_url: string | null;
   tope_mensual_usd: string;
+  tope_portal_usd: string;
   falta: LoQueFalta[];
 }
 
@@ -374,6 +377,7 @@ export async function leerNegocio(sql: Sql, id: string): Promise<NegocioPanel | 
         logo: b.widget_logo,
         privacidadUrl: b.privacidad_url,
         topeMensualUsd: Number(b.tope_mensual_usd),
+        topePortalUsd: Number(b.tope_portal_usd),
       },
       servicios: servicios.map((s) => ({
         id: s.id,
@@ -431,7 +435,8 @@ export async function guardarChat(sql: Sql, id: string, c: ChatNegocio): Promise
   await enNegocio(sql, id, 'El negocio', (tx) => tx`
     update public.businesses
        set widget_dominios = ${c.dominios}::text[], widget_color = ${c.color}, widget_logo = ${c.logo},
-           privacidad_url = ${c.privacidadUrl}, tope_mensual_usd = ${c.topeMensualUsd}
+           privacidad_url = ${c.privacidadUrl}, tope_mensual_usd = ${c.topeMensualUsd},
+           tope_portal_usd = ${c.topePortalUsd}
      where id = ${id}::uuid
     returning id`);
 }

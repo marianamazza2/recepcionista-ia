@@ -2,11 +2,20 @@
 // consumo`, con las pruebas del panel aparte (PI-13) y el aviso del 80 %.
 // Sin mes elegido, el campo enseña el mes que devolvió el servidor (aceptación
 // Fase 4: antes se veía vacío aunque la tabla era del mes en curso).
+// Fase 5: el chat del portal con su tope y su aviso del 80 % (PC-22) y lo que
+// costó leer documentos (PB-07), cada uno en su columna.
 
 import { useState } from 'react';
 
 import { api, type InformeConsumo } from '../api';
 import { Aviso, Cargando, useCarga, usd } from '../ui';
+
+/** PC-22: rojo al llegar al tope del chat del portal; ámbar desde el 80 %. */
+function colorPortal(r: InformeConsumo): string {
+  const f = r.portal.fraccionTope;
+  if (f === null) return r.portal.costeUsd > 0 ? 'bg-red-100 text-red-900' : '';
+  return f >= 1 ? 'bg-red-100 text-red-900' : r.portal.aviso ? 'bg-amber-100 text-amber-900' : '';
+}
 
 export function Consumo() {
   const [mes, setMes] = useState('');
@@ -28,6 +37,7 @@ export function Consumo() {
               <tr>
                 <th className="px-3 py-2 text-left">Negocio</th><th className="px-3 py-2 text-right">Mensajes</th><th className="px-3 py-2 text-right">Conversaciones</th>
                 <th className="px-3 py-2 text-right">Citas</th><th className="px-3 py-2 text-right">Coste</th><th className="px-3 py-2 text-right">Pruebas</th><th className="px-3 py-2 text-right">% del tope</th>
+                <th className="px-3 py-2 text-right">Chat del portal</th><th className="px-3 py-2 text-right">Documentos</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -45,6 +55,15 @@ export function Consumo() {
                     <td className="px-3 py-2 text-right">
                       <span className={`rounded px-1.5 py-0.5 ${color}`}>{pct === null ? 'tope 0' : `${pct.toLocaleString('es-ES', { maximumFractionDigits: 1 })} % de ${usd(r.topeUsd, 0)}`}</span>
                     </td>
+                    {/* PC-22: el chat del portal, con su tope y su aviso al 80 % (lo paga MAZZMKT). */}
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <span className={`rounded px-1.5 py-0.5 ${colorPortal(r)}`}>
+                        {usd(r.portal.costeUsd)}
+                        {r.portal.fraccionTope === null ? ' · tope 0' : ` · ${(r.portal.fraccionTope * 100).toLocaleString('es-ES', { maximumFractionDigits: 0 })} % de ${usd(r.portal.topeUsd, 0)}`}
+                      </span>
+                    </td>
+                    {/* PB-07: leer documentos al subirlos, fuera de los topes. */}
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-slate-500">{r.documentos.leidos ? `${n(r.documentos.leidos)} · ${usd(r.documentos.costeUsd)}` : '—'}</td>
                   </tr>
                 );
               })}

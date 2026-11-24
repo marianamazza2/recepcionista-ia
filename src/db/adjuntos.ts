@@ -13,6 +13,10 @@
 //     otro negocio no existe, ni para leerlo ni para mandarlo.
 //   · Un adjunto solo se manda una vez: al mandarse queda ligado a su
 //     conversación y ya no se puede «reutilizar» en otra.
+//   · Fase 5 (PB-06): cuando el negocio guarda un adjunto como documento
+//     desde el chat, el archivo sale de la conversación: se le quitan los
+//     bytes y queda el título del documento (marcarAdjuntoGuardado). Así la
+//     IA no lo vuelve a leer en cada mensaje de ese chat.
 // =============================================================================
 
 import type { Sql } from 'postgres';
@@ -35,6 +39,8 @@ export interface AdjuntoResumido {
 
 export interface Adjunto extends AdjuntoResumido {
   datos: Buffer;
+  /** Fase 5 (PB-06): si se guardó como documento, con qué título. Desde entonces ya no tiene bytes. */
+  documentoTitulo: string | null;
 }
 
 /** El tipo de verdad, mirando los primeros bytes. null si no es uno de los admitidos. */
@@ -101,7 +107,7 @@ export async function leerAdjuntos(sql: Sql, businessId: string, ids: string[]):
     sql,
     businessId,
     (tx) => tx<Adjunto[]>`
-      select id, nombre, tipo, bytes, datos from portal.adjuntos
+      select id, nombre, tipo, bytes, datos, documento_titulo as "documentoTitulo" from portal.adjuntos
        where business_id = ${businessId}::uuid and id = any(${ids}::uuid[])`,
   );
 }
@@ -110,4 +116,38 @@ export async function leerAdjuntos(sql: Sql, businessId: string, ids: string[]):
 export async function leerAdjunto(sql: Sql, businessId: string, id: string): Promise<Adjunto | null> {
   const [a] = await leerAdjuntos(sql, businessId, [id]);
   return a ?? null;
+}
+
+/**
+ * Fase 5 (PB-03): el adjunto que el negocio nombra en el chat del portal, por
+ * su nombre de archivo, entre los que ya mandó en esa conversación (o en las
+ * de su cadena). Sin tildes ni mayúsculas; si hay varios iguales, el último.
+ * Null si no hay ninguno claro.
+ */
+export async function adjuntoDelChat(sql: Sql, businessId: string, conversationIds: string[], nombre: string): Promise<Adjunto | null> {
+  if (conversationIds.length === 0) return null;
+  const filas = await inTenant(
+    sql,
+    businessId,
+    (tx) => tx<Adjunto[]>`
+      select id, nombre, tipo, bytes, datos, documento_titulo as "documentoTitulo" from portal.adjuntos
+       where business_id = ${businessId}::uuid and conversation_id = any(${conversationIds}::uuid[])
+       order by created_at desc, id`,
+  );
+  const limpio = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const n = limpio(nombre);
+  if (!n) return filas.length === 1 ? filas[0]! : null;
+  return filas.find((a) => limpio(a.nombre) === n) ?? filas.find((a) => limpio(a.nombre).includes(n) || n.includes(limpio(a.nombre).replace(/\.[a-z0-9]+$/, ''))) ?? null;
+}
+
+/** PB-06: guardado como documento: el archivo sale del chat (sin bytes) y queda su título. */
+export async function marcarAdjuntoGuardado(sql: Sql, businessId: string, id: string, titulo: string, ahora: Date = new Date()): Promise<void> {
+  await inTenant(
+    sql,
+    businessId,
+    (tx) => tx`
+      update portal.adjuntos
+         set datos = ''::bytea, documento_titulo = ${titulo.slice(0, 200)}, guardado_at = ${ahora}
+       where business_id = ${businessId}::uuid and id = ${id}::uuid and guardado_at is null`,
+  );
 }

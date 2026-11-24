@@ -107,6 +107,22 @@ pantalla.
     botón nuevo no necesita `cursor-pointer`; lo que se pincha y no es un
     `button` ni un enlace (un `div` con `onClick`), sí. El e2e del portal lo
     comprueba.
+14. **Documentos (Fase 5)**: una sección más de la ficha compartida
+    (`Documentos` en `Ficha.tsx`), igual en el panel y en el portal. Subir un
+    PDF o una foto viaja en **binario** con su nombre en `x-nombre`
+    (`src/cuerpo.ts`: `pedir()` acepta un `File`), un texto en JSON. La lista
+    llega ya comparada con la configuración: por cada dato que no coincide,
+    un recuadro «¿Cuál es el correcto?» con los botones **«Es 60 € (lo de mi
+    configuración)»** y **«Es 55 € (lo del documento): cámbialo»** (este
+    pide confirmación y recarga la ficha; un horario con citas afectadas
+    saca el cartel de PI-21); si el documento quedó viejo, «Corregirlo» o
+    «Reemplazar» (PB-01, PB-04). Se vuelve a pedir cada vez que cambia la
+    ficha, porque un cambio de precio puede dejar un documento viejo.
+15. **Los dos topes son de Mariana** (PC-09, PC-22): en «El chat en su web»
+    del panel, el de las clientas y el del chat del portal; el portal no ve
+    ninguno. En Consumo, el chat del portal va en su columna, con su % y el
+    aviso del 80 % (ámbar, rojo al llegar), y lo que costó leer documentos,
+    en otra (PB-07).
 
 ## Tests
 
@@ -115,7 +131,8 @@ pantalla.
 segundo hace el camino entero, de la invitación a la cita, y deja capturas de
 cada pantalla en ordenador y en móvil (`PORTAL_CAPTURAS`). La API que hay
 debajo la cubren `tests/admin-api.test.ts`, `tests/portal-api.test.ts` y
-`tests/alta-chat.test.ts`. `npm run typecheck` comprueba también `admin/`
+`tests/alta-chat.test.ts`; Documentos, `tests/documentos.test.ts` y el paso
+12 del e2e del portal. `npm run typecheck` comprueba también `admin/`
 (`tsc -p admin`), las dos apps.
 
 ## Si cambiás algo de acá

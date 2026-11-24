@@ -19,6 +19,7 @@ Leé el de la carpeta que vas a tocar **antes** de tocarla:
 | `src/` | La aplicación (TypeScript, Node 22) | [`src/AGENTS.md`](src/AGENTS.md) |
 | `src/core/` | El núcleo del agente: igual para todos los negocios | [`src/core/AGENTS.md`](src/core/AGENTS.md) |
 | `src/alta/` | El chat del portal: el alta por chat y los cambios de después. **Otro agente**, no el de las clientas | [`src/alta/AGENTS.md`](src/alta/AGENTS.md) |
+| `src/conocimiento/` | Lo que sabe el negocio (Fase 5): subir, leer, partir, comparar con la configuración y buscar sus documentos. **Un solo camino** para el panel, el portal y el chat | [`src/conocimiento/AGENTS.md`](src/conocimiento/AGENTS.md) |
 | `src/portal/` | Cuentas del portal (contraseña y sesión propias) y sus emails | [`src/portal/AGENTS.md`](src/portal/AGENTS.md) |
 | `src/adapters/` | Agenda, canales, email y SMS detrás de interfaces | [`src/adapters/AGENTS.md`](src/adapters/AGENTS.md) |
 | `src/db/` | Acceso a datos: tenant, clientas, conversaciones, consumo | [`src/db/AGENTS.md`](src/db/AGENTS.md) |

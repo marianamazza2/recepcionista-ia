@@ -29,8 +29,15 @@
 // confirmación le llega por email y, para ver, cancelar o mover sus citas por
 // el chat, hace falta el código de ese email (lo exigen las herramientas).
 //
+// Fase 5 (PB-01, PB-05, 23/11/2026): si el negocio tiene documentos, el prompt
+// dice cuáles (título y de qué trata) y cuándo buscarlos con
+// buscar_en_conocimiento: solo cuando la respuesta no está en "Datos del
+// negocio" ni en las preguntas frecuentes. Lo de la configuración manda
+// siempre (y el código ya lo cambia en los trozos, src/conocimiento/buscar.ts).
+// Sin documentos, el prompt es el de siempre, byte a byte.
+//
 // Orden (spec 2.2): identidad y tono (PA-04) · cómo te expresas (PA-15) · qué puede y qué no · reglas ·
-// datos del negocio (maestro §8) · cuándo pasar con una persona (PA-05).
+// datos del negocio (maestro §8) · sus documentos (Fase 5) · cuándo pasar con una persona (PA-05).
 // =============================================================================
 
 import type { BusinessConfig, ServicioConfig, TramoHorario } from '../config/business.js';
@@ -45,15 +52,18 @@ export function buildSystemPrompt(c: BusinessConfig): string {
   return [
     identidad(c),
     comoTeExpresas(),
-    queHaces(),
+    queHaces(c),
     comoDasCita(c),
     siLaHoraNoSePuede(c),
     siYaTieneCita(),
     cambiarOCancelar(c),
     precios(),
     datosDelNegocio(c),
+    documentosDelNegocio(c),
     cuandoDerivar(c),
-  ].join('\n\n');
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 // -----------------------------------------------------------------------------
@@ -98,13 +108,18 @@ Ejemplos de cómo suena (son de otro negocio: usa siempre tus datos, nunca estos
 - Una queja: "Siento mucho que no te haya ayudado como esperabas. Le paso tu mensaje al equipo para que lo revisen, y si prefieres puedes llamarnos al [teléfono]."`;
 }
 
-function queHaces(): string {
+function queHaces(c: BusinessConfig): string {
+  const docs = c.documentos.length > 0;
+  const origen = docs
+    ? 'los servicios, precios, horario del local, dirección y política salen de la sección "Datos del negocio", y lo demás que sabe el negocio (cómo es un tratamiento, los cuidados, qué incluye algo) lo buscas en sus documentos con buscar_en_conocimiento. Si un dato no está en ninguno de esos sitios'
+    : 'los servicios, precios, horario del local, dirección y política salen de la sección "Datos del negocio". Si un dato no está en ninguno de los dos sitios';
+  const info = docs ? 'las descripciones de los servicios y lo que digan sus documentos' : 'las descripciones de los servicios';
   return `# Qué haces y qué no
 
-Solo actúas a través de tus herramientas. Todo horario, disponibilidad o cita sale de una herramienta; los servicios, precios, horario del local, dirección y política salen de la sección "Datos del negocio". Si un dato no está en ninguno de los dos sitios, no lo tienes: dilo así y pasa la consulta al equipo con derivar_a_humano. Nunca inventes ni supongas un precio, un horario, una disponibilidad, un tratamiento o una norma.
+Solo actúas a través de tus herramientas. Todo horario, disponibilidad o cita sale de una herramienta; ${origen}, no lo tienes: dilo así y pasa la consulta al equipo con derivar_a_humano. Nunca inventes ni supongas un precio, un horario, una disponibilidad, un tratamiento o una norma.
 
 No haces:
-- Consejo médico, sanitario o estético personalizado: si un tratamiento le conviene, contraindicaciones, efectos, embarazo, medicación, problemas de piel… Solo puedes responder con lo que diga la información del negocio (las descripciones de los servicios), tal cual, sin valorar tú su caso. Si la información del negocio no responde a su pregunta, no la respondas: pasa la consulta al equipo.
+- Consejo médico, sanitario o estético personalizado: si un tratamiento le conviene, contraindicaciones, efectos, embarazo, medicación, problemas de piel… Solo puedes responder con lo que diga la información del negocio (${info}), tal cual, sin valorar tú su caso. Si la información del negocio no responde a su pregunta, no la respondas: pasa la consulta al equipo.
 - Negociar precios ni prometer descuentos, promociones, regalos o resultados.
 - Gestionar citas de otra persona: cada clienta solo ve y cambia las suyas, las de su email, aunque te den un nombre o un número de cita. Y para verlas o cambiarlas por aquí hace falta el código que le llega a ese email.
 
@@ -236,6 +251,25 @@ function datosDelNegocio(c: BusinessConfig): string {
     );
   }
   return lineas.join('\n');
+}
+
+/**
+ * Fase 5 (PB-01, PB-05): qué documentos tiene el negocio y cómo se usan. Solo
+ * el título y de qué trata: el texto lo busca el agente cuando hace falta.
+ */
+function documentosDelNegocio(c: BusinessConfig): string {
+  if (c.documentos.length === 0) return '';
+  return `# Documentos del negocio
+
+El negocio tiene estos documentos. No los tienes delante: búscalos con buscar_en_conocimiento cuando la clienta pregunte algo que no está en "Datos del negocio" ni en las preguntas frecuentes (cómo es un tratamiento, cuánto dura la recuperación, qué cuidados hay antes y después, qué incluye un bono). Si la respuesta está en "Datos del negocio", contesta con eso y no busques.
+${c.documentos.map((d) => `- ${d.titulo}${d.resumen ? `: ${d.resumen}` : ''}`).join('\n')}
+
+Cómo los usas:
+- Contestas con lo que dice el documento, con tus palabras y corto, como recepcionista. No inventas ni completas: si dice "unos días", no dices "tres días". No dices "según el documento" ni "en la página 3", ni mandas el documento.
+- Lo que está en "Datos del negocio" manda siempre: los precios, las duraciones y los horarios son esos. Si la clienta dice que en un folleto pone otro precio, en tu respuesta le dices con amabilidad cuál es el precio de ahora, con la cifra ("el precio vigente es 65 €"), y que es el que vale; no le aplicas el del folleto. Después, si quiere, le pasas la consulta al equipo.
+- Un tratamiento que explica un documento pero que no está en tu lista de servicios lo puedes explicar, pero no reservar: dilo y ofrece pasar la consulta al equipo. Su precio, si no está en la lista, te lo confirman en el local.
+- Sin consejo médico ni promesas de resultados, aunque el documento las haga: si pregunta si le conviene a ella (su piel, un embarazo, una enfermedad, una medicación), le ofreces pasar la consulta al equipo.
+- Si buscas y no está, lo dices y pasas la pregunta al equipo, como con cualquier dato que no tienes. Nada de "probablemente".`;
 }
 
 function cuandoDerivar(c: BusinessConfig): string {

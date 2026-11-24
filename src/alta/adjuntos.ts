@@ -12,6 +12,9 @@
 // siguientes del chat (si el cliente lo sube sin decir nada y luego contesta
 // «cárgalos», el agente lo vuelve a tener delante). Con la caché de prompts,
 // volver a mandarlo cuesta poco.
+//
+// Fase 5 (PB-06): un adjunto que ya se guardó como documento ya no se manda:
+// el modelo ve «guardado en Documentos como …» en su lugar.
 // =============================================================================
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -48,6 +51,8 @@ export async function expandirAdjuntos(sql: Sql, businessId: string, mensajes: M
         if (!x) return [b];
         const a = porId.get(x[1]!);
         if (!a) return [{ type: 'text', text: `[El archivo «${x[3]}» ya no está disponible.]` }];
+        // Fase 5 (PB-06): guardado como documento, el archivo ya no viaja.
+        if (a.documentoTitulo !== null) return [{ type: 'text', text: `[El archivo «${a.nombre}» ya está guardado en Documentos como «${a.documentoTitulo}».]` }];
         const data = a.datos.toString('base64');
         if (a.tipo === 'application/pdf') {
           return [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data }, title: a.nombre }];

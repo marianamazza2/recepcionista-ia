@@ -228,12 +228,15 @@ select test.ok(
 -- Desde la Fase 2 el agente escribe conversaciones y mensajes cada vez que
 -- alguien conversa (npm run chat), así que esas tablas ya no tienen por qué
 -- estar vacías: solo se comprueba que existen. De conocimiento, desde la
--- Fase 4 hay preguntas frecuentes (PI-08); los documentos y los trozos
--- indexados siguen vacíos hasta la Fase 5.
+-- Fase 4 hay preguntas frecuentes (PI-08). Desde la Fase 5 hay documentos
+-- (los suben los negocios), pero el seed de Aurora no trae ninguno: los
+-- escenarios de agent:eval crean los suyos y los borran.
 select test.ok(
-  (select count(*) from public.knowledge_docs where tipo <> 'faq') = 0
-  and (select count(*) from public.knowledge_chunks) = 0,
-  'de conocimiento solo hay preguntas frecuentes: documentos y trozos llegan en la fase 5'
+  (select count(*) from public.knowledge_docs
+    where business_id = 'a0000000-0000-4000-8000-000000000001' and tipo <> 'faq') = 0
+  and (select count(*) from public.knowledge_chunks
+        where business_id = 'a0000000-0000-4000-8000-000000000001') = 0,
+  'Aurora (seed): de conocimiento solo trae preguntas frecuentes, sin documentos (Fase 5)'
 );
 select test.ok(
   (select array_agg(titulo order by orden) from public.knowledge_docs

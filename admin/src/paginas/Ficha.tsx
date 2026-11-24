@@ -8,7 +8,8 @@
 // pausar, ni la clave del widget (PC-09): eso es de MAZZMKT.
 // =============================================================================
 // En el orden del cuestionario de alta: negocio, servicios, profesionales,
-// horarios, festivos, reglas, preguntas frecuentes y el chat en su web. Arriba,
+// horarios, festivos, reglas, preguntas frecuentes, documentos (Fase 5) y el
+// chat en su web. Arriba,
 // "Publicar": lo que falta y lo que conviene revisar (PI-03, PI-18), activar/pausar y el código del widget
 // (PI-09). En horarios: "Copiar a…" entre días y el aviso de PI-18 (horario
 // propio fuera del horario del local: tramos en ámbar, un aviso fijo debajo y
@@ -22,7 +23,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
-import { ErrorApi, type CitaAfectada, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
+import { ErrorApi, type AvisoDeValor, type CitaAfectada, type Documento, type Documentos as DocumentosNegocio, type Negocio, type Profesional, type Servicio, type Tramo } from '../api';
 import { useApiNegocio } from '../negocio-api';
 import { avisosHorario, copiarDia, copiarLibres, estadoDia, fueraDelLocal, LABORABLES, ponerEstado, TODA_LA_SEMANA, trabajaAlgunDia, type EstadoDia } from '../horario';
 import { LogoNoValido, prepararLogo, textoSobre } from '../logo';
@@ -52,6 +53,7 @@ export function Ficha(p: Props) {
     ['festivos', 'Festivos y ausencias'],
     ['reglas', 'Reservas y cancelación'],
     ['preguntas', 'Preguntas frecuentes'],
+    ['documentos', 'Documentos'],
     ['chat', ver === 'panel' ? 'El chat en su web' : 'El chat en tu web'],
   ];
   return (
@@ -75,6 +77,7 @@ export function Ficha(p: Props) {
         <Festivos {...p} />
         <Reglas {...p} />
         <Preguntas {...p} />
+        <Documentos {...p} />
         <Chat {...p} />
       </div>
     </div>
@@ -860,12 +863,194 @@ function FilaPregunta({ negocio: n, poner, id, inicial }: Props & { id: string |
 }
 
 // -----------------------------------------------------------------------------
+// Documentos: lo que sabe el negocio (Fase 5 · 5.4: PB-01 a PB-08)
+// -----------------------------------------------------------------------------
+// Su carta, sus hojas de cuidados, un folleto o un texto: el agente de las
+// clientas los busca cuando preguntan algo que no está en el resto de la
+// configuración. Por cada dato que no coincide al subirlo, «¿cuál es el
+// correcto?» con un botón por valor (PB-04); si la configuración cambia
+// después, «quedó viejo» con Corregirlo o Reemplazar (PB-01).
+
+function Documentos({ negocio: n, poner }: Props) {
+  const { pedir, ver } = useApiNegocio();
+  const [d, setD] = useState<DocumentosNegocio | null>(null);
+  const [texto, setTexto] = useState({ titulo: '', texto: '' });
+  const [escribir, setEscribir] = useState(false);
+  const a = useAccion();
+  // La comparación es con la configuración de AHORA: se vuelve a pedir cuando cambia (D-98).
+  useEffect(() => {
+    void pedir<DocumentosNegocio>('GET', 'documentos').then(setD, () => setD({ documentos: [], usados: { documentos: 0, paginas: 0 }, limites: { documentos: 20, paginas: 100, bytes: 4194304 } }));
+  }, [n]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const subir = (archivo: File | undefined) => {
+    if (!archivo) return;
+    void a.hacer(async () => setD(await pedir<DocumentosNegocio>('POST', 'documentos', archivo)), `«${archivo.name}» subido. Tu recepcionista ya lo sabe.`);
+  };
+  const subirTexto = () =>
+    void a.hacer(async () => {
+      setD(await pedir<DocumentosNegocio>('POST', 'documentos', { texto: texto.texto, titulo: nada(texto.titulo) }));
+      setTexto({ titulo: '', texto: '' });
+      setEscribir(false);
+    }, 'Guardado. Tu recepcionista ya lo sabe.');
+  const lleno = d ? d.usados.documentos >= d.limites.documentos : false;
+
+  return (
+    <Bloque
+      id="documentos"
+      titulo="Documentos"
+      ayuda={ver === 'panel' ? 'Lo que el agente busca cuando una clienta pregunta algo que no está en la configuración: la carta, los cuidados, un folleto.' : 'Lo que tu recepcionista busca cuando una clienta pregunta algo que no está en tu configuración: tu carta, los cuidados de antes y después, un folleto.'}
+    >
+      <Pideselo vacio={d !== null && d.documentos.length === 0} texto="Todavía no has subido ningún documento." seccion="documento" />
+      {/* PB-08: nada de datos de clientas. */}
+      <p className="mb-3 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">No subas datos de tus clientas: solo información de tu negocio (tratamientos, precios, cuidados…). PDF o fotos de hasta 4 MB, o un texto.</p>
+      {d ? (
+        <p className="mb-3 text-xs text-slate-500">
+          {d.usados.documentos} de {d.limites.documentos} documentos · {d.usados.paginas} de {d.limites.paginas} páginas
+        </p>
+      ) : (
+        <p className="text-sm text-slate-500">Cargando…</p>
+      )}
+
+      <ul className="space-y-3">
+        {d?.documentos.map((doc) => <FilaDocumento key={doc.id} doc={doc} setD={setD} poner={poner} />)}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className={`boton cursor-pointer ${a.ocupado || lleno ? 'pointer-events-none opacity-50' : ''}`}>
+          Subir un PDF o una foto
+          <input
+            type="file"
+            className="sr-only"
+            aria-label="Elegir un documento"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            disabled={a.ocupado || lleno}
+            onChange={(e) => {
+              subir(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <button type="button" className="boton-suave" disabled={a.ocupado || lleno} onClick={() => setEscribir(!escribir)}>
+          Escribir un texto
+        </button>
+        {a.ocupado ? <span className="text-sm text-slate-500">Leyendo el documento… puede tardar hasta un minuto.</span> : null}
+      </div>
+      {escribir ? (
+        <div className="mt-3 space-y-2 rounded-md bg-slate-50 p-3">
+          <input className="campo" aria-label="Título del texto" placeholder="Cuidados después del láser" maxLength={200} value={texto.titulo} onChange={(e) => setTexto({ ...texto, titulo: e.target.value })} />
+          <textarea className="campo" aria-label="Texto del documento" rows={6} maxLength={30000} placeholder="Escribe aquí lo que quieres que sepa tu recepcionista." value={texto.texto} onChange={(e) => setTexto({ ...texto, texto: e.target.value })} />
+          <div className="flex justify-end">
+            <button type="button" className="boton" disabled={a.ocupado || texto.texto.trim() === ''} onClick={subirTexto}>Guardar el texto</button>
+          </div>
+        </div>
+      ) : null}
+      <Aviso error={a.error} ok={a.ok} />
+    </Bloque>
+  );
+}
+
+const ORIGEN: Record<Documento['origen'], string> = { portal: 'subido en Configuración', panel: 'subido por MAZZMKT', chat: 'subido por el chat' };
+
+function FilaDocumento({ doc, setD, poner }: { doc: Documento; setD: (d: DocumentosNegocio) => void; poner: (n: Negocio) => void }) {
+  const { pedir } = useApiNegocio();
+  const [titulo, setTitulo] = useState(doc.titulo);
+  useEffect(() => setTitulo(doc.titulo), [doc.titulo]);
+  const a = useAccion();
+  const pc = usePreguntarCitas();
+  const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  /** PB-04 / PB-01: qué valor vale. Si gana el del documento, cambia la configuración (con confirmación). */
+  const resolver = (v: AvisoDeValor, usar: 'configuracion' | 'documento') => {
+    if (usar === 'documento' && !window.confirm(`Se cambiará ${v.que} en tu configuración: pasará a ${v.documento}. ¿Seguro?`)) return;
+    const enviar = async (citas?: DecisionCitas) => {
+      setD(await pedir<DocumentosNegocio>('POST', `documentos/${doc.id}/valores/${v.valorId}`, { usar, ...(citas ? { citas } : {}) }));
+      if (usar === 'documento') poner(await pedir<Negocio>('GET', ''));
+    };
+    void a.hacer(() => pc.intentar(enviar), usar === 'documento' ? 'Cambiado en tu configuración.' : 'Corregido en el documento.');
+  };
+  const decidir = (dc: DecisionCitas) => {
+    const p = pc.pendiente;
+    if (p) void a.hacer(async () => { await p.seguir(dc); pc.setPendiente(null); }, OK_CITAS[dc]);
+  };
+  const reemplazar = (archivo: File | undefined) => {
+    if (!archivo) return;
+    void a.hacer(async () => setD(await pedir<DocumentosNegocio>('POST', `documentos/${doc.id}/reemplazar`, archivo)), 'Reemplazado. Tu recepcionista ya sabe la versión nueva.');
+  };
+  const inputReemplazo = (
+    <label className={`boton-suave cursor-pointer ${a.ocupado ? 'pointer-events-none opacity-50' : ''}`}>
+      Reemplazar
+      <input type="file" className="sr-only" aria-label={`Reemplazar ${doc.titulo}`} accept="application/pdf,image/jpeg,image/png,image/webp" disabled={a.ocupado} onChange={(e) => { reemplazar(e.target.files?.[0]); e.target.value = ''; }} />
+    </label>
+  );
+
+  return (
+    <li className="rounded-md border border-slate-200 p-3" data-documento={doc.titulo}>
+      {/* En el móvil, el título y su texto a todo el ancho y los botones debajo (plan de pruebas, caso 56). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1">
+          <input className="campo font-medium" aria-label="Título del documento" maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          {doc.resumen ? <p className="mt-1 text-sm text-slate-600">{doc.resumen}</p> : null}
+          <p className="mt-1 text-xs text-slate-400">
+            {doc.tipo === 'pdf' ? 'PDF' : doc.tipo === 'imagen' ? 'Foto' : 'Texto'} · {doc.paginas} {doc.paginas === 1 ? 'página' : 'páginas'} · {ORIGEN[doc.origen]} el {fecha(doc.creado)}
+            {doc.reemplazado ? ` · reemplazado el ${fecha(doc.reemplazado)}` : ''}
+          </p>
+        </div>
+        <div className="flex flex-none flex-wrap gap-2">
+          {titulo.trim() && titulo !== doc.titulo ? (
+            <button type="button" className="boton" disabled={a.ocupado} onClick={() => void a.hacer(async () => setD(await pedir<DocumentosNegocio>('PUT', `documentos/${doc.id}`, { titulo: titulo.trim() })), 'Título cambiado.')}>Guardar título</button>
+          ) : null}
+          {inputReemplazo}
+          <button
+            type="button"
+            className="boton-peligro"
+            disabled={a.ocupado}
+            onClick={() => {
+              if (window.confirm(`¿Borrar «${doc.titulo}»? Tu recepcionista dejará de saberlo al momento.`)) void a.hacer(async () => setD(await pedir<DocumentosNegocio>('DELETE', `documentos/${doc.id}`)), 'Borrado.');
+            }}
+          >
+            Borrar
+          </button>
+        </div>
+      </div>
+
+      {doc.paginasIlegibles.length ? (
+        <p className="mt-2 text-xs text-amber-800">No se pudo leer {doc.paginasIlegibles.length === 1 ? `la página ${doc.paginasIlegibles[0]}` : `las páginas ${doc.paginasIlegibles.join(', ')}`}: lo que diga no lo sabe tu recepcionista.</p>
+      ) : null}
+      {doc.sinServicio.length ? (
+        <p className="mt-2 text-xs text-slate-600">Explica {doc.sinServicio.join(', ')}, que no {doc.sinServicio.length === 1 ? 'está' : 'están'} en tus Servicios: tu recepcionista lo explica, pero no puede dar cita. Si lo ofreces, dalo de alta en Servicios.</p>
+      ) : null}
+
+      {doc.preguntas.map((v) => (
+        <div key={v.valorId} role="group" aria-label={`Dato que no coincide: ${v.que}`} className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+          <p>Este documento dice que {v.que} es <strong>{v.documento}</strong>, y en tu configuración pone <strong>{v.configuracion}</strong>. ¿Cuál es el correcto?</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="boton" disabled={a.ocupado} onClick={() => resolver(v, 'configuracion')}>Es {v.configuracion} (lo de mi configuración)</button>
+            <button type="button" className="boton-suave" disabled={a.ocupado} onClick={() => resolver(v, 'documento')}>Es {v.documento} (lo del documento): cámbialo</button>
+          </div>
+        </div>
+      ))}
+      {doc.viejos.map((v) => (
+        <div key={v.valorId} role="group" aria-label={`Documento viejo: ${v.que}`} className="mt-3 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800">
+          <p>Este documento quedó viejo: dice que {v.que} es <strong>{v.documento}</strong>, y ahora tu configuración dice <strong>{v.configuracion}</strong>. Tu recepcionista usa el de tu configuración.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className="boton" disabled={a.ocupado} onClick={() => resolver(v, 'configuracion')}>Corregirlo</button>
+            {inputReemplazo}
+          </div>
+        </div>
+      ))}
+      {pc.pendiente ? <CartelCitas pendiente={pc.pendiente} ocupado={a.ocupado} decidir={decidir} cerrar={() => pc.setPendiente(null)} /> : null}
+      <Aviso error={a.error} ok={a.ok} />
+    </li>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // El chat en su web (PW-01, PW-02, PW-04, PW-06, PW-17, PI-10)
 // -----------------------------------------------------------------------------
 
 function Chat({ negocio: n, poner }: Props) {
   const { pedir, ver } = useApiNegocio();
-  const [f, setF] = useState({ dominios: n.chat.dominios.join('\n'), color: n.chat.color, logo: n.chat.logo, privacidadUrl: n.chat.privacidadUrl ?? '', topeMensualUsd: n.chat.topeMensualUsd });
+  const [f, setF] = useState({ dominios: n.chat.dominios.join('\n'), color: n.chat.color, logo: n.chat.logo, privacidadUrl: n.chat.privacidadUrl ?? '', topeMensualUsd: n.chat.topeMensualUsd, topePortalUsd: n.chat.topePortalUsd });
   const [avisoLogo, setAvisoLogo] = useState<string | null>(null);
   const [version, setVersion] = useState(n.versiones.chat); // PI-22
   const a = useAccion();
@@ -899,6 +1084,10 @@ function Chat({ negocio: n, poner }: Props) {
           {ver === 'panel' ? (
             <Campo etiqueta="Tope mensual de la IA (US$)" ayuda="Al llegar, el chat da el teléfono del local sin llamar a la IA."><input className="campo" type="number" min={0} step="1" value={f.topeMensualUsd ?? 0} onChange={(e) => setF({ ...f, topeMensualUsd: Number(e.target.value) })} /></Campo>
           ) : null}
+          {/* PC-22: el del chat del portal (el alta y los cambios), que paga MAZZMKT. */}
+          {ver === 'panel' ? (
+            <Campo etiqueta="Tope mensual del chat del portal (US$)" ayuda="Lo paga MAZZMKT. Al llegar, el chat del portal se pausa hasta el mes siguiente; Configuración a mano sigue."><input className="campo" type="number" min={0} step="1" value={f.topePortalUsd ?? 5} onChange={(e) => setF({ ...f, topePortalUsd: Number(e.target.value) })} /></Campo>
+          ) : null}
         </div>
         <div className="sm:col-span-2">
           <span className="etiqueta">Logo (PNG, JPG, SVG o WebP; si pesa más de 150 KB se reduce solo)</span>
@@ -931,7 +1120,7 @@ function Chat({ negocio: n, poner }: Props) {
                 logo: f.logo,
                 privacidadUrl: nada(f.privacidadUrl),
                 // PC-09: el portal no lo manda; la API conserva el que puso Mariana.
-                ...(ver === 'panel' ? { topeMensualUsd: f.topeMensualUsd } : {}),
+                ...(ver === 'panel' ? { topeMensualUsd: f.topeMensualUsd, topePortalUsd: f.topePortalUsd } : {}),
                 version,
               }),
             ),

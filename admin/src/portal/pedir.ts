@@ -8,7 +8,7 @@
 // Lo lee el cliente: español de España, de tú.
 // =============================================================================
 
-export type Pedido = 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'festivo' | 'empezar' | 'seguir' | 'cambiar-horario' | 'cambiar-servicio';
+export type Pedido = 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas' | 'festivo' | 'documento' | 'empezar' | 'seguir' | 'cambiar-horario' | 'cambiar-servicio';
 
 /** Las cinco secciones del alta, en el orden del guion (como portal.alta). */
 export type SeccionAlta = 'negocio' | 'servicios' | 'profesionales' | 'horario' | 'reglas';
@@ -23,6 +23,8 @@ export const PEDIDOS: Record<Pedido, { boton: string; mensaje: string }> = {
   horario: { boton: 'Cargar los horarios', mensaje: 'Quiero empezar a dar de alta los horarios del negocio.' },
   reglas: { boton: 'Configurar las reservas', mensaje: 'Quiero configurar cómo se reserva y se cancela.' },
   festivo: { boton: 'Cargar un festivo', mensaje: 'Quiero cargar un festivo.' },
+  // Fase 5 (PB-03): un documento para que la recepcionista lo sepa.
+  documento: { boton: 'Subir un documento', mensaje: 'Quiero que mi recepcionista sepa lo que dice un documento (mi carta de tratamientos, la hoja de cuidados…).' },
   'cambiar-horario': { boton: 'Cambiar un horario', mensaje: 'Quiero cambiar un horario.' },
   'cambiar-servicio': { boton: 'Cambiar un servicio', mensaje: 'Quiero cambiar un servicio.' },
 };

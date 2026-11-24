@@ -17,6 +17,10 @@
 // llegue la base de conocimiento (Fase 5). Su límite (20 o 4.000 caracteres)
 // lo pone la base (RA007).
 //
+// Fase 5 (PB-01): el título y la línea de qué trata de cada documento activo
+// del negocio. El texto NO va al prompt: lo busca el agente cuando hace falta
+// (buscar_en_conocimiento); el prompt solo dice qué documentos hay.
+//
 // Aceptación Fase 4 (caso 27): un servicio que no hace ninguna profesional
 // activa no llega al agente: no se puede reservar, así que no se ofrece.
 //
@@ -89,6 +93,14 @@ export interface BusinessConfig {
   horariosPropios: HorarioPropio[];
   /** PI-08: en el orden que eligió el negocio. */
   preguntasFrecuentes: PreguntaFrecuente[];
+  /** Fase 5 (PB-01): qué documentos tiene (solo título y de qué trata), por título. */
+  documentos: DocumentoConfig[];
+}
+
+/** Fase 5: un documento del negocio, tal como lo nombra el prompt. */
+export interface DocumentoConfig {
+  titulo: string;
+  resumen: string | null;
 }
 
 /** PI-08: una pregunta frecuente, tal como la escribió el negocio. */
@@ -181,6 +193,13 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
        where business_id = ${b.id}::uuid and tipo = 'faq'
        order by orden, created_at, id`;
 
+    // Fase 5: solo los activos (un borrador del chat del portal no existe).
+    const documentos = await tx<{ titulo: string; resumen: string | null }[]>`
+      select titulo, resumen
+        from public.knowledge_docs
+       where business_id = ${b.id}::uuid and tipo <> 'faq' and estado = 'activo'
+       order by titulo, id`;
+
     // Aceptación Fase 4 (caso 27): un servicio activo que no hace ninguna
     // profesional activa no se le da al agente. Si no, lo ofrecía como
     // reservable y, al no encontrar huecos, acababa pasando la conversación.
@@ -230,6 +249,7 @@ export async function loadBusinessConfig(sql: Sql, ref: BusinessRef): Promise<Bu
         .filter((t): t is typeof t & { staff_id: string } => t.staff_id !== null)
         .map((t) => ({ staffId: t.staff_id, weekday: t.weekday, apertura: t.apertura, cierre: t.cierre })),
       preguntasFrecuentes: faq.map((f) => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
+      documentos: documentos.map((d) => ({ titulo: d.titulo, resumen: d.resumen })),
     };
   });
 }

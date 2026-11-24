@@ -8,6 +8,7 @@
 // sesión caducó y el email ya puesto (aceptación Fase 4, caso 74).
 // =============================================================================
 
+import { cuerpoDe } from './cuerpo';
 import { ErrorApi } from './error-api';
 
 export interface Sesion {
@@ -56,10 +57,11 @@ export function alCambiarSesion(f: (s: Sesion | null) => void): () => void {
 export { ErrorApi } from './error-api';
 
 async function crudo(metodo: string, ruta: string, body?: unknown, token?: string): Promise<Response> {
-  const headers: Record<string, string> = {};
-  if (body !== undefined) headers['content-type'] = 'application/json';
+  // Fase 5: un archivo (Documentos) va en binario; lo demás, en JSON.
+  const c = cuerpoDe(body);
+  const headers: Record<string, string> = { ...c.headers };
   if (token) headers.authorization = `Bearer ${token}`;
-  return fetch(`/api/admin/${ruta}`, { method: metodo, headers, credentials: 'omit', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+  return fetch(`/api/admin/${ruta}`, { method: metodo, headers, credentials: 'omit', ...(c.body !== undefined ? { body: c.body } : {}) });
 }
 
 async function leer<T>(r: Response): Promise<T> {
@@ -218,7 +220,7 @@ export interface Negocio {
     cancelacionPlazoHoras: number;
   };
   /** PC-09: `topeMensualUsd` solo llega en el panel; en el portal no viene. */
-  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd?: number };
+  chat: { dominios: string[]; color: string; logo: string | null; privacidadUrl: string | null; topeMensualUsd?: number; topePortalUsd?: number };
   servicios: Servicio[];
   profesionales: Profesional[];
   horario: Tramo[];
@@ -318,6 +320,38 @@ export interface Agenda {
   timezone: string;
 }
 
+/** Fase 5 (PB-04, PB-01): un dato de un documento que no coincide con la configuración. */
+export interface AvisoDeValor {
+  valorId: string;
+  que: string;
+  documento: string;
+  configuracion: string;
+}
+
+/** Fase 5: un documento de Configuración → Documentos (sin su texto). */
+export interface Documento {
+  id: string;
+  tipo: 'pdf' | 'imagen' | 'texto';
+  titulo: string;
+  resumen: string | null;
+  origen: 'portal' | 'panel' | 'chat';
+  paginas: number;
+  paginasIlegibles: number[];
+  sinServicio: string[];
+  creado: string;
+  reemplazado: string | null;
+  /** PB-04: «¿cuál es el correcto?». */
+  preguntas: AvisoDeValor[];
+  /** PB-01: la configuración cambió y el documento dice lo de antes. */
+  viejos: AvisoDeValor[];
+}
+
+export interface Documentos {
+  documentos: Documento[];
+  usados: { documentos: number; paginas: number };
+  limites: { documentos: number; paginas: number; bytes: number };
+}
+
 export interface InformeConsumo {
   businessId: string;
   negocio: string;
@@ -328,6 +362,10 @@ export interface InformeConsumo {
   tokens: number;
   costeUsd: number;
   pruebas: { mensajes: number; conversaciones: number; citas: number; costeUsd: number };
+  /** PC-14 / PC-22: el chat del portal, aparte, con su propio tope y su aviso al 80 %. */
+  portal: { mensajes: number; conversaciones: number; costeUsd: number; topeUsd: number; fraccionTope: number | null; aviso: boolean };
+  /** PB-07: preparar documentos al subirlos (lo paga MAZZMKT, fuera de los topes). */
+  documentos: { leidos: number; costeUsd: number };
   topeUsd: number;
   fraccionTope: number | null;
   aviso: boolean;

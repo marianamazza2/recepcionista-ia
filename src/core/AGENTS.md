@@ -32,7 +32,8 @@ elige según un ajuste.
    PA-08 (solo sus citas, `tools/common.ts → citaDeLaClienta`), PA-16 (ver,
    cancelar o mover solo con el código del email, `tools/common.ts →
    exigirCodigo`; el código, sus intentos y su caducidad en `db/codigos.ts`),
-   PA-17 (la clienta es su email, `tools/clientes.ts`), PR-07 bloquear, PA-06 (tras derivar no se escribe), precios ocultos (se descartan
+   PA-17 (la clienta es su email, `tools/clientes.ts`), PR-07 bloquear, PA-06 (tras derivar no se escribe), PB-01 (la configuración manda sobre
+   un documento: `buscar_en_conocimiento` recibe los trozos ya con sus precios, `src/conocimiento/buscar.ts`), precios ocultos (se descartan
    al cargar la configuración), límites de vueltas y tokens.
 5. **El modelo nunca ve UTC ni ids de base que no necesita.** Las herramientas
    reciben y devuelven hora local (`fecha`, `hora`, `dia` legible).
@@ -43,6 +44,20 @@ elige según un ajuste.
 8. **El núcleo no conoce el canal.** Si un canal necesita algo (p. ej. el
    `externalId` del widget), entra como parámetro opcional de `runAgentTurn`,
    con el cambio mínimo.
+9. **La respuesta del turno es todo el texto del turno** (D-103): lo que el
+   modelo escribe junto a una llamada a herramienta también es para la
+   clienta y se junta, en orden, con el texto final. No lo filtres.
+
+## La base de conocimiento (Fase 5)
+
+`buscar_en_conocimiento` (`tools/conocimiento.ts`) **solo se le da al modelo si
+el negocio tiene documentos** (`toolsDe(config)`): un negocio sin documentos
+tiene el mismo prefijo de siempre. El prompt (`documentosDelNegocio`) dice
+qué documentos hay (título y de qué trata) y cuándo buscar: cuando la
+respuesta no está en "Datos del negocio" ni en las preguntas frecuentes
+(PB-01, PB-05). La búsqueda la pone `AgentDeps.buscador` (de serie, la de
+texto, PB-09 la A; D-96). El núcleo no lee, ni parte, ni compara documentos:
+eso es de [`src/conocimiento/`](../conocimiento/AGENTS.md).
 
 ## Añadir o cambiar una herramienta
 
