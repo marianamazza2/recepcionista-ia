@@ -24,9 +24,10 @@ Antes del primer cliente real falta conectar un proveedor de email de verdad
 chat del portal como los chats de IA conocidos: historial de chats, alta por
 temas, portal siempre visible; PC-17 a PC-20) publicada el 21/11/2026 (PR #10
 y su migración en la nube). **Fase 5** (lo que sabe el negocio: sus
-documentos, PB-01 a PB-09, y el tope del chat del portal, PC-22) construida
-en local en la rama `fase-5-spec` (24/11/2026): falta el plan de pruebas, la
-nube y el PR. Un negocio nuevo se da de alta **hablando con un
+documentos, PB-01 a PB-09, y el tope del chat del portal, PC-22) construida y
+probada en la rama `fase-5-spec` (PR #12, 24/11/2026): plan de pruebas 57/59
+OK y sus 2 migraciones aplicadas en la nube, con los tests en verde allí;
+falta mergear y probar la web publicada cuando vuelva la IA. Un negocio nuevo se da de alta **hablando con un
 chat**: Mariana le genera su enlace de invitación desde su panel (PC-02), él
 crea su cuenta con el código que le llega al email (PC-11), el chat le
 pregunta una cosa cada vez siguiendo el guion que dictó ella y, al terminar,
@@ -697,7 +698,7 @@ tests siguen en Aurora.
 | Proveedor real de email (hoy, uno de prueba que escribe en la consola y en los logs de Vercel) | cuando Mariana lo elija (PW-18) |
 | SMS (apagado desde PW-18) | 6, para los recordatorios, o si un negocio lo pide (PW-07) |
 | Retención y borrado de conversaciones | con PD-11 |
-| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) y tope del chat del portal (PC-22) | 5: construida en local (rama `fase-5-spec`); faltan el plan de pruebas, la nube y el PR |
+| Documentos del negocio y búsqueda (base de conocimiento, PB-01 a PB-09) y tope del chat del portal (PC-22) | 5: construida y probada, migraciones en la nube (PR #12, rama `fase-5-spec`); falta mergear y probar la web publicada |
 | Recordatorios | 6 |
 | `GoogleCalendarAdapter` | 7 |
 
